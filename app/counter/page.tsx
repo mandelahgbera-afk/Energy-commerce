@@ -36,6 +36,8 @@ export default function Counter() {
   const [tab, setTab] = useState<'sell' | 'till'>('sell');
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<Hit[]>([]);
+  const [hitsFor, setHitsFor] = useState('');
+  const pendingEnter = useRef(false);
   const [active, setActive] = useState(0);
   const [lines, setLines] = useState<SaleLine[]>([]);
   const [serials, setSerials] = useState<Record<string, string[]>>({});
@@ -86,18 +88,35 @@ export default function Counter() {
     if (tab === 'sell') focusScan();
   }, [tab, focusScan]);
 
+  // A scanner types the whole code and presses Enter at once. Each answer is kept only if it is
+  // for what is in the box now, and an Enter that comes before its answer waits for it, so a late
+  // answer for a half-typed number can never add the wrong part.
   useEffect(() => {
-    if (!query.trim()) {
+    const q = query.trim();
+    if (!q) {
       setHits([]);
+      setHitsFor('');
       return;
     }
+    let live = true;
     const t = setTimeout(async () => {
-      const { data, error: e } = await db.rpc('search_parts', { p_query: query.trim(), p_limit: 4 });
-      if (e) return;
-      setHits((data ?? []) as Hit[]);
+      const { data, error: e } = await db.rpc('search_parts', { p_query: q, p_limit: 4 });
+      if (!live || e) return;
+      const rows = (data ?? []) as Hit[];
+      setHits(rows);
+      setHitsFor(q);
       setActive(0);
+      if (pendingEnter.current && rows.length) {
+        pendingEnter.current = false;
+        void addHit(rows[0]);
+      }
     }, 120);
-    return () => clearTimeout(t);
+    return () => {
+      live = false;
+      clearTimeout(t);
+    };
+    // addHit is read when the answer lands, from this same render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, db]);
 
   const discountPct = Math.min(100, Math.max(0, Number(discount.replace(/\D/g, '').slice(0, 3)) || 0));
@@ -112,6 +131,8 @@ export default function Counter() {
       return;
     }
     const shape = saleShape;
+    // Only the answer for the sale as it stands now counts. An older one landing late is dropped.
+    let live = true;
     const t = setTimeout(async () => {
       const { data, error: e } = await db.rpc('preview_sale', {
         p_lines: lines.map((l) => ({ product_id: l.productId, qty: Number(l.qty) })),
@@ -119,13 +140,17 @@ export default function Counter() {
         p_phone: phone || null,
         p_discount_pct: discountPct,
       });
+      if (!live) return;
       if (e) {
         showError(e.message);
         return;
       }
       setPreview({ key: shape, data: data as Preview });
     }, 150);
-    return () => clearTimeout(t);
+    return () => {
+      live = false;
+      clearTimeout(t);
+    };
     // saleShape stands for lines, phone, discount and location together.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saleShape, db]);
@@ -308,7 +333,11 @@ export default function Counter() {
                 onKeyDown={(e) => {
                   if (e.key === 'ArrowDown' && hits.length) { e.preventDefault(); setActive((a) => (a + 1) % hits.length); }
                   if (e.key === 'ArrowUp' && hits.length) { e.preventDefault(); setActive((a) => (a - 1 + hits.length) % hits.length); }
-                  if (e.key === 'Enter' && hits.length) { e.preventDefault(); void addHit(hits[Math.min(active, hits.length - 1)]); }
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (hitsFor === query.trim() && hits.length) void addHit(hits[Math.min(active, hits.length - 1)]);
+                    else if (query.trim()) pendingEnter.current = true;
+                  }
                 }}
                 autoComplete="off"
                 placeholder="Scan the barcode, or type 6205 2rs"
@@ -327,7 +356,7 @@ export default function Counter() {
                   ))}
                 </div>
               ) : null}
-              {query.trim() && hits.length === 0 ? <div style={{ marginTop: 8, fontSize: 14, color: '#92400E' }}>Nothing matches. Check the number, or search by size.</div> : null}
+              {query.trim() && hitsFor === query.trim() && hits.length === 0 ? <div style={{ marginTop: 8, fontSize: 14, color: '#92400E' }}>Nothing matches. Check the number, or search by size.</div> : null}
             </section>
 
             <section className="card" aria-label="Items on this sale" style={{ padding: '8px 18px 10px' }}>
@@ -401,7 +430,7 @@ export default function Counter() {
                 </div>
 
                 <dl className="tabular" style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '5px 14px', margin: '12px 0 0', fontSize: 14.5 }}>
-                  <dt style={{ color: '#434E5A' }}>Items</dt><dd style={{ margin: 0, textAlign: 'right' }}>{current ? formatNaira(current.list_total) : '…'}</dd>
+                  <dt style={{ color: '#434E5A' }}>Items</dt><dd style={{ margin: 0, textAlign: 'right' }}>{current ? formatNaira(current.list_total) : lines.length ? '…' : formatNaira(0)}</dd>
                   <dt style={{ color: '#434E5A' }}>Discount</dt><dd style={{ margin: 0, textAlign: 'right' }}>{current && BigInt(String(current.list_total)) > payable ? `−${formatNaira(BigInt(String(current.list_total)) - payable)}` : formatNaira(0)}</dd>
                 </dl>
                 <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginTop: 6 }}>

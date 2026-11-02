@@ -12,13 +12,12 @@ Read at the start of every session. Update at the end. Keep it short. Long histo
 - orders with separate money and goods tracks: deposits, part payment, part delivery, credit, discount approvals, VAT
 - transfers confirmed against bank lines, tills, refunds and opening balances
 - row-level security on every table, and role checks on every function
-
 - returns and credit notes, owner money and blind safe counts, card taps waiting for the bank, quotes, part search
 - the counter's price preview and the owner's day (`owner_today`)
 
 **Tests:** 126 rule scenes on PGlite and real Postgres, 19 race scenes, all recorded in `sim/baseline.json` with every migration locked (raised 2 Nov after an outside review). Outside reviews have now found 15 serious bugs in the first core and 3 in the 2 Nov work. All are fixed, with scenes.
 
-**Screens (Next.js):** `/counter` (sale and till), `/owner` (the owner's day), `/kit`, `/login`. They build and type-check, and their maths has helper tests, but **no screen has yet run end to end with a signed-in user**. The counter's first version had four money bugs that only that would have caught.
+**Screens (Next.js):** `/counter` (sale and till), `/owner` (the owner's day), `/kit`, `/login`. `npm run e2e` drives `/counter` and `/owner` in Chrome against a throwaway local Supabase, with test logins, and checks each result in the books: 9 of 9 pass, at desktop and phone width. Not yet seen by the owner with their own login on staging.
 
 **Staging:** the owner's free Supabase project has all 13 migrations, recorded in `ops.applied_migrations`. Apply new ones with `npm run db:apply` (a dry run), then `--yes`. Nothing is deployed for customers. The shop visit (plan Phase 0) hasn't happened and is still required before go-live.
 
@@ -37,7 +36,15 @@ Database first, because these need no accounts and the core can't handle a retur
 - [x] **Counter sale and till.** The counter screen at `/counter`, ported from `Counter.dc.html`: scan box with Enter and arrows and the cursor returning by itself, lines with quantity and serial picking (oldest first), known-customer trade prices and credit, per-line discount maths in a pure tested module (`lib/sale-math.ts`, mirroring the database's rounding), Cash/POS/Transfer/Credit with the honest POS and transfer notes, one key per Complete tap so a retry never records twice, done state with receipt, and a blind till close typed per note denomination. Two honest deviations from the prototype, both rules: the system's expected till figure is never shown, not even after the count (rule 9), and the lottie seal stays a tick until the owner approves the player package. Proof: `npm run build` green, 11 helper tests green (sale maths match the database's exact rounding), page renders with no console errors. Open: the live 5-action run needs the owner's login — sign up in the app, then `npm run db:owner -- you@email.com`, then `npm run db:demo` for the demo catalogue.
 - [x] **Outside review and counter fixes (Claude).** The counter priced sales itself and got it wrong: phone lookups in the wrong format, trade prices for retail customers, a shown total that could differ from the charged one, and a till count sent as naira instead of kobo (₦243,000 would have been recorded as ₦2,430). Now `preview_sale` prices the sale by the order's own rules (24 random sales match to the kobo), and the till counts in kobo with the ₦20, ₦10 and ₦5 notes. The outside review of the five 2 Nov migrations proved 3 holes, all fixed with scenes: a battery returned without its serial, an accountant hiding a safe shortage as an owner drawing, and a quote blocked by a squatted key. Owner money is owner-only, and only counters count the safe. `db-apply` now applies each migration once and refuses a changed one, and the wipe and password scripts need `--confirm <project-id>`.
 - [x] **Owner's today screen.** `/owner`, from `owner_today()`: what waits on the owner with a yes and a no (approvals with the profit a yes leaves, transfers and card taps, stock and safe counts, lapsed holds), money in today by channel, money in and out per day or week, money in, money out and gross profit against the period before, who owes by age with click-to-chat or call, what is running out against the supplier's wait, and batteries due by month. Proof: a scene checks each figure against the ledger; the build is green. Open: the dollar graph waits for dollar costs (plan 5.1); the battery age is 24 months until the shop sets it (`shop_settings.battery_life_months`); not yet seen with real data in a browser.
-- [ ] **End-to-end test stack.** A local Supabase (Postgres, auth and the API, from images already on this laptop) so the screens can be driven in a browser with test logins, and a sale on `/counter` checked in the books. The counter's money bugs would have been caught here.
+- [x] **End-to-end test stack.** `npm run e2e`: Supabase's own Postgres, sign-in and API images, a small gateway, the app on port 3100 in its own `.next-e2e` folder (so it runs beside a dev server on 3000), and Chrome. Test logins are made fresh each run and never saved. It checks:
+  - a trade customer recognised from their phone and priced at trade
+  - a scanner-style scan-and-Enter, and the phone typed before the scans
+  - each sale recorded exactly as shown
+  - the till counted in kobo, with no expected figure shown
+  - the owner's day, and confirming a waiting transfer
+  - no sideways scroll at 375px, and the owner screen refused to a counter
+
+  Proof: 9 of 9, five runs in a row after the fixes. It found a real race on its second run: an older price or search answer landing late could replace a newer one, and a scanner's Enter could add the wrong part. Both are fixed. All 13 migrations also apply cleanly on Supabase's real Postgres image.
 - [ ] **Stock room.** Receive, pack with oldest-first picks, blind count.
 - [ ] **Books.** Month report, ledger, bank matching, month close, with the graphs from plan section 15.
 - [ ] **Public catalogue with request a quote.** Plan step 1.8, without go-live.
@@ -54,6 +61,8 @@ After these, stop. Everything left needs the owner and a real shop.
 ## Log
 
 Newest first. One or two lines per item: what now works, the test result, anything left open.
+
+- 2 Nov 2026 (Claude): end-to-end test stack, `npm run e2e`, 9 of 9. Fixed a late-answer race in the counter's price preview and search. Left open: the owner's own look at both screens on staging.
 
 - 2 Nov 2026 (Claude): owner's today screen at /owner, from owner_today(). 126 rules on both databases, 19 races, build green. Staging has all 13 migrations. Left open: dollar graph, battery age, a browser run with real data.
 - 2 Nov 2026 (Claude): reviewed OpenCode's 11 items. Fixed four money bugs in the counter and three holes from an outside review of the new migrations. Raised the baseline to 126 rules and 19 races, locked every migration, fast-forwarded main to the reviewed build.

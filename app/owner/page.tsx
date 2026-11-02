@@ -349,6 +349,14 @@ function Tile({ label, note, now, before, upIsGood, days }: { label: string; not
 type Point = { label: string; full: string; in: bigint; out: bigint };
 
 function MoneyChart({ points, hover, setHover, plotRef }: { points: Point[]; hover: number | null; setHover: (i: number | null) => void; plotRef: React.RefObject<HTMLDivElement | null> }) {
+  const [width, setWidth] = useState(600);
+  useEffect(() => {
+    const el = plotRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setWidth(e.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [plotRef]);
   const max = points.reduce((m, p) => (p.in > m ? p.in : p.out > m ? p.out : m), 0n);
   // A round top for the scale, so the gridlines read as plain amounts.
   const nice = (v: number) => { const e = 10 ** Math.floor(Math.log10(v || 1)); const f = v / e; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * e; };
@@ -359,7 +367,9 @@ function MoneyChart({ points, hover, setHover, plotRef }: { points: Point[]; hov
   const line = (key: 'in' | 'out') => points.map((p, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)} ${Y(p[key]).toFixed(1)}`).join(' ');
   const ticks: number[] = [];
   for (let v = 0; v <= top + 1; v += step) ticks.push(v);
-  const every = points.length <= 7 ? 1 : points.length <= 13 ? 3 : 6;
+  // As many dates as fit, about one per 70px and no more than seven, so they never run into each other on a phone.
+  const fit = Math.max(2, Math.min(7, Math.floor(width / 70)));
+  const every = Math.max(1, Math.ceil((points.length - 1) / (fit - 1)));
   const h = hover !== null && points[hover] ? hover : null;
   const hp = h !== null ? points[h] : null;
   const hl = h !== null ? (points.length === 1 ? 0 : (h / (points.length - 1)) * 100) : 0;

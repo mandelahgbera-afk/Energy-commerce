@@ -14,6 +14,7 @@ All commands run from `sim/`.
 | `node backup-proof.mjs` | Seeds a whole shop day on a throwaway server, seals an encrypted dump, restores it into a blank one, and compares every table, the ledger and `i_books_check()`; a tampered dump refuses to open | Before go-live, and whenever the schema grew | A minute or two |
 | `node edge.mjs` | Every rule scene, one per line | When you need to see scene names | About a minute |
 | `node race.mjs` | Real connections fighting over the same stock and money | Included in `--full` | Under a minute |
+| `npm run e2e` (from the project folder, not `sim/`) | A throwaway local Supabase (real Postgres, sign-in and API images), the app, and Chrome. Signs in as test staff, sells at the counter, closes the till, works the owner's screen, and checks each result in the books. Never touches staging | After changing a screen, or a function a screen calls. Needs Docker running | About two minutes |
 | `node simulate.mjs 30 90` | 90 pretend days through the real functions. Reports KB per sale and checks the books daily | Only when the schema grew and new size numbers are wanted | A few minutes |
 
 Filter anything you run directly, to save credits: `node edge.mjs | grep -vE '^pass'`.
