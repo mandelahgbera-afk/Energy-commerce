@@ -1,4 +1,5 @@
 // Records today's passing tests and locked files as the bar check.mjs holds later work to.
+// Every migration on the baseline is locked: once reviewed (and maybe applied to staging), a file never changes.
 // The owner runs this, or a reviewer they trust. OpenCode is denied it on purpose: a new bar should never be set by the one being measured.
 //   node make-baseline.mjs
 import crypto from 'node:crypto';
@@ -20,7 +21,7 @@ function passes(script) {
 
 const locked = {};
 const migrations = path.join(root, 'supabase', 'migrations');
-for (const f of fs.readdirSync(migrations).filter((n) => n.startsWith('20261101') && n.endsWith('.sql')).sort()) {
+for (const f of fs.readdirSync(migrations).filter((n) => n.endsWith('.sql')).sort()) {
   locked[`supabase/migrations/${f}`] = crypto.createHash('sha256').update(fs.readFileSync(path.join(migrations, f), 'utf8').replace(/\r\n/g, '\n')).digest('hex');
 }
 locked['sim/stubs.sql'] = crypto.createHash('sha256').update(fs.readFileSync(path.join(here, 'stubs.sql'), 'utf8').replace(/\r\n/g, '\n')).digest('hex');

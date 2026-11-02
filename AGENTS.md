@@ -34,7 +34,7 @@ Source of truth: `docs/plans/2026-11-01-power-store-plan.md` (long: read only th
 8. **Every write that can be retried takes a client key.** One tap makes one key, and a retry reuses it. On a bad network a sale must never record twice.
 9. **Counts are blind.** Till and shelf counts never show the expected figure to the person counting.
 10. **Never weaken a test to get it passing.** No deleting, renaming, skipping or loosening. If you truly believe a test is wrong, stop and show the owner why. `node check.mjs` fails if a baseline test goes missing.
-11. **The five migrations dated `20261101` are locked.** Change behaviour with a new migration file (`create or replace function ...`). `node check.mjs` fails if a locked file changes.
+11. **Every migration on the baseline is locked**, and so is any migration already applied to staging. Change behaviour with a new migration file (`create or replace function ...`), copying the latest version of the function, not an older one. `node check.mjs` fails if a locked file changes, and `npm run db:apply` refuses a changed file.
 
 ## Stop and ask the owner before
 
