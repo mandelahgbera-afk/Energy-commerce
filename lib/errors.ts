@@ -39,7 +39,7 @@ export const errorWords: Record<string, string> = {
   future_date: 'That date has not happened yet. The books only hold real days.',
   gateway_not_connected: 'Online payments are not connected yet.',
   goods_already_left: 'Those goods already left, so that cannot be undone here. Use a return instead.',
-  insufficient_stock: 'Only {detail} is on the shelf for that part. Reduce the quantity or offer a deposit for the rest.',
+  insufficient_stock: 'Not enough of {detail} on the shelf. Reduce the quantity or take a deposit for the rest.',
   key_required: 'This action needs its one-tap key. Try again from the button you pressed.',
   key_reused: 'This looks like a different action on an old request. Refresh and try again.',
   ledger_empty: 'There was nothing to record in the books for that action.',

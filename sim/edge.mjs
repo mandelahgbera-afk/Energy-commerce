@@ -1131,7 +1131,7 @@ await test('only the functions on this list can be run from outside', async () =
   eq((await runnable('authenticated')).join(), [
     'accept_quote', 'add_bank_line', 'approve_safe_count', 'approve_stock_count', 'availability', 'books_check', 'cancel_order', 'cancel_quote', 'cash_position', 'check_serial', 'close_month', 'close_till', 'confirm_payment',
     'counter_sale', 'create_order', 'create_quote', 'customer_balance', 'debtors', 'decide_approval', 'deliver_order', 'has_staff_role', 'is_staff', 'month_report', 'move_money',
-    'my_till', 'oldest_serials', 'open_till', 'owner_exceptions', 'owner_money_in', 'owner_money_out', 'pay_supplier', 'post_opening_balance', 'post_opening_debt', 'receipt_by_token', 'receive_goods',
+    'my_till', 'oldest_serials', 'open_till', 'owner_exceptions', 'owner_money_in', 'owner_money_out', 'pay_supplier', 'post_opening_balance', 'post_opening_debt', 'preview_sale', 'receipt_by_token', 'receive_goods',
     'record_expense', 'refund_order', 'reject_payment', 'reject_safe_count', 'reject_stock_count', 'reserve_order', 'return_goods', 'reverse_payment', 'reverse_txn', 'revise_quote', 'save_customer', 'save_location', 'save_part_details', 'save_product',
     'save_staff', 'save_supplier', 'search_parts', 'set_customer_terms', 'set_last_cost', 'shop_today', 'submit_safe_count', 'submit_stock_count', 'take_payment', 'till_paid_out', 'transfer_stock', 'void_opening_debt',
   ].join());
@@ -1185,6 +1185,7 @@ await test('each role is refused what is not its job', async () => {
     ['owner_exceptions', {}, everyoneBut(ACCOUNT)],
     ['debtors', {}, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
     ['customer_balance', { p_customer: dummy }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
+    ['preview_sale', { p_lines: [] }, everyoneBut(COUNTER, COUNTER2)],
     ['open_till', { p_float: 0 }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
     ['close_till', { p_counted: 0 }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
     ['my_till', {}, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
@@ -1764,6 +1765,58 @@ await test('search shows no count and no cost, and only staff who serve can use 
   await q(`update products set status = 'archived' where id = $1`, [crown]);
   expect(!(await rpc(COUNTER, 'search_parts', { p_query: '6205 2rs' })).some((x) => x.product === crown), 'an archived part still shows:');
   eq((await rpc(COUNTER, 'search_parts', { p_query: '205' })).length, 0, 'a loose number pulled something in:');
+});
+
+// ---- The counter's price preview (Claude, 2 Nov 2026) ----
+
+await test('the counter preview prices a sale exactly as the sale records it', async () => {
+  const items = [
+    await product({ price: 1250000, trade: 1100000, vat: 750, qty: 40 }),
+    await product({ price: 333333, qty: 40 }),
+    await product({ unit: 'metre', qty: 50, price: 3333, cost: 2000, vat: 750 }),
+    await product({ price: 99999, trade: 90001, qty: 40 }),
+  ];
+  const tradePhone = '08030000301';
+  const retailPhone = '08030000302';
+  const tc = await rpc(COUNTER, 'save_customer', { p_phone: tradePhone, p_name: 'Trade buyer' });
+  await rpc(OWNER, 'set_customer_terms', { p_customer: tc, p_kind: 'installer', p_credit_limit: 0 });
+  await rpc(COUNTER, 'save_customer', { p_phone: retailPhone, p_name: 'Retail buyer' });
+  let seed = 7;
+  const rand = () => (seed = (seed * 48271) % 2147483647) / 2147483647;
+  for (let i = 0; i < 24; i++) {
+    const pick = items.filter(() => rand() < 0.6);
+    if (pick.length === 0) pick.push(items[i % items.length]);
+    const lines = pick.map((p) => line(p, p === items[2] ? [0.5, 1.25, 2.333][i % 3] : 1 + (i % 3)));
+    const phone = [null, tradePhone, retailPhone, '0803'][i % 4];
+    const pct = [0, 3, 5, 12][Math.floor(i / 4) % 4];
+    const who = i % 2 ? COUNTER : COUNTER2;
+    const pv = await rpc(who, 'preview_sale', { p_lines: lines, p_location: shop, p_phone: phone, p_discount_pct: pct });
+    const sent = pv.lines.map((l) => ({ product_id: l.product_id, qty: l.qty, unit_price: l.unit_price }));
+    const o = await rpc(who, 'create_order', { p_key: k('ord'), p_location: shop, p_lines: sent, p_phone: phone && phone.length === 11 ? phone : null, p_backorder: true });
+    const row = await orderRow(o);
+    const why = `case ${i} (${phone ?? 'walk-in'}, ${pct}%):`;
+    eq(N(row.total_kobo), N(pv.total), `total, ${why}`);
+    eq(N(row.vat_kobo), N(pv.vat), `VAT, ${why}`);
+    eq(row.needs_approval, pv.needs_approval, `approval, ${why}`);
+    const stored = await q('select product_id, unit_price_kobo, line_total_kobo, line_vat_kobo from order_lines where order_id = $1', [o]);
+    for (const pl of pv.lines) {
+      const d = stored.find((s) => s.product_id === pl.product_id);
+      eq(N(d.unit_price_kobo), N(pl.unit_price), `unit price, ${why}`);
+      eq(N(d.line_total_kobo), N(pl.line_total), `line total, ${why}`);
+      eq(N(d.line_vat_kobo), N(pl.line_vat), `line VAT, ${why}`);
+    }
+    await rpc(COUNTER, 'cancel_order', { p_order: o, p_reason: 'Preview test' });
+  }
+  const trade = await rpc(COUNTER, 'preview_sale', { p_lines: [line(items[0])], p_location: shop, p_phone: '+234 803 000 0301' });
+  eq(trade.customer.trade, true, 'any phone format finds the customer:');
+  eq(N(trade.lines[0].unit_price), 1100000);
+  const retail = await rpc(COUNTER, 'preview_sale', { p_lines: [line(items[0])], p_location: shop, p_phone: retailPhone });
+  eq(retail.customer.trade, false);
+  eq(N(retail.lines[0].unit_price), 1250000, 'a retail customer pays the shelf price:');
+  eq((await rpc(COUNTER, 'preview_sale', { p_lines: [line(items[0])], p_location: shop, p_phone: '080' })).customer, null, 'a half-typed number:');
+  expect(!/cost/i.test(JSON.stringify(trade)) && !JSON.stringify(trade).includes('6000000'), 'cost in the preview');
+  await fails(rpc(COUNTER, 'preview_sale', { p_lines: [line(items[0])], p_discount_pct: 101 }), 'bad_discount');
+  await fails(rpc(COUNTER, 'preview_sale', { p_lines: [line(items[0], 1.5)] }), 'bad_qty');
 });
 
 // ---- Last, because it closes the month that every other scene posts into ----

@@ -9,13 +9,23 @@ import { browserDb } from '@/lib/supabase';
 import { friendly } from '@/lib/errors';
 import { formatNaira, nairaToKobo } from '@/lib/money';
 import { toQty } from '@/lib/quantity';
-import { lineTotalKobo, saleTotals, saleBlocker, type SaleLine } from '@/lib/sale-math';
+import { saleBlocker, type SaleLine } from '@/lib/sale-math';
+import { cashNotes, countedKobo, noteKobo } from '@/lib/till';
 import { Tick } from '@/components/kit/feel';
 
 type Hit = { product: string; sku: string; name: string; part_number: string | null; price: bigint | number | string; match: string; state: string };
-type Done = { invoice: string; state: string; method: string; total: bigint };
-
-const cashNotes = [1000, 500, 200, 100, 50];
+type Kobo = bigint | number | string;
+// What the database says this sale costs. The screen shows only this, and sends these unit prices back.
+type PreviewLine = { product_id: string; qty: number; list_price: Kobo; unit_price: Kobo; trade: boolean; line_total: Kobo; enough_stock: boolean; over_limit: boolean };
+type Preview = {
+  customer: null | { id: string; name: string | null; trade: boolean; owes: Kobo; holds: Kobo };
+  lines: PreviewLine[];
+  total: Kobo;
+  list_total: Kobo;
+  needs_approval: boolean;
+};
+type ReceiptLine = { name: string; qty: string; total: Kobo };
+type Done = { invoice: string; state: string; method: string; total: bigint; lines: ReceiptLine[] };
 
 export default function Counter() {
   const db = useRef(browserDb()).current;
@@ -30,8 +40,7 @@ export default function Counter() {
   const [lines, setLines] = useState<SaleLine[]>([]);
   const [serials, setSerials] = useState<Record<string, string[]>>({});
   const [phone, setPhone] = useState('');
-  const [known, setKnown] = useState<{ name: string; owes: bigint | number; holds: bigint | number } | null>(null);
-  const [tradePrices, setTradePrices] = useState<Record<string, bigint>>({});
+  const [preview, setPreview] = useState<{ key: string; data: Preview } | null>(null);
   const [discount, setDiscount] = useState('0');
   const [method, setMethod] = useState<string | null>(null);
   const [tender, setTender] = useState<bigint | null>(null);
@@ -48,7 +57,12 @@ export default function Counter() {
   const showError = useCallback((e: unknown) => {
     const msg = e instanceof Error ? e.message : String(e);
     const [name, ...rest] = msg.split(':');
-    setError(friendly(name, rest.join(':').trim()));
+    const detail = rest.join(':').trim();
+    if (name === 'payment_required' && detail) {
+      setError(`${formatNaira(BigInt(String(detail).split(' ')[0]))} is still owed before these goods can leave.`);
+      return;
+    }
+    setError(friendly(name, detail));
   }, []);
 
   useEffect(() => {
@@ -61,7 +75,7 @@ export default function Counter() {
       setSession({ email: data.session.user.email ?? '' });
       const me = await db.from('staff').select('discount_limit_pct').eq('id', data.session.user.id).maybeSingle();
       if (me.data) setLimitPct(Number(me.data.discount_limit_pct));
-      const locs = await db.from('locations').select('id, name').limit(1);
+      const locs = await db.from('locations').select('id, name').eq('kind', 'shop').limit(1);
       if (locs.data?.[0]) setLocation(locs.data[0]);
       const { data: tillData } = await db.rpc('my_till');
       if (tillData && typeof tillData === 'object' && 'id' in tillData) setTill(tillData as { id: string; float: bigint });
@@ -86,31 +100,39 @@ export default function Counter() {
     return () => clearTimeout(t);
   }, [query, db]);
 
+  const discountPct = Math.min(100, Math.max(0, Number(discount.replace(/\D/g, '').slice(0, 3)) || 0));
+  // "This sale as it stands", so a preview of an older version of it is never shown or charged.
+  const saleShape = JSON.stringify([lines.map((l) => [l.productId, l.qty]), phone, discountPct, location?.id ?? null]);
+
+  // The database prices the sale by the same rules the sale itself uses: trade prices, the
+  // customer found from any phone format, VAT, the discount judged line by line.
   useEffect(() => {
-    if (!phone.trim()) {
-      setKnown(null);
-      setTradePrices({});
+    if (lines.length === 0) {
+      setPreview(null);
       return;
     }
+    const shape = saleShape;
     const t = setTimeout(async () => {
-      const digits = phone.replace(/\D/g, '').padStart(11, '0').slice(0, 11);
-      const { data } = await db.from('customers').select('id, name, kind').eq('phone', `0${digits.slice(-10)}`).maybeSingle();
-      if (!data) {
-        setKnown(null);
-        setTradePrices({});
+      const { data, error: e } = await db.rpc('preview_sale', {
+        p_lines: lines.map((l) => ({ product_id: l.productId, qty: Number(l.qty) })),
+        p_location: location?.id ?? null,
+        p_phone: phone || null,
+        p_discount_pct: discountPct,
+      });
+      if (e) {
+        showError(e.message);
         return;
       }
-      const bal = await db.rpc('customer_balance', { p_customer: data.id });
-      setKnown({ name: data.name ?? 'Customer', owes: bal.data?.owes ?? 0, holds: bal.data?.holds ?? 0 });
-      const trades = await db.from('product_trade_prices').select('product_id, trade_price_kobo');
-      const map: Record<string, bigint> = {};
-      for (const t of trades.data ?? []) map[t.product_id] = BigInt(t.trade_price_kobo);
-      setTradePrices(map);
-    }, 400);
+      setPreview({ key: shape, data: data as Preview });
+    }, 150);
     return () => clearTimeout(t);
-  }, [phone, db]);
+    // saleShape stands for lines, phone, discount and location together.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saleShape, db]);
 
-  const unitPriceOf = (line: SaleLine): bigint => (known ? tradePrices[line.productId] ?? line.unitPriceKobo : line.unitPriceKobo);
+  const current = preview && preview.key === saleShape ? preview.data : null;
+  const priced = (productId: string) => current?.lines.find((x) => x.product_id === productId);
+  const payable = current ? BigInt(String(current.total)) : 0n;
 
   const addHit = useCallback(async (hit: Hit) => {
     const { data: prod } = await db.from('products').select('tracking').eq('id', hit.product).maybeSingle();
@@ -136,12 +158,14 @@ export default function Counter() {
   const updateLine = (productId: string, patch: Partial<SaleLine>) =>
     setLines((cur) => cur.map((l) => (l.productId === productId ? { ...l, ...patch } : l)));
 
-  const discountPct = Math.min(100, Math.max(0, Number(discount.replace(/\D/g, '').slice(0, 3)) || 0));
-  const totals = saleTotals(lines, discountPct);
   const blocker = saleBlocker(lines, method, tender, discountPct, limitPct, till !== null);
-  const blocked = busy || blocker !== null;
+  const short = current?.lines.find((x) => !x.enough_stock);
+  const waiting = lines.length > 0 && current === null;
+  const blocked = busy || blocker !== null || waiting || short !== undefined;
 
   const blockerText = (): string | null => {
+    if (waiting) return 'Working out the price…';
+    if (short) return `Not enough of ${lines.find((l) => l.productId === short.product_id)?.name ?? 'one item'} on the shelf.`;
     if (blocker?.kind === 'serial') return `Pick the serial number for ${blocker.line}.`;
     if (blocker?.kind === 'discount') return `Discount is above your limit (${blocker.limitPct}%). Ask the owner, or lower it.`;
     if (blocker?.kind === 'method') return 'Choose how they are paying.';
@@ -151,18 +175,20 @@ export default function Counter() {
   };
 
   const complete = async () => {
-    if (blocked) return;
+    if (blocked || !current) return;
     setBusy(true);
     setError(null);
     if (!saleKey.current) saleKey.current = crypto.randomUUID();
     const key = saleKey.current;
     const phoneDigits = phone.replace(/\D/g, '');
-    const lineArgs = lines.map((l, i) => ({
+    // The prices the customer was shown are the prices sent, so what is shown is what is charged.
+    const lineArgs = lines.map((l) => ({
       product_id: l.productId,
       qty: Number(l.qty),
+      unit_price: Number(priced(l.productId)?.unit_price ?? 0),
       ...(l.serials.length ? { serials: l.serials } : {}),
-      ...(discountPct > 0 ? { unit_price: Number(totals.unitPrices[i]) } : {}),
     }));
+    const receipt: ReceiptLine[] = lines.map((l) => ({ name: l.name, qty: l.qty, total: priced(l.productId)?.line_total ?? 0 }));
     try {
       if (method === 'Credit') {
         const order = await db.rpc('create_order', { p_key: `credit:${key}`, p_location: location?.id, p_lines: lineArgs, p_phone: phoneDigits || null, p_on_credit: true });
@@ -174,14 +200,14 @@ export default function Counter() {
         if (delivery.error) {
           const name = String(delivery.error.message).split(':')[0];
           if (name === 'awaiting_approval') {
-            setDone({ invoice: '', state: 'awaiting_approval', method: 'Credit', total: totals.totalKobo });
+            setDone({ invoice: '', state: 'awaiting_approval', method: 'Credit', total: payable, lines: receipt });
           } else {
             showError(delivery.error);
           }
           return;
         }
-        const row = await db.from('orders').select('invoice_no').eq('id', order.data).maybeSingle();
-        setDone({ invoice: row.data?.invoice_no ?? '', state: 'credit', method: 'Credit', total: totals.totalKobo });
+        const row = await db.from('orders').select('invoice_no, total_kobo').eq('id', order.data).maybeSingle();
+        setDone({ invoice: row.data?.invoice_no ?? '', state: 'credit', method: 'Credit', total: BigInt(String(row.data?.total_kobo ?? payable)), lines: receipt });
       } else {
         const dbMethod = method === 'Cash' ? 'cash' : method === 'POS' ? 'pos' : 'transfer';
         const sale = await db.rpc('counter_sale', { p_key: key, p_location: location?.id, p_lines: lineArgs, p_method: dbMethod, p_phone: phoneDigits || null });
@@ -189,8 +215,9 @@ export default function Counter() {
           showError(sale.error);
           return;
         }
+        // The receipt shows what the books recorded, not what the screen expected.
         const r = sale.data as { invoice_no: string; total: number | string; state: string };
-        setDone({ invoice: r.invoice_no, state: r.state, method: method ?? '', total: totals.totalKobo });
+        setDone({ invoice: r.invoice_no, state: r.state, method: method ?? '', total: BigInt(String(r.total)), lines: receipt });
       }
       setMethod(null);
       setTender(null);
@@ -215,7 +242,7 @@ export default function Counter() {
   };
 
   const submitTill = async () => {
-    const counted = cashNotes.reduce((a, n) => a + BigInt(n) * BigInt(Number(tillCounts[n]?.replace(/\D/g, '') || 0)), 0n);
+    const counted = countedKobo(tillCounts);
     if (counted === 0n) return;
     setBusy(true);
     const { error: e } = await db.rpc('close_till', { p_counted: Number(counted) });
@@ -306,13 +333,13 @@ export default function Counter() {
             <section className="card" aria-label="Items on this sale" style={{ padding: '8px 18px 10px' }}>
               {lines.length === 0 ? <div style={{ padding: '22px 0', textAlign: 'center', fontSize: 15, color: '#55606C' }}>Scan the first item to start.</div> : null}
               {lines.map((l) => {
-                const price = unitPriceOf(l);
+                const pl = priced(l.productId);
                 return (
                   <div key={l.productId} style={{ padding: '10px 0', borderBottom: '1px solid #F1F3F5' }}>
                     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px 12px' }}>
                       <div style={{ flex: '1 1 170px', minWidth: 0 }}>
                         <div style={{ fontSize: 15, fontWeight: 500 }}>{l.name}</div>
-                        <div style={{ fontSize: 13, color: '#55606C' }}>{formatNaira(price)} each{known && tradePrices[l.productId] ? ', trade price' : ''}</div>
+                        <div style={{ fontSize: 13, color: '#55606C' }}>{pl ? `${formatNaira(pl.unit_price)} each${pl.trade ? ', trade price' : ''}` : '…'}</div>
                       </div>
                       <div role="group" aria-label={`Quantity of ${l.name}`} style={{ flex: 'none', display: 'flex', alignItems: 'center', background: '#F1F3F5', borderRadius: 12 }}>
                         <button type="button" aria-label={`One fewer: ${l.name}`} className="press" style={stepStyle} onClick={() => {
@@ -323,7 +350,7 @@ export default function Counter() {
                         <span aria-live="polite" className="tabular" style={{ width: 28, textAlign: 'center', fontSize: 15.5, fontWeight: 600 }}>{l.qty}</span>
                         <button type="button" aria-label={`One more: ${l.name}`} className="press" style={stepStyle} onClick={() => updateLine(l.productId, { qty: toQty(String(Number(l.qty) + 1)) })}>+</button>
                       </div>
-                      <div className="tabular" style={{ flex: '0 0 96px', textAlign: 'right', fontSize: 15.5, fontWeight: 600 }}>{formatNaira(lineTotalKobo(price, l.qty))}</div>
+                      <div className="tabular" style={{ flex: '0 0 96px', textAlign: 'right', fontSize: 15.5, fontWeight: 600 }}>{pl ? formatNaira(pl.line_total) : '…'}</div>
                     </div>
                     {l.needsSerials ? (
                       <div className="rise" style={{ marginTop: 8, padding: '10px 12px', background: l.serials.length >= Number(l.qty) ? '#EEF9F4' : '#F4F6F8', borderRadius: 12 }}>
@@ -356,9 +383,9 @@ export default function Counter() {
               <>
                 <label htmlFor="ph" style={{ display: 'block', marginBottom: 6, fontSize: 14, fontWeight: 550 }}>Customer phone, for warranty and reminders</label>
                 <input id="ph" inputMode="numeric" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))} placeholder="0803 123 4567, or leave blank" className="tabular" style={{ width: '100%', height: 48, boxSizing: 'border-box', padding: '0 14px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 13, background: '#FFFFFF', color: '#10161E', font: '450 15.5px Geist, system-ui, sans-serif' }} />
-                {known ? (
+                {current?.customer ? (
                   <div className="rise" style={{ marginTop: 6, padding: '9px 12px', background: '#EEF3FF', borderRadius: 11, fontSize: 13.5, lineHeight: 1.4 }}>
-                    <b style={{ fontWeight: 600 }}>{known.name}.</b> Trade prices applied. Owes {formatNaira(known.owes)}. Holds {formatNaira(known.holds)}.
+                    <b style={{ fontWeight: 600 }}>{current.customer.name ?? 'Known customer'}.</b>{current.customer.trade ? ' Trade prices applied.' : ''} Owes {formatNaira(current.customer.owes)}. Holds {formatNaira(current.customer.holds)}.
                   </div>
                 ) : null}
 
@@ -374,17 +401,17 @@ export default function Counter() {
                 </div>
 
                 <dl className="tabular" style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '5px 14px', margin: '12px 0 0', fontSize: 14.5 }}>
-                  <dt style={{ color: '#434E5A' }}>Items</dt><dd style={{ margin: 0, textAlign: 'right' }}>{formatNaira(totals.subtotalKobo)}</dd>
-                  <dt style={{ color: '#434E5A' }}>Discount</dt><dd style={{ margin: 0, textAlign: 'right' }}>{totals.discountKobo ? `−${formatNaira(totals.discountKobo)}` : formatNaira(0)}</dd>
+                  <dt style={{ color: '#434E5A' }}>Items</dt><dd style={{ margin: 0, textAlign: 'right' }}>{current ? formatNaira(current.list_total) : '…'}</dd>
+                  <dt style={{ color: '#434E5A' }}>Discount</dt><dd style={{ margin: 0, textAlign: 'right' }}>{current && BigInt(String(current.list_total)) > payable ? `−${formatNaira(BigInt(String(current.list_total)) - payable)}` : formatNaira(0)}</dd>
                 </dl>
                 <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginTop: 6 }}>
                   <span style={{ fontSize: 15, fontWeight: 550 }}>To pay</span>
-                  <span className="tabular" style={{ fontSize: 34, fontWeight: 600, letterSpacing: '-.03em' }}>{formatNaira(totals.totalKobo)}</span>
+                  <span className="tabular" style={{ fontSize: 34, fontWeight: 600, letterSpacing: '-.03em' }}>{lines.length && !current ? '…' : formatNaira(payable)}</span>
                 </div>
 
                 <div role="group" aria-label="How they are paying" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 5, marginTop: 10 }}>
                   {(['Cash', 'POS', 'Transfer', 'Credit'] as const).map((m) => {
-                    const off = m === 'Credit' && !known;
+                    const off = m === 'Credit' && !current?.customer;
                     const on = method === m;
                     return (
                       <button key={m} type="button" onClick={() => { setMethod(m); setTender(null); }} aria-pressed={on} disabled={off} className="press" style={{ minHeight: 48, padding: '0 2px', border: `1px solid ${on ? '#10161E' : 'rgba(16,24,34,.16)'}`, borderRadius: 12, background: on ? '#10161E' : '#FFFFFF', color: on ? '#FFFFFF' : '#10161E', font: '500 14px Geist, system-ui, sans-serif', cursor: 'pointer', opacity: off ? 0.45 : 1 }}>
@@ -397,7 +424,7 @@ export default function Counter() {
                 {method === 'Cash' ? (
                   <div className="rise" style={{ marginTop: 10 }}>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                      {[0n, ...([100000n, 500000n, 1000000n].map((r) => totals.totalKobo + (r - (totals.totalKobo % r)) % r))]
+                      {[0n, ...([100000n, 500000n, 1000000n].map((r) => payable + (r - (payable % r)) % r))]
                         .filter((v, i, arr) => arr.findIndex((x) => x === v) === i)
                         .map((v) => (
                           <button key={String(v)} type="button" onClick={() => setTender(v)} aria-pressed={tender === v} className="press" style={{ flex: '1 1 70px', minHeight: 44, border: `1px solid ${tender === v ? '#10161E' : 'rgba(16,24,34,.16)'}`, borderRadius: 11, background: tender === v ? '#10161E' : '#FFFFFF', color: tender === v ? '#FFFFFF' : '#10161E', font: '500 13.5px Geist, system-ui, sans-serif', cursor: 'pointer' }}>
@@ -407,13 +434,13 @@ export default function Counter() {
                     </div>
                     <div aria-live="polite" className="tabular" style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 15 }}>
                       <span>Change to give</span>
-                      <b style={{ fontWeight: 600 }}>{formatNaira(tender ? (tender > totals.totalKobo ? tender - totals.totalKobo : 0n) : 0n)}</b>
+                      <b style={{ fontWeight: 600 }}>{formatNaira(tender ? (tender > payable ? tender - payable : 0n) : 0n)}</b>
                     </div>
                   </div>
                 ) : null}
                 {method === 'POS' ? <p className="rise" style={{ margin: '10px 0 0', fontSize: 13.5, lineHeight: 1.4, color: '#434E5A' }}>Goods leave now. The money lands once finance matches the bank line.</p> : null}
                 {method === 'Transfer' ? <p className="rise" style={{ margin: '10px 0 0', fontSize: 13.5, lineHeight: 1.4, color: '#92400E' }}>Goods stay here until finance confirms the money is in the bank. A screenshot does not count.</p> : null}
-                {method === 'Credit' ? <p className="rise" style={{ margin: '10px 0 0', fontSize: 13.5, lineHeight: 1.4, color: '#434E5A' }}>Added to {known?.name}&apos;s account.</p> : null}
+                {method === 'Credit' ? <p className="rise" style={{ margin: '10px 0 0', fontSize: 13.5, lineHeight: 1.4, color: '#434E5A' }}>Added to {current?.customer?.name ?? 'their'}&apos;s account.</p> : null}
                 {method === 'Cash' && !till ? (
                   <div className="rise" style={{ marginTop: 10, padding: '10px 12px', background: '#F4F6F8', borderRadius: 12 }}>
                     <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.4, color: '#434E5A' }}>Your till is not open. Open it with the float you received.</p>
@@ -443,10 +470,10 @@ export default function Counter() {
                     <div style={{ fontWeight: 500 }}>POWER STORE</div>
                     <div>Receipt {done.invoice}</div>
                     <div style={{ margin: '6px 0', borderTop: '1px dashed #C6CED6' }} />
-                    {lines.map((l) => (
-                      <div key={l.productId} style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                    {done.lines.map((l) => (
+                      <div key={l.name} style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
                         <span>{l.qty} × {l.name}</span>
-                        <span className="tabular" style={{ flex: 'none' }}>{formatNaira(lineTotalKobo(unitPriceOf(l), l.qty))}</span>
+                        <span className="tabular" style={{ flex: 'none' }}>{formatNaira(l.total)}</span>
                       </div>
                     ))}
                     <div style={{ margin: '6px 0', borderTop: '1px dashed #C6CED6' }} />
@@ -478,16 +505,16 @@ export default function Counter() {
                   <input inputMode="numeric" aria-label={`Number of ₦${n} notes`} disabled={tillClosed} value={tillCounts[n] ?? ''} onChange={(e) => setTillCounts((c) => ({ ...c, [n]: e.target.value.replace(/\D/g, '').slice(0, 5) }))} className="tabular" style={{ width: 58, height: 44, boxSizing: 'border-box', padding: 0, border: 0, background: 'transparent', color: '#10161E', textAlign: 'center', font: '600 15.5px Geist, system-ui, sans-serif' }} />
                   <button type="button" aria-label={`One more ₦${n} note`} disabled={tillClosed} className="press" style={stepStyle} onClick={() => setTillCounts((c) => ({ ...c, [n]: String(Number(c[n]?.replace(/\D/g, '') || 0) + 1) }))}>+</button>
                 </div>
-                <span className="tabular" style={{ flex: '0 0 100px', textAlign: 'right', fontSize: 15.5 }}>{formatNaira(BigInt(n) * BigInt(Number(tillCounts[n]?.replace(/\D/g, '') || 0)))}</span>
+                <span className="tabular" style={{ flex: '0 0 100px', textAlign: 'right', fontSize: 15.5 }}>{formatNaira(noteKobo(n, tillCounts[n]))}</span>
               </div>
             ))}
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginTop: 10, paddingTop: 10, borderTop: '1px solid #E6EAEE' }}>
               <span style={{ fontSize: 15, fontWeight: 550 }}>You counted</span>
-              <span className="tabular" style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-.028em' }}>{formatNaira(cashNotes.reduce((a, n) => a + BigInt(n) * BigInt(Number(tillCounts[n]?.replace(/\D/g, '') || 0)), 0n))}</span>
+              <span className="tabular" style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-.028em' }}>{formatNaira(countedKobo(tillCounts))}</span>
             </div>
           </section>
           {!tillClosed ? (
-            <button type="button" onClick={() => void submitTill()} disabled={busy || !cashNotes.some((n) => Number(tillCounts[n]?.replace(/\D/g, '') || 0) > 0)} className="press" style={{ width: '100%', minHeight: 54, marginTop: 12, border: 0, borderRadius: 15, background: busy || !cashNotes.some((n) => Number(tillCounts[n]?.replace(/\D/g, '') || 0) > 0) ? '#8E99A4' : '#1B5CF0', color: '#FFFFFF', font: '600 16px Geist, system-ui, sans-serif', cursor: 'pointer' }}>
+            <button type="button" onClick={() => void submitTill()} disabled={busy || countedKobo(tillCounts) === 0n} className="press" style={{ width: '100%', minHeight: 54, marginTop: 12, border: 0, borderRadius: 15, background: busy || countedKobo(tillCounts) === 0n ? '#8E99A4' : '#1B5CF0', color: '#FFFFFF', font: '600 16px Geist, system-ui, sans-serif', cursor: 'pointer' }}>
               This is my count
             </button>
           ) : (

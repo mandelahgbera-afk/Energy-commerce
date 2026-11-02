@@ -1,28 +1,79 @@
-// One-off, run by the owner: applies every migration in supabase/migrations to the staging
-// database named by SUPABASE_DB_URL in .env.local (which this script reads itself, and never
-// prints). The test stubs in sim/stubs.sql are never applied. Re-running is safe: Postgres
-// re-runs the files in order, and each migration is written to tolerate a second run.
+// Applies new migrations to staging, each one once, and remembers what ran.
+//   node scripts/db-apply.mjs          shows what would run, and changes nothing
+//   node scripts/db-apply.mjs --yes    runs it
+// Each file runs in its own transaction, so a failure leaves the database as it was. A file that
+// changed after it ran is refused rather than skipped: change behaviour with a new migration.
+// The test stubs in sim/stubs.sql are never applied.
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import postgres from 'postgres';
+import { root, stagingUrl, projectRef } from './staging.mjs';
 
-const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const env = fs.readFileSync(path.join(root, '.env.local'), 'utf8');
-const url = env.match(/^SUPABASE_DB_URL=(.*)$/m)?.[1]?.trim().replace(/^["']|["']$/g, '');
-if (!url) {
-  console.log('SUPABASE_DB_URL is not in .env.local yet. Fill it in and run again.');
-  process.exit(1);
-}
+const apply = process.argv.includes('--yes');
+const url = stagingUrl();
+const dir = path.join(root, 'supabase', 'migrations');
+const files = fs.readdirSync(dir).filter((n) => n.endsWith('.sql')).sort();
+const text = (f) => fs.readFileSync(path.join(dir, f), 'utf8');
+const hash = (f) => crypto.createHash('sha256').update(text(f).replace(/\r\n/g, '\n')).digest('hex');
+// The first thing a file creates tells us whether it already ran on a database set up before this record existed.
+const probe = (f) => text(f).match(/create\s+(?:or\s+replace\s+)?(function|table|policy|type)\s+(?:public\.)?(\w+)/i);
+const exists = async (kind, name) => {
+  const n = name.toLowerCase();
+  if (kind === 'table') return (await sql`select to_regclass(${'public.' + n}) is not null as yes`)[0].yes;
+  if (kind === 'policy') return (await sql`select exists (select 1 from pg_policies where schemaname = 'public' and policyname = ${n}) as yes`)[0].yes;
+  if (kind === 'type') return (await sql`select to_regtype(${'public.' + n}) is not null as yes`)[0].yes;
+  return (await sql`select exists (select 1 from pg_proc p join pg_namespace s on s.oid = p.pronamespace where s.nspname = 'public' and p.proname = ${n}) as yes`)[0].yes;
+};
 
 const sql = postgres(url, { ssl: 'require', max: 1, onnotice: () => {} });
-const files = fs.readdirSync(path.join(root, 'supabase', 'migrations')).filter((n) => n.endsWith('.sql')).sort();
 try {
-  for (const f of files) {
-    await sql.unsafe(fs.readFileSync(path.join(root, 'supabase', 'migrations', f), 'utf8'));
+  const tracked = (await sql`select to_regclass('ops.applied_migrations') is not null as yes`)[0].yes;
+  const done = new Map();
+  if (tracked) for (const r of await sql`select name, sha256 from ops.applied_migrations`) done.set(r.name, r.sha256);
+
+  // First run on a database that already has the schema: find which files are in it already.
+  const found = [];
+  if (!tracked && (await sql`select to_regclass('public.staff') is not null as yes`)[0].yes) {
+    let gap = false;
+    for (const f of files) {
+      const p = probe(f);
+      if (!p) throw new Error(`${f} creates nothing this script can look for. Sort this out by hand.`);
+      const there = await exists(p[1].toLowerCase(), p[2]);
+      if (there && gap) throw new Error(`${f} is already in the database but an earlier file is not. Sort this out by hand.`);
+      if (there) found.push(f);
+      else gap = true;
+    }
+  }
+
+  const changed = files.filter((f) => done.has(f) && done.get(f) !== hash(f));
+  if (changed.length) {
+    console.log(`Refusing: these ran before and have changed since: ${changed.join(', ')}. Put the change in a new migration.`);
+    process.exit(1);
+  }
+  const pending = files.filter((f) => !done.has(f) && !found.includes(f));
+  console.log(`Staging project ${projectRef(url) ?? '(unknown)'}: ${files.length} migrations, ${done.size + found.length} already in, ${pending.length} to run.`);
+  for (const f of found) console.log(`  already there, will be recorded: ${f}`);
+  for (const f of pending) console.log(`  to run: ${f}`);
+  if (!apply) {
+    console.log(pending.length || found.length ? 'Nothing changed. Run again with --yes to apply.' : 'Up to date.');
+    process.exit(0);
+  }
+
+  await sql.unsafe(`create schema if not exists ops;
+    revoke all on schema ops from public;
+    create table if not exists ops.applied_migrations (name text primary key, sha256 text not null, applied_at timestamptz not null default now(), how text not null)`);
+  for (const f of found) {
+    await sql`insert into ops.applied_migrations (name, sha256, how) values (${f}, ${hash(f)}, 'found already applied') on conflict do nothing`;
+  }
+  for (const f of pending) {
+    await sql.begin(async (t) => {
+      await t.unsafe(text(f));
+      await t`insert into ops.applied_migrations (name, sha256, how) values (${f}, ${hash(f)}, 'applied')`;
+    });
     console.log(`applied ${f}`);
   }
-  console.log(`done: ${files.length} migrations applied to staging.`);
+  console.log('Up to date.');
 } finally {
   await sql.end({ timeout: 5 });
 }
