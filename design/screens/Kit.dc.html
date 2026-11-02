@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Components and feel</title>
+<script src="./support.js"></script>
+<script src="/_blob/8894df7a6a20de073c579d8151803290"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+body{margin:0;background:#EEF1F4}
+a{color:inherit}
+.card{display:flex;flex-direction:column;gap:12px;box-sizing:border-box;padding:20px;background:#FFFFFF;border:1px solid rgba(16,24,34,.07);border-radius:22px;min-width:0}
+.lab{font-size:15px;font-weight:600;letter-spacing:-.012em}
+.sub{font-size:13.5px;line-height:1.4;color:#55606C;margin-top:1px}
+.glass{background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.82);box-shadow:0 1px 2px rgba(16,24,34,.06),0 14px 32px rgba(16,24,34,.14)}
+.press{transition:background .18s,transform .12s,border-color .18s,color .18s,box-shadow .18s}
+.press:hover{box-shadow:0 2px 10px rgba(16,24,34,.08)}
+.press:active{transform:scale(.97)}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #1B5CF0;outline-offset:2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(13,148,101,.42)}70%{box-shadow:0 0 0 7px rgba(13,148,101,0)}100%{box-shadow:0 0 0 0 rgba(13,148,101,0)}}
+@keyframes sweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.spin{animation:spin .75s linear infinite}
+.tickdraw{stroke-dasharray:1;animation:draw .34s cubic-bezier(.3,.7,.2,1) both}
+.rise{animation:rise .3s cubic-bezier(.2,.7,.2,1) both}
+.livedot{animation:pulse 2s ease-out infinite}
+.sweep{animation:sweep 1.05s ease-in-out infinite}
+.fieldwrap{position:relative}
+@media (min-width:760px){.wide{grid-column:span 2}}
+@media (prefers-reduced-motion:reduce){.spin,.livedot,.sweep{animation:none}.tickdraw,.rise{animation-duration:.01ms}}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; padding: clamp(18px, 3vw, 40px) clamp(14px, 3vw, 44px) 48px; font-family: Geist, system-ui, -apple-system, 'Segoe UI', sans-serif; color: #10161E; background: radial-gradient(70% 420px at 70% 0, #FFFFFF 0%, rgba(255,255,255,0) 100%), #EEF1F4">
+<div style="max-width: 1220px; margin: 0 auto">
+<h1 style="margin: 0; font-size: clamp(28px, 3.2vw, 40px); line-height: 1.08; font-weight: 600; letter-spacing: -.03em">Components and feel</h1>
+<p style="margin: 8px 0 22px; max-width: 620px; font-size: 16px; line-height: 1.5; color: #434E5A">The custom parts the whole store and back office are built from. Each one tells you what just happened. Press, type and drag them.</p>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 14px">
+
+<section class="card">
+<div><div class="lab">Add to bag</div><div class="sub">Confirms, then the bag count responds.</div></div>
+<div style="display: flex; align-items: center; gap: 12px; margin-top: auto">
+<button type="button" onClick="{{add}}" disabled="{{addBusy}}" class="press" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; height: 50px; border: 0; border-radius: 14px; background: {{addBg}}; color: #FFFFFF; font: 550 15.5px Geist, system-ui, sans-serif; cursor: pointer; box-shadow: 0 8px 20px rgba(27,92,240,.22)">
+<sc-if value="{{addIsBusy}}" hint-placeholder-val="{{ false }}"><svg class="spin" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" style="fill: none; stroke: #FFFFFF; stroke-width: 2.4; stroke-linecap: round"><path d="M12 3a9 9 0 1 0 9 9"></path></svg></sc-if>
+<sc-if value="{{addIsDone}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" style="fill: none; stroke: #FFFFFF; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round"><path class="tickdraw" pathLength="1" d="M5 12.500 10 17.500 19.500 7"></path></svg></sc-if>
+<span>{{addText}}</span>
+</button>
+<span ref="{{bindBadge}}" aria-live="polite" style="display: inline-flex; align-items: center; gap: 7px; height: 50px; padding: 0 14px; background: #10161E; color: #FFFFFF; border-radius: 14px; font-size: 14.5px; font-weight: 500">Bag <b style="font-weight: 650">{{bag}}</b></span>
+</div>
+</section>
+
+<section class="card">
+<div><div class="lab">Quantity</div><div class="sub">The number moves in the direction you press.</div></div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto">
+<div role="group" aria-label="Quantity" style="display: flex; align-items: center; background: #F1F3F5; border-radius: 13px">
+<button type="button" onClick="{{qtyLess}}" aria-label="One fewer" class="press" style="width: 48px; height: 48px; border: 0; border-radius: 13px; background: transparent; color: #10161E; font: 400 22px Geist, system-ui, sans-serif; cursor: pointer">−</button>
+<span ref="{{bindQty}}" aria-live="polite" style="display: inline-block; width: 40px; text-align: center; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums">{{qty}}</span>
+<button type="button" onClick="{{qtyMore}}" aria-label="One more" class="press" style="width: 48px; height: 48px; border: 0; border-radius: 13px; background: transparent; color: #10161E; font: 400 22px Geist, system-ui, sans-serif; cursor: pointer">+</button>
+</div>
+<div style="text-align: right"><div style="font-size: 13px; color: #55606C">Total</div><div style="font-size: 20px; font-weight: 600; letter-spacing: -.02em">{{qtyTotal}}</div></div>
+</div>
+</section>
+
+<section class="card">
+<div><div class="lab">Filter switch</div><div class="sub">A glass thumb slides to your choice.</div></div>
+<div role="group" aria-label="Show" style="position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 4px; margin-top: auto; background: #E6EAEE; border-radius: 14px">
+<span aria-hidden="true" style="position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / 3); background: #FFFFFF; border-radius: 11px; box-shadow: 0 1px 2px rgba(16,24,34,.1), 0 6px 14px rgba(16,24,34,.09); transform: translateX({{segX}}%); transition: transform .32s cubic-bezier(.3,1.25,.5,1)"></span>
+<sc-for list="{{segs}}" as="s" hint-placeholder-count="3">
+<button type="button" onClick="{{s.pick}}" aria-pressed="{{s.on}}" style="position: relative; height: 42px; border: 0; background: transparent; color: {{s.fg}}; font: 500 14px Geist, system-ui, sans-serif; cursor: pointer; transition: color .2s">{{s.label}}</button>
+</sc-for>
+</div>
+</section>
+
+<section class="card">
+<div><div class="lab">Stock states</div><div class="sub">Never colour alone. Always words too.</div></div>
+<div style="display: flex; flex-direction: column; gap: 9px; margin-top: auto; font-size: 14.5px; font-weight: 500">
+<div style="display: flex; align-items: center; gap: 9px"><span class="livedot" aria-hidden="true" style="width: 8px; height: 8px; border-radius: 50%; background: #0D9465"></span>48 in Ikeja, ready today</div>
+<div style="display: flex; align-items: center; gap: 9px"><svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14" style="fill: none; stroke: #B45309; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round"><path d="M8 2 15 14H1ZM8 6.500v3.500M8 12v.01"></path></svg>Only 3 left</div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px"><span style="color: #55606C">Out of stock</span>
+<button type="button" onClick="{{notify}}" aria-pressed="{{notified}}" class="press" style="min-height: 44px; padding: 0 13px; border: 1px solid {{notifyBorder}}; border-radius: 11px; background: {{notifyBg}}; color: {{notifyFg}}; font: 500 13.5px Geist, system-ui, sans-serif; cursor: pointer">{{notifyText}}</button></div>
+</div>
+</section>
+
+<section class="card">
+<div><div class="lab">Price hold</div><div class="sub">The time left is always visible on a quote.</div></div>
+<div style="display: flex; align-items: center; gap: 14px; margin-top: auto">
+<svg aria-hidden="true" viewBox="0 0 44 44" width="52" height="52" style="flex: none; transform: rotate(-90deg)">
+<circle cx="22" cy="22" r="18" style="fill: none; stroke: #E6EAEE; stroke-width: 4"></circle>
+<circle cx="22" cy="22" r="18" pathLength="100" style="fill: none; stroke: #1B5CF0; stroke-width: 4; stroke-linecap: round; stroke-dasharray: {{holdPct}} 100; transition: stroke-dasharray 1s linear"></circle>
+</svg>
+<div><div style="font-size: 20px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums">{{holdLeft}}</div><div style="font-size: 13.5px; color: #55606C">₦4,800,000 held until Friday, 6 PM</div></div>
+</div>
+</section>
+
+<section class="card">
+<div><div class="lab">Bank details</div><div class="sub">One tap to copy, with proof it worked.</div></div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 10px 10px 14px; margin-top: auto; background: #F1F3F5; border-radius: 14px">
+<div style="min-width: 0"><div style="font-size: 13px; color: #55606C">[BANK NAME], for this order only</div><div style="font: 500 18px 'Geist Mono', monospace; letter-spacing: .02em">0123 456 789</div></div>
+<button type="button" onClick="{{copy}}" class="press" style="flex: none; display: flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border: 0; border-radius: 11px; background: {{copyBg}}; color: #FFFFFF; font: 500 14px Geist, system-ui, sans-serif; cursor: pointer">
+<sc-if value="{{copied}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" style="fill: none; stroke: #FFFFFF; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round"><path class="tickdraw" pathLength="1" d="M5 12.500 10 17.500 19.500 7"></path></svg></sc-if>
+<span aria-live="polite">{{copyText}}</span></button>
+</div>
+</section>
+
+<section class="card wide">
+<div><div class="lab">Part search</div><div class="sub">Any spelling, or a size. Try 62052rs, a42, or 25 52 15.</div></div>
+<label for="ps" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%)">Search parts</label>
+<input id="ps" value="{{search}}" onChange="{{onSearch}}" placeholder="Part number or size" autocomplete="off" style="height: 50px; box-sizing: border-box; padding: 0 16px; border: 1px solid rgba(16,24,34,.15); border-radius: 14px; background: #FFFFFF; color: #10161E; font: 400 16px 'Geist Mono', monospace">
+<div style="display: flex; flex-direction: column; gap: 2px; min-height: 120px">
+<sc-for list="{{results}}" as="r" hint-placeholder-count="3">
+<div class="rise" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; border-radius: 12px; background: {{r.bg}}; animation-delay: {{r.delay}}">
+<div style="min-width: 0"><div style="font: 500 15px 'Geist Mono', monospace">{{r.code}}</div><div style="font-size: 13.5px; color: #55606C">{{r.note}}</div></div>
+<div style="flex: none; text-align: right"><div style="font-size: 15px; font-weight: 600">{{r.price}}</div><div style="font-size: 13px; color: #0A6E4B; font-weight: 500">{{r.stock}}</div></div>
+</div>
+</sc-for>
+<sc-if value="{{noResults}}" hint-placeholder-val="{{ false }}">
+<div class="rise" style="display: flex; align-items: center; gap: 14px; padding: 10px 6px"><div ref="{{bindEmpty}}" aria-hidden="true" style="flex: none; width: 84px; height: 84px"></div><div><div style="font-size: 15px; font-weight: 600">No match for that</div><div style="font-size: 14px; line-height: 1.4; color: #55606C">Check the number, measure the old part, or send us a photo.</div></div></div>
+</sc-if>
+</div>
+</section>
+
+<section class="card">
+<div><div class="lab">Slide to confirm</div><div class="sub">For the owner, on actions that move money.</div></div>
+<div ref="{{bindTrack}}" style="position: relative; height: 56px; margin-top: auto; background: {{slideTrack}}; border-radius: 16px; overflow: hidden; touch-action: none; transition: background .25s">
+<div aria-hidden="true" style="position: absolute; left: 0; top: 0; bottom: 0; width: {{slideFill}}px; background: rgba(27,92,240,.14)"></div>
+<div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 14.5px; font-weight: 500; color: {{slideInk}}; padding-left: 40px">{{slideText}}</div>
+<button type="button" aria-label="Slide to confirm the ₦1,500,000 transfer" onPointerDown="{{slideStart}}" onPointerMove="{{slideMove}}" onPointerUp="{{slideEnd}}" onPointerCancel="{{slideEnd}}" onKeyDown="{{slideKey}}" style="position: absolute; left: 4px; top: 4px; width: 56px; height: 48px; border: 0; border-radius: 12px; background: #FFFFFF; color: #10161E; cursor: grab; touch-action: none; box-shadow: 0 1px 3px rgba(16,24,34,.14), 0 6px 14px rgba(16,24,34,.1); transform: translateX({{slideX}}px); transition: {{slideEase}}">
+<svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" style="fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><path d="{{slideIcon}}"></path></svg>
+</button>
+</div>
+<sc-if value="{{slideDone}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{slideReset}}" style="align-self: flex-start; min-height: 44px; padding: 0 2px; border: 0; background: transparent; color: #1747C7; font: 500 14px Geist, system-ui, sans-serif; cursor: pointer">Undo within 10 seconds</button></sc-if>
+</section>
+
+<section class="card">
+<div><div class="lab">Part payment</div><div class="sub">A transfer counts only once the bank confirms it.</div></div>
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px">
+<span style="font-size: 26px; font-weight: 600; letter-spacing: -.025em">{{paidText}}</span><span style="font-size: 13.5px; color: #55606C">of ₦4,800,000</span>
+</div>
+<div style="position: relative; height: 10px; background: #E6EAEE; border-radius: 5px; overflow: hidden">
+<div style="height: 100%; width: {{paidPct}}%; background: #1B5CF0; border-radius: 5px; transition: width .7s cubic-bezier(.2,.7,.2,1)"></div>
+<sc-if value="{{payWaiting}}" hint-placeholder-val="{{ false }}"><div class="sweep" aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.7), transparent)"></div></sc-if>
+</div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 52px">
+<div style="min-width: 0; font-size: 14px; line-height: 1.35; color: #434E5A" aria-live="polite">{{payNote}}</div>
+<sc-if value="{{payShowTick}}" hint-placeholder-val="{{ false }}"><div ref="{{bindPayTick}}" aria-hidden="true" style="flex: none; width: 52px; height: 52px"></div></sc-if>
+<sc-if value="{{payCan}}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{pay}}" class="press" style="flex: none; min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: #10161E; color: #FFFFFF; font: 500 14px Geist, system-ui, sans-serif; cursor: pointer">I sent ₦600,000</button></sc-if>
+</div>
+</section>
+
+<section class="card">
+<div><div class="lab">Phone number</div><div class="sub">Checks as you type, without shouting.</div></div>
+<div class="fieldwrap" style="margin-top: auto">
+<label for="ph" style="position: absolute; left: 15px; top: {{phLabelTop}}px; font-size: {{phLabelSize}}px; color: #55606C; pointer-events: none; transition: top .16s, font-size .16s">Phone number</label>
+<input id="ph" inputmode="numeric" value="{{phone}}" onChange="{{onPhone}}" onFocus="{{phFocus}}" onBlur="{{phBlur}}" style="width: 100%; height: 56px; box-sizing: border-box; padding: 19px 44px 0 15px; border: 1px solid {{phBorder}}; border-radius: 14px; background: #FFFFFF; color: #10161E; font: 450 16px Geist, system-ui, sans-serif; font-variant-numeric: tabular-nums; transition: border-color .2s">
+<sc-if value="{{phValid}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" style="position: absolute; right: 14px; top: 18px; fill: none; stroke: #0D9465; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round"><path class="tickdraw" pathLength="1" d="M5 12.500 10 17.500 19.500 7"></path></svg></sc-if>
+</div>
+<div style="min-height: 18px; font-size: 13px; color: {{phHintColor}}" aria-live="polite">{{phHint}}</div>
+</section>
+
+<section class="card">
+<div><div class="lab">Switches</div><div class="sub">They move like real ones.</div></div>
+<div style="display: flex; flex-direction: column; gap: 4px; margin-top: auto">
+<button type="button" role="switch" aria-checked="{{remind}}" onClick="{{toggleRemind}}" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding: 0; border: 0; background: transparent; color: #10161E; font: 500 14.5px Geist, system-ui, sans-serif; cursor: pointer; text-align: left">Send me reminders by email
+<span aria-hidden="true" style="flex: none; position: relative; width: 46px; height: 28px; border-radius: 14px; background: {{remindBg}}; transition: background .22s"><span style="position: absolute; left: 3px; top: 3px; width: 22px; height: 22px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 1px 3px rgba(16,24,34,.25); transform: translateX({{remindX}}px); transition: transform .26s cubic-bezier(.3,1.35,.5,1)"></span></span></button>
+<button type="button" role="checkbox" aria-checked="{{same}}" onClick="{{toggleSame}}" style="display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0; border: 0; background: transparent; color: #10161E; font: 500 14.5px Geist, system-ui, sans-serif; cursor: pointer; text-align: left">
+<span aria-hidden="true" style="flex: none; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 7px; border: 1.5px solid {{sameBorder}}; background: {{sameBg}}; box-sizing: border-box; transition: background .18s, border-color .18s">
+<sc-if value="{{same}}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 24 24" width="16" height="16" style="fill: none; stroke: #FFFFFF; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round"><path class="tickdraw" pathLength="1" d="M5 12.500 10 17.500 19.500 7"></path></svg></sc-if></span>Same as delivery address</button>
+</div>
+</section>
+
+<section class="card">
+<div><div class="lab">Toast</div><div class="sub">Calm news, with a way back.</div></div>
+<div style="position: relative; display: flex; align-items: flex-end; justify-content: center; height: 118px; margin-top: auto; padding: 10px; box-sizing: border-box; border-radius: 16px; overflow: hidden; background: linear-gradient(135deg, #C9D6E6, #8FA6C4 55%, #5F7A9E)">
+<sc-if value="{{toastCan}}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{showToast}}" class="press" style="align-self: center; min-height: 44px; padding: 0 16px; border: 0; border-radius: 12px; background: #FFFFFF; color: #10161E; font: 500 14px Geist, system-ui, sans-serif; cursor: pointer">Remove from bag</button></sc-if>
+<sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}"><div class="glass rise" role="status" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; box-sizing: border-box; padding: 6px 6px 6px 14px; border-radius: 14px; font-size: 14px; font-weight: 500">6205-2RS removed<button type="button" onClick="{{undoToast}}" class="press" style="min-height: 44px; padding: 0 12px; border: 0; border-radius: 10px; background: #10161E; color: #FFFFFF; font: 500 13.5px Geist, system-ui, sans-serif; cursor: pointer">Undo</button></div></sc-if>
+</div>
+</section>
+
+<section class="card wide">
+<div><div class="lab">Serial check</div><div class="sub">Anyone can check a unit. Try PS-5K-204417, or anything else.</div></div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<label for="sn" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%)">Serial number</label>
+<input id="sn" value="{{serial}}" onChange="{{onSerial}}" placeholder="Serial number" style="flex: 1 1 200px; min-width: 0; height: 50px; box-sizing: border-box; padding: 0 16px; border: 1px solid rgba(16,24,34,.15); border-radius: 14px; background: #FFFFFF; color: #10161E; font: 400 16px 'Geist Mono', monospace">
+<button type="button" onClick="{{check}}" class="press" style="flex: none; height: 50px; padding: 0 22px; border: 0; border-radius: 14px; background: #10161E; color: #FFFFFF; font: 550 15px Geist, system-ui, sans-serif; cursor: pointer">Check</button>
+</div>
+<div aria-live="polite" style="position: relative; display: flex; align-items: center; gap: 16px; min-height: 106px; padding: 12px 16px; border-radius: 16px; background: {{snBg}}; overflow: hidden; transition: background .3s">
+<sc-if value="{{snChecking}}" hint-placeholder-val="{{ false }}"><div class="sweep" aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(27,92,240,.12), transparent)"></div><div style="font-size: 14.5px; color: #434E5A">Checking our records</div></sc-if>
+<sc-if value="{{snIdle}}" hint-placeholder-val="{{ true }}"><div style="font-size: 14.5px; color: #55606C">The result appears here. It never shows the owner's details.</div></sc-if>
+<sc-if value="{{snGood}}" hint-placeholder-val="{{ false }}">
+<div ref="{{bindSeal}}" aria-hidden="true" style="flex: none; width: 82px; height: 82px"></div>
+<div style="flex: 1; min-width: 0">
+<div style="font-size: 16px; font-weight: 600; letter-spacing: -.012em">Genuine. Sold by Power Store on 14 March 2026.</div>
+<div style="margin-top: 2px; font-size: 14px; color: #434E5A">5 kVA hybrid inverter. Warranty until 14 March 2031.</div>
+<div style="height: 6px; margin-top: 9px; background: rgba(16,24,34,.09); border-radius: 3px; overflow: hidden"><div style="height: 100%; width: {{snBar}}%; background: #0F8F6B; border-radius: 3px; transition: width .9s cubic-bezier(.2,.7,.2,1)"></div></div>
+<div style="margin-top: 4px; font-size: 13px; color: #434E5A">4 years, 4 months left</div>
+</div>
+</sc-if>
+<sc-if value="{{snBad}}" hint-placeholder-val="{{ false }}">
+<svg aria-hidden="true" viewBox="0 0 24 24" width="30" height="30" style="flex: none; fill: none; stroke: #B45309; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round"><path d="M12 3 23 21H1ZM12 10v5M12 18v.01"></path></svg>
+<div style="min-width: 0"><div style="font-size: 16px; font-weight: 600; letter-spacing: -.012em">We have no record of this serial</div><div style="margin-top: 2px; font-size: 14px; line-height: 1.4; color: #434E5A">It may be mistyped, or not sold by us. Send us a photo of the label and we will check.</div></div>
+</sc-if>
+</div>
+</section>
+
+<section class="card wide">
+<div><div class="lab">Lottie moments</div><div class="sub">Only four, each after something important. Made for this store. Press to replay.</div></div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr)); gap: 10px">
+<button type="button" onClick="{{replay1}}" class="press" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 8px; border: 1px solid rgba(16,24,34,.07); border-radius: 16px; background: #F7F8FA; color: #10161E; font: 500 13.5px Geist, system-ui, sans-serif; cursor: pointer"><span ref="{{bindL1}}" style="display: block; width: 96px; height: 96px"></span>Payment confirmed</button>
+<button type="button" onClick="{{replay2}}" class="press" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 8px; border: 1px solid rgba(16,24,34,.07); border-radius: 16px; background: #F7F8FA; color: #10161E; font: 500 13.5px Geist, system-ui, sans-serif; cursor: pointer"><span ref="{{bindL2}}" style="display: block; width: 96px; height: 96px"></span>Unit is genuine</button>
+<button type="button" onClick="{{replay3}}" class="press" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 8px; border: 1px solid rgba(16,24,34,.07); border-radius: 16px; background: #F7F8FA; color: #10161E; font: 500 13.5px Geist, system-ui, sans-serif; cursor: pointer"><span ref="{{bindL3}}" style="display: block; width: 96px; height: 96px"></span>Delivered</button>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 8px; border: 1px solid rgba(16,24,34,.07); border-radius: 16px; background: #F7F8FA; font-size: 13.5px; font-weight: 500"><span ref="{{bindL4}}" style="display: block; width: 96px; height: 96px"></span>Empty bag</div>
+</div>
+</section>
+
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1680}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      add: 'idle', bag: 2, qty: 2, seg: 0, notified: false, hold: 47 * 3600 + 59 * 60 + 12, copied: null,
+      search: '6205', slideX: 0, sliding: false, slideDone: false,
+      paid: 3000000, paidShown: 3000000, pay: 'idle',
+      phone: '', phFocus: false, remind: true, same: false, toast: false,
+      serial: 'PS-5K-204417', sn: 'idle', snBar: 0
+    };
+    this.anims = {};
+    this.reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const mount = (name, path, loop) => (el) => {
+      if (this.anims[name]) { this.anims[name].destroy(); delete this.anims[name]; }
+      if (!el) return;
+      const start = (tries) => {
+        if (!window.lottie) { if (tries < 50) setTimeout(() => start(tries + 1), 100); return; }
+        if (!el.isConnected || this.anims[name]) return;
+        const a = window.lottie.loadAnimation({ container: el, renderer: 'svg', loop: !!loop && !this.reduced, autoplay: !this.reduced, path });
+        if (this.reduced) a.addEventListener('DOMLoaded', () => a.goToAndStop(a.totalFrames - 1, true));
+        this.anims[name] = a;
+      };
+      start(0);
+    };
+    this.bindL1 = mount('l1', '/_blob/21dabc68a83f1dbda6cac29c53bc20a1');
+    this.bindL2 = mount('l2', '/_blob/e82edc91a48d7f6e92feaa4b81abf718');
+    this.bindL3 = mount('l3', '/_blob/d958c69b62fe952ba71f58e4d9f56e3e');
+    this.bindL4 = mount('l4', '/_blob/a9eb19d879e12d2c46e8f3e8322d658f', true);
+    this.bindEmpty = mount('empty', '/_blob/a9eb19d879e12d2c46e8f3e8322d658f', true);
+    this.bindSeal = mount('seal', '/_blob/e82edc91a48d7f6e92feaa4b81abf718');
+    this.bindPayTick = mount('paytick', '/_blob/21dabc68a83f1dbda6cac29c53bc20a1');
+    this.bindBadge = (el) => { this.badge = el; };
+    this.bindQty = (el) => { this.qtyEl = el; };
+    this.bindTrack = (el) => { this.track = el; };
+  }
+  componentDidMount() {
+    this.holdTimer = setInterval(() => this.setState({ hold: Math.max(0, this.state.hold - 1) }), 1000);
+  }
+  componentWillUnmount() {
+    clearInterval(this.holdTimer);
+    Object.values(this.anims).forEach((a) => a.destroy());
+    (this.timers || []).forEach(clearTimeout);
+  }
+  later(fn, ms) { (this.timers = this.timers || []).push(setTimeout(fn, ms)); }
+  bump(el, keyframes, opts) { if (el && el.animate && !this.reduced) el.animate(keyframes, opts); }
+  rollPaid(to) {
+    const from = this.state.paidShown, start = Date.now(), dur = 700;
+    const step = () => {
+      const p = Math.min(1, (Date.now() - start) / dur), e = 1 - Math.pow(1 - p, 3);
+      this.setState({ paidShown: from + (to - from) * e });
+      if (p < 1) this.later(step, 16);
+    };
+    step();
+  }
+  maxSlide() { return this.track ? this.track.getBoundingClientRect().width - 64 : 240; }
+  renderVals() {
+    const s = this.state, self = this;
+    const money = (n) => '₦' + Math.round(n).toLocaleString('en-NG');
+    const tick = 'M5 12.500 10 17.500 19.500 7', arrow = 'M5 12h14M13 6l6 6-6 6';
+    const PARTS = [
+      { code: '6205-2RS', note: 'Bearing, sealed, 25 x 52 x 15 mm', size: '25 52 15', price: 4800, stock: '48 in Ikeja' },
+      { code: '6205-ZZ', note: 'Bearing, shielded, 25 x 52 x 15 mm', size: '25 52 15', price: 4300, stock: '30 in Ikeja' },
+      { code: '6204-2RS', note: 'Bearing, sealed, 20 x 47 x 14 mm', size: '20 47 14', price: 3900, stock: '22 in Ikeja' },
+      { code: 'A42', note: 'V-belt, section A, 42 inch', size: 'a 42', price: 3200, stock: '15 in Ikeja' },
+      { code: 'A44', note: 'V-belt, section A, 44 inch', size: 'a 44', price: 3400, stock: '9 in Lekki' },
+      { code: '10B-1', note: 'Roller chain, 5/8 inch pitch, per metre', size: '10b', price: 9500, stock: '40 m in warehouse' }
+    ];
+    const norm = (t) => String(t).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const q = norm(s.search), qSize = String(s.search).toLowerCase().replace(/[^0-9a-z]+/g, ' ').trim();
+    const hits = q ? PARTS.filter((p) => norm(p.code).includes(q) || p.size.startsWith(qSize)) : [];
+    const h = Math.floor(s.hold / 3600), m = Math.floor(s.hold % 3600 / 60), sec = s.hold % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+    const digits = s.phone.replace(/\D/g, '');
+    const phValid = /^0[789][01]\d{8}$/.test(digits);
+    const phHasError = digits.length >= 11 && !phValid;
+    const startHold = 48 * 3600;
+    const max = self.maxSlide();
+    const slideP = max > 0 ? s.slideX / max : 0;
+    const finishSlide = () => { self.setState({ sliding: false, slideDone: true, slideX: self.maxSlide() }); };
+    return {
+      bag: s.bag, addBusy: s.add !== 'idle', addIsBusy: s.add === 'busy', addIsDone: s.add === 'done',
+      addText: s.add === 'busy' ? 'Adding' : (s.add === 'done' ? 'Added' : 'Add to bag'),
+      addBg: s.add === 'done' ? '#0E7A56' : '#1B5CF0',
+      add: () => {
+        if (s.add !== 'idle') return;
+        self.setState({ add: 'busy' });
+        self.later(() => {
+          self.setState({ add: 'done', bag: self.state.bag + 1 });
+          self.bump(self.badge, [{ transform: 'scale(1)' }, { transform: 'scale(1.1)' }, { transform: 'scale(1)' }], { duration: 320, easing: 'cubic-bezier(.3,1.4,.5,1)' });
+        }, 520);
+        self.later(() => self.setState({ add: 'idle' }), 1900);
+      },
+      qty: s.qty, qtyTotal: money(s.qty * 4800),
+      qtyLess: () => { if (s.qty <= 1) return; self.setState({ qty: s.qty - 1 }); self.bump(self.qtyEl, [{ transform: 'translateY(-9px)', opacity: .2 }, { transform: 'none', opacity: 1 }], { duration: 170, easing: 'ease-out' }); },
+      qtyMore: () => { self.setState({ qty: s.qty + 1 }); self.bump(self.qtyEl, [{ transform: 'translateY(9px)', opacity: .2 }, { transform: 'none', opacity: 1 }], { duration: 170, easing: 'ease-out' }); },
+      segX: s.seg * 100,
+      segs: ['All', 'In stock', 'On order'].map((label, i) => ({ label, on: i === s.seg, fg: i === s.seg ? '#10161E' : '#434E5A', pick: () => self.setState({ seg: i }) })),
+      notified: s.notified, notify: () => self.setState({ notified: !s.notified }),
+      notifyText: s.notified ? 'We will tell you' : 'Tell me when it is back',
+      notifyBg: s.notified ? '#E7EEFE' : '#FFFFFF', notifyFg: s.notified ? '#1747C7' : '#10161E', notifyBorder: s.notified ? '#BBCDF9' : 'rgba(16,24,34,.16)',
+      holdPct: (s.hold / startHold * 100).toFixed(2), holdLeft: pad(h) + ':' + pad(m) + ':' + pad(sec),
+      copied: s.copied === 'ok',
+      copyText: s.copied === 'ok' ? 'Copied' : (s.copied === 'fail' ? 'Press and hold to copy' : 'Copy'),
+      copyBg: s.copied === 'ok' ? '#0E7A56' : '#10161E',
+      copy: () => {
+        const done = (r) => { self.setState({ copied: r }); self.later(() => self.setState({ copied: null }), 1800); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText('0123456789').then(() => done('ok'), () => done('fail'));
+        else done('fail');
+      },
+      search: s.search, onSearch: (e) => self.setState({ search: e.target.value }),
+      results: hits.slice(0, 3).map((p, i) => ({ code: p.code, note: p.note, price: money(p.price), stock: p.stock, delay: (i * 40) + 'ms', bg: i === 0 ? '#F4F6F8' : 'transparent' })),
+      noResults: !!q && hits.length === 0,
+      bindBadge: this.bindBadge, bindQty: this.bindQty, bindTrack: this.bindTrack, bindEmpty: this.bindEmpty, bindSeal: this.bindSeal, bindPayTick: this.bindPayTick,
+      bindL1: this.bindL1, bindL2: this.bindL2, bindL3: this.bindL3, bindL4: this.bindL4,
+      replay1: () => self.anims.l1 && self.anims.l1.goToAndPlay(0), replay2: () => self.anims.l2 && self.anims.l2.goToAndPlay(0), replay3: () => self.anims.l3 && self.anims.l3.goToAndPlay(0),
+      slideX: s.slideX, slideFill: s.slideX + 30, slideDone: s.slideDone,
+      slideEase: s.sliding ? 'none' : 'transform .34s cubic-bezier(.3,1.3,.5,1)',
+      slideTrack: s.slideDone ? '#DDF3EA' : '#EDF0F3', slideInk: s.slideDone ? '#0A6E4B' : '#434E5A',
+      slideText: s.slideDone ? 'Transfer confirmed' : 'Slide to confirm ₦1,500,000', slideIcon: s.slideDone ? tick : arrow,
+      slideStart: (e) => { if (s.slideDone) return; e.currentTarget.setPointerCapture(e.pointerId); self.dragFrom = e.clientX - s.slideX; self.setState({ sliding: true }); },
+      slideMove: (e) => { if (!self.state.sliding) return; self.setState({ slideX: Math.max(0, Math.min(self.maxSlide(), e.clientX - self.dragFrom)) }); },
+      slideEnd: () => { if (!self.state.sliding) return; if (self.state.slideX >= self.maxSlide() * .9) finishSlide(); else self.setState({ sliding: false, slideX: 0 }); },
+      slideKey: (e) => { if (e.key === 'Enter' && !s.slideDone) { e.preventDefault(); finishSlide(); } },
+      slideReset: () => self.setState({ slideDone: false, slideX: 0 }),
+      paidText: money(s.paidShown), paidPct: (s.paid / 4800000 * 100).toFixed(1),
+      payWaiting: s.pay === 'waiting', payShowTick: s.pay === 'ok', payCan: s.pay === 'idle' && s.paid < 4800000,
+      payNote: s.pay === 'waiting' ? 'Waiting for the bank to confirm. A screenshot alone does not count.' : (s.pay === 'ok' ? 'Confirmed by the bank.' : (s.paid >= 4800000 ? 'Paid in full. Your goods are released.' : money(4800000 - s.paid) + ' left to pay.')),
+      pay: () => {
+        self.setState({ pay: 'waiting' });
+        self.later(() => { const to = Math.min(4800000, self.state.paid + 600000); self.setState({ pay: 'ok', paid: to }); self.rollPaid(to); }, 1600);
+        self.later(() => self.setState({ pay: 'idle' }), 3700);
+      },
+      phone: s.phone, phValid,
+      onPhone: (e) => { const d = e.target.value.replace(/\D/g, '').slice(0, 11); self.setState({ phone: d.length > 7 ? d.slice(0, 4) + ' ' + d.slice(4, 7) + ' ' + d.slice(7) : (d.length > 4 ? d.slice(0, 4) + ' ' + d.slice(4) : d) }); },
+      phFocus: () => self.setState({ phFocus: true }), phBlur: () => self.setState({ phFocus: false }),
+      phLabelTop: s.phFocus || s.phone ? 8 : 18, phLabelSize: s.phFocus || s.phone ? 12 : 15.5,
+      phBorder: phHasError ? '#B45309' : (phValid ? '#0D9465' : 'rgba(16,24,34,.18)'),
+      phHint: phHasError ? 'That does not look like a Nigerian mobile number.' : (phValid ? 'Looks right.' : 'We use this for your order and warranty.'),
+      phHintColor: phHasError ? '#92400E' : (phValid ? '#0A6E4B' : '#55606C'),
+      remind: s.remind, toggleRemind: () => self.setState({ remind: !s.remind }), remindBg: s.remind ? '#1B5CF0' : '#C6CED6', remindX: s.remind ? 18 : 0,
+      same: s.same, toggleSame: () => self.setState({ same: !s.same }), sameBg: s.same ? '#1B5CF0' : '#FFFFFF', sameBorder: s.same ? '#1B5CF0' : '#9AA4AF',
+      toastOn: s.toast, toastCan: !s.toast,
+      showToast: () => { self.setState({ toast: true }); clearTimeout(self.toastT); self.toastT = setTimeout(() => self.setState({ toast: false }), 5000); },
+      undoToast: () => { clearTimeout(self.toastT); self.setState({ toast: false }); },
+      serial: s.serial, onSerial: (e) => self.setState({ serial: e.target.value, sn: 'idle', snBar: 0 }),
+      snIdle: s.sn === 'idle', snChecking: s.sn === 'checking', snGood: s.sn === 'good', snBad: s.sn === 'bad', snBar: s.snBar,
+      snBg: s.sn === 'good' ? '#EEF9F4' : (s.sn === 'bad' ? '#FDF4E7' : '#F4F6F8'),
+      check: () => {
+        const ok = norm(s.serial) === 'PS5K204417';
+        self.setState({ sn: 'checking', snBar: 0 });
+        self.later(() => { self.setState({ sn: ok ? 'good' : 'bad' }); if (ok) self.later(() => self.setState({ snBar: 87 }), 60); }, 1100);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

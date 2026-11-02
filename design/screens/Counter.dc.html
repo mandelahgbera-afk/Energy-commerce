@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Counter sale</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+body{margin:0;background:#EEF1F4}
+a{color:inherit}
+.card{box-sizing:border-box;padding:18px;background:#FFFFFF;border:1px solid rgba(16,24,34,.07);border-radius:22px;min-width:0}
+.glass{background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.85);box-shadow:0 1px 2px rgba(16,24,34,.06),0 14px 32px rgba(16,24,34,.11)}
+.press{transition:background .15s,transform .1s,border-color .15s,color .15s}
+.press:active{transform:scale(.97)}
+.ghost{min-height:44px;padding:0 13px;border:1px solid rgba(16,24,34,.16);border-radius:12px;background:#FFFFFF;color:#10161E;font:500 14px Geist,system-ui,sans-serif;cursor:pointer}
+.step{width:44px;height:44px;border:0;border-radius:12px;background:transparent;color:#10161E;font:400 21px Geist,system-ui,sans-serif;cursor:pointer}
+.navlink{display:inline-flex;align-items:center;min-height:40px;padding:0 11px;border-radius:11px;text-decoration:none;font-size:14px;font-weight:500}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #1B5CF0;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.rise{animation:rise .2s cubic-bezier(.2,.7,.2,1) both}
+@keyframes flash{0%{background:#E7EEFE}100%{background:transparent}}
+.flash{animation:flash .9s ease-out both}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+.tickdraw{stroke-dasharray:1;animation:draw .3s cubic-bezier(.3,.7,.2,1) both}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.shake{animation:shake .24s ease-in-out 2}
+input::placeholder{color:#5D6874;opacity:1}
+@media (prefers-reduced-motion:reduce){.rise,.flash,.tickdraw,.shake{animation-duration:.01ms}}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; padding: 12px clamp(10px, 2vw, 28px) 32px; font-family: Geist, system-ui, -apple-system, 'Segoe UI', sans-serif; color: #10161E; background: radial-gradient(70% 380px at 70% 0, #FFFFFF 0%, rgba(255,255,255,0) 100%), #EEF1F4">
+
+<nav aria-label="Staff" class="glass" style="position: sticky; top: 12px; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 14px; padding: 6px 12px 6px 18px; border-radius: 18px">
+<span style="display: inline-flex; align-items: center; min-height: 42px; font-weight: 650; font-size: 17px; letter-spacing: -.02em">Counter</span>
+<div role="group" aria-label="Counter" style="position: relative; display: grid; grid-template-columns: repeat(2, 120px); padding: 3px; background: rgba(16,24,34,.07); border-radius: 12px">
+<span aria-hidden="true" style="position: absolute; top: 3px; bottom: 3px; left: 3px; width: 120px; background: #FFFFFF; border-radius: 9px; box-shadow: 0 1px 2px rgba(16,24,34,.12), 0 4px 10px rgba(16,24,34,.08); transform: translateX({{tabX}}px); transition: transform .28s cubic-bezier(.3,1.2,.5,1)"></span>
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="2"><button type="button" onClick="{{t.pick}}" aria-pressed="{{t.on}}" style="position: relative; height: 40px; border: 0; background: transparent; color: #10161E; font: 500 14px Geist, system-ui, sans-serif; cursor: pointer">{{t.label}}</button></sc-for>
+</div>
+<span style="font-size: 13.5px; color: #434E5A">Tunde, Ikeja till 1</span>
+</nav>
+
+<sc-if value="{{isSell}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; max-width: 1320px; margin: 14px auto 0">
+<div style="flex: 999 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+<section class="card" aria-label="Add items" style="position: relative">
+<label for="scan" style="display: block; margin-bottom: 7px; font-size: 14.5px; font-weight: 600">Scan or type a part</label>
+<input id="scan" ref="{{bindScan}}" value="{{query}}" onChange="{{onQuery}}" onKeyDown="{{scanKey}}" autocomplete="off" placeholder="Scan the barcode, or type 6205 2rs" style="width: 100%; height: 56px; box-sizing: border-box; padding: 0 16px; border: 1.5px solid #10161E; border-radius: 14px; background: #FFFFFF; color: #10161E; font: 500 18px 'Geist Mono', monospace">
+<sc-if value="{{hasHits}}" hint-placeholder-val="{{ false }}">
+<div role="listbox" aria-label="Matching items" style="display: flex; flex-direction: column; gap: 2px; margin-top: 8px">
+<sc-for list="{{hits}}" as="h" hint-placeholder-count="3">
+<button type="button" role="option" aria-selected="{{h.on}}" onClick="{{h.pick}}" class="press" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 50px; padding: 6px 12px; border: 0; border-radius: 11px; background: {{h.bg}}; color: #10161E; text-align: left; font-family: Geist, system-ui, sans-serif; cursor: pointer">
+<span style="min-width: 0"><span style="display: block; font-size: 15px; font-weight: 500">{{h.name}}</span><span style="display: block; font-size: 13px; color: #55606C">{{h.stock}}</span></span>
+<span style="flex: none; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums">{{h.price}}</span>
+</button>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{noHits}}" hint-placeholder-val="{{ false }}"><div style="margin-top: 8px; font-size: 14px; color: #92400E">Nothing matches. Check the number, or search by size.</div></sc-if>
+<sc-if value="{{showQuick}}" hint-placeholder-val="{{ true }}">
+<div style="margin: 12px 0 6px; font-size: 13.5px; color: #55606C">Most sold today</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 6px">
+<sc-for list="{{quick}}" as="q" hint-placeholder-count="6"><button type="button" onClick="{{q.pick}}" class="press" style="display: flex; flex-direction: column; justify-content: center; gap: 1px; min-height: 58px; padding: 6px 12px; border: 1px solid rgba(16,24,34,.1); border-radius: 13px; background: #F7F8FA; color: #10161E; text-align: left; font-family: Geist, system-ui, sans-serif; cursor: pointer"><span style="font-size: 14px; font-weight: 500">{{q.name}}</span><span style="font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums">{{q.price}}</span></button></sc-for>
+</div>
+</sc-if>
+</section>
+
+<section class="card" aria-label="Items on this sale" style="padding: 8px 18px 10px">
+<sc-if value="{{empty}}" hint-placeholder-val="{{ true }}"><div style="padding: 22px 0; text-align: center; font-size: 15px; color: #55606C">Scan the first item to start.</div></sc-if>
+<sc-for list="{{lines}}" as="l" hint-placeholder-count="2">
+<div class="{{l.cls}}" style="padding: 10px 0; border-bottom: 1px solid #F1F3F5; border-radius: 6px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px">
+<div style="flex: 1 1 170px; min-width: 0"><div style="font-size: 15px; font-weight: 500">{{l.name}}</div><div style="font-size: 13px; color: #55606C">{{l.priceNote}}</div></div>
+<div role="group" aria-label="{{l.qtyA}}" style="flex: none; display: flex; align-items: center; background: #F1F3F5; border-radius: 12px"><button type="button" onClick="{{l.less}}" aria-label="{{l.lessA}}" class="step press">−</button><span aria-live="polite" style="width: 28px; text-align: center; font-size: 15.5px; font-weight: 600; font-variant-numeric: tabular-nums">{{l.qty}}</span><button type="button" onClick="{{l.more}}" aria-label="{{l.moreA}}" class="step press">+</button></div>
+<div style="flex: 0 0 96px; text-align: right; font-size: 15.5px; font-weight: 600; font-variant-numeric: tabular-nums">{{l.total}}</div>
+</div>
+<sc-if value="{{l.needSerial}}" hint-placeholder-val="{{ false }}">
+<div class="rise" style="margin-top: 8px; padding: 10px 12px; background: {{l.serialBg}}; border-radius: 12px">
+<div style="font-size: 13.5px; line-height: 1.35; color: #434E5A">{{l.serialHint}}</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px">
+<sc-for list="{{l.serials}}" as="n" hint-placeholder-count="2"><button type="button" onClick="{{n.pick}}" aria-pressed="{{n.on}}" class="press" style="min-height: 44px; padding: 0 11px; border: 1px solid {{n.border}}; border-radius: 10px; background: {{n.bg}}; color: {{n.fg}}; font: 500 13.5px 'Geist Mono', monospace; cursor: pointer">{{n.code}}</button></sc-for>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</section>
+</div>
+
+<aside class="glass" aria-label="This sale" style="flex: 1 1 340px; min-width: 0; position: sticky; top: 76px; box-sizing: border-box; padding: 18px; border-radius: 24px">
+<sc-if value="{{paying}}" hint-placeholder-val="{{ true }}">
+<label for="ph" style="display: block; margin-bottom: 6px; font-size: 14px; font-weight: 550">Customer phone, for warranty and reminders</label>
+<input id="ph" inputmode="numeric" value="{{phone}}" onChange="{{onPhone}}" placeholder="0803 123 4567, or leave blank" style="width: 100%; height: 48px; box-sizing: border-box; padding: 0 14px; border: 1px solid rgba(16,24,34,.16); border-radius: 13px; background: #FFFFFF; color: #10161E; font: 450 15.5px Geist, system-ui, sans-serif; font-variant-numeric: tabular-nums">
+<sc-if value="{{known}}" hint-placeholder-val="{{ false }}"><div class="rise" style="margin-top: 6px; padding: 9px 12px; background: #EEF3FF; border-radius: 11px; font-size: 13.5px; line-height: 1.4"><b style="font-weight: 600">Bello Stores.</b> Trade prices applied. ₦1,250,000 credit left. Owes ₦1,400,000, 41 days late.</div></sc-if>
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px">
+<label for="disc" style="font-size: 14px; font-weight: 550">Discount</label>
+<div style="display: flex; align-items: center; gap: 6px"><input id="disc" inputmode="numeric" value="{{discount}}" onChange="{{onDiscount}}" aria-describedby="disc-note" style="width: 64px; height: 44px; box-sizing: border-box; padding: 0 10px; border: 1px solid rgba(16,24,34,.16); border-radius: 11px; background: #FFFFFF; color: #10161E; text-align: right; font: 500 15px Geist, system-ui, sans-serif"><span style="font-size: 15px">%</span></div>
+</div>
+<div id="disc-note" aria-live="polite" style="min-height: 18px; margin-top: 3px; text-align: right; font-size: 13px; color: {{discColor}}">{{discNote}}</div>
+<sc-if value="{{discAsk}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{askOwner}}" class="ghost press rise" style="width: 100%; margin-top: 2px">{{askText}}</button></sc-if>
+
+<dl style="display: grid; grid-template-columns: 1fr auto; gap: 5px 14px; margin: 12px 0 0; font-size: 14.5px; font-variant-numeric: tabular-nums">
+<dt style="color: #434E5A">Items</dt><dd style="margin: 0; text-align: right">{{subtotal}}</dd>
+<dt style="color: #434E5A">Discount</dt><dd style="margin: 0; text-align: right">{{discountAmt}}</dd>
+</dl>
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 6px"><span style="font-size: 15px; font-weight: 550">To pay</span><span style="font-size: 34px; font-weight: 600; letter-spacing: -.03em">{{total}}</span></div>
+
+<div role="group" aria-label="How they are paying" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; margin-top: 10px">
+<sc-for list="{{methods}}" as="m" hint-placeholder-count="4"><button type="button" onClick="{{m.pick}}" aria-pressed="{{m.on}}" disabled="{{m.off}}" class="press" style="min-height: 48px; padding: 0 2px; border: 1px solid {{m.border}}; border-radius: 12px; background: {{m.bg}}; color: {{m.fg}}; font: 500 14px Geist, system-ui, sans-serif; cursor: pointer; opacity: {{m.o}}">{{m.label}}</button></sc-for>
+</div>
+
+<sc-if value="{{isCash}}" hint-placeholder-val="{{ false }}">
+<div class="rise" style="margin-top: 10px">
+<div style="display: flex; flex-wrap: wrap; gap: 5px"><sc-for list="{{tender}}" as="c" hint-placeholder-count="4"><button type="button" onClick="{{c.pick}}" aria-pressed="{{c.on}}" class="press" style="flex: 1 1 70px; min-height: 44px; border: 1px solid {{c.border}}; border-radius: 11px; background: {{c.bg}}; color: {{c.fg}}; font: 500 13.5px Geist, system-ui, sans-serif; font-variant-numeric: tabular-nums; cursor: pointer">{{c.label}}</button></sc-for></div>
+<div aria-live="polite" style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 15px"><span>Change to give</span><b style="font-weight: 600; font-variant-numeric: tabular-nums">{{change}}</b></div>
+</div>
+</sc-if>
+<sc-if value="{{isTransfer}}" hint-placeholder-val="{{ false }}"><p class="rise" style="margin: 10px 0 0; font-size: 13.5px; line-height: 1.4; color: #92400E">Goods stay here until finance confirms the money is in the bank. A screenshot does not count.</p></sc-if>
+<sc-if value="{{isCredit}}" hint-placeholder-val="{{ false }}"><p class="rise" style="margin: 10px 0 0; font-size: 13.5px; line-height: 1.4; color: #434E5A">Added to Bello Stores' account. Credit left after this: {{creditAfter}}.</p></sc-if>
+
+<p aria-live="polite" style="min-height: 18px; margin: 8px 0 0; font-size: 13.5px; color: #92400E">{{blocker}}</p>
+<button type="button" onClick="{{complete}}" disabled="{{blocked}}" class="press" style="width: 100%; min-height: 56px; margin-top: 4px; border: 0; border-radius: 15px; background: {{completeBg}}; color: #FFFFFF; font: 600 17px Geist, system-ui, sans-serif; cursor: pointer">{{completeText}}</button>
+</sc-if>
+
+<sc-if value="{{paid}}" hint-placeholder-val="{{ false }}">
+<div class="rise" aria-live="polite">
+<div style="display: flex; align-items: center; gap: 10px; font-size: 19px; font-weight: 600; letter-spacing: -.018em"><svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" style="flex: none; fill: none; stroke: #0D9465; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round"><path class="tickdraw" pathLength="1" d="M5 12.500 10 17.500 19.500 7"></path></svg><span>{{doneTitle}}</span></div>
+<div style="margin-top: 4px; font-size: 14px; color: #434E5A">{{doneNote}}</div>
+<div style="margin-top: 12px; padding: 14px; background: #FFFFFF; border-radius: 12px; font: 400 13px/1.55 'Geist Mono', monospace">
+<div style="font-weight: 500">POWER STORE, IKEJA</div><div>Receipt {{receiptNo}}, 1 Nov 2026</div>
+<div style="margin: 6px 0; border-top: 1px dashed #C6CED6"></div>
+<sc-for list="{{receipt}}" as="r" hint-placeholder-count="2"><div style="display: flex; justify-content: space-between; gap: 10px"><span>{{r.name}}</span><span style="flex: none">{{r.total}}</span></div></sc-for>
+<div style="margin: 6px 0; border-top: 1px dashed #C6CED6"></div>
+<div style="display: flex; justify-content: space-between; font-weight: 500"><span>TOTAL</span><span>{{total}}</span></div>
+</div>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px"><button type="button" onClick="{{sendWa}}" class="ghost press">{{waText}}</button><button type="button" class="ghost press">Print</button></div>
+<button type="button" onClick="{{newSale}}" class="press" style="width: 100%; min-height: 56px; margin-top: 8px; border: 0; border-radius: 15px; background: #1B5CF0; color: #FFFFFF; font: 600 17px Geist, system-ui, sans-serif; cursor: pointer">New sale</button>
+</div>
+</sc-if>
+</aside>
+</div>
+</sc-if>
+
+<sc-if value="{{isTill}}" hint-placeholder-val="{{ false }}">
+<div class="rise" style="max-width: 640px; margin: 18px auto 0">
+<h1 style="margin: 0 2px; font-size: clamp(26px, 3vw, 34px); line-height: 1.1; font-weight: 600; letter-spacing: -.028em">Close the till</h1>
+<p style="margin: 6px 2px 14px; font-size: 15.5px; line-height: 1.45; color: #434E5A">{{tillIntro}}</p>
+<section class="card" aria-label="Count the cash">
+<sc-for list="{{notes}}" as="n" hint-placeholder-count="5">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 3px 0">
+<span style="flex: 0 0 70px; font-size: 15.5px; font-weight: 550; font-variant-numeric: tabular-nums">{{n.label}}</span>
+<div role="group" aria-label="{{n.aria}}" style="display: flex; align-items: center; background: #F1F3F5; border-radius: 12px"><button type="button" onClick="{{n.less}}" disabled="{{tillDone}}" aria-label="{{n.lessA}}" class="step press">−</button><input inputmode="numeric" value="{{n.count}}" onChange="{{n.set}}" disabled="{{tillDone}}" aria-label="{{n.aria}}" style="width: 58px; height: 44px; box-sizing: border-box; padding: 0; border: 0; background: transparent; color: #10161E; text-align: center; font: 600 15.5px Geist, system-ui, sans-serif; font-variant-numeric: tabular-nums"><button type="button" onClick="{{n.more}}" disabled="{{tillDone}}" aria-label="{{n.moreA}}" class="step press">+</button></div>
+<span style="flex: 0 0 100px; text-align: right; font-size: 15.5px; font-variant-numeric: tabular-nums">{{n.total}}</span>
+</div>
+</sc-for>
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #E6EAEE"><span style="font-size: 15px; font-weight: 550">You counted</span><span style="font-size: 28px; font-weight: 600; letter-spacing: -.028em">{{counted}}</span></div>
+</section>
+<sc-if value="{{tillOpen}}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{submitTill}}" disabled="{{tillEmpty}}" class="press" style="width: 100%; min-height: 54px; margin-top: 12px; border: 0; border-radius: 15px; background: {{tillBtn}}; color: #FFFFFF; font: 600 16px Geist, system-ui, sans-serif; cursor: pointer">This is my count</button></sc-if>
+<sc-if value="{{tillDone}}" hint-placeholder-val="{{ false }}">
+<section class="card rise" aria-live="polite" style="margin-top: 12px; background: {{tillBg}}">
+<div style="font-size: 18px; font-weight: 600; letter-spacing: -.016em">{{tillResult}}</div>
+<dl style="display: grid; grid-template-columns: 1fr auto; gap: 5px 14px; margin: 10px 0 0; font-size: 15px; font-variant-numeric: tabular-nums">
+<dt style="color: #434E5A">The system expected</dt><dd style="margin: 0; text-align: right">{{expected}}</dd><dt style="color: #434E5A">You counted</dt><dd style="margin: 0; text-align: right">{{counted}}</dd><dt style="font-weight: 600">Difference</dt><dd style="margin: 0; text-align: right; font-weight: 600">{{tillDiff}}</dd>
+</dl>
+<p style="margin: 10px 0 0; font-size: 14px; line-height: 1.45; color: #434E5A">{{tillNext}}</p>
+</section>
+</sc-if>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1020}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = this.fresh();
+    this.state.tab = 0; this.state.sales = 0;
+    this.state.cash = { 1000: 0, 500: 0, 200: 0, 100: 0, 50: 0 }; this.state.tillDone = false;
+    this.bindScan = (el) => { this.scan = el; if (el && !this.focused) { this.focused = true; el.focus(); } };
+  }
+  fresh() { return { query: '', active: 0, lines: [], phone: '', discount: '0', asked: null, method: null, tender: null, paid: false, waSent: false, flash: null }; }
+  componentWillUnmount() { clearTimeout(this.ownerT); }
+  catalog() {
+    return [
+      { id: '6205', code: '62052RS', name: '6205-2RS bearing', price: 4800, trade: 4200, stock: '48 here' },
+      { id: '6204', code: '62042RS', name: '6204-2RS bearing', price: 3900, trade: 3400, stock: '8 here' },
+      { id: 'a42', code: 'A42', name: 'A42 V-belt', price: 3200, trade: 2800, stock: '15 here' },
+      { id: 'car', code: 'CAR24F', name: 'Car battery, size 24F', price: 78000, trade: 71000, stock: '14 here', serials: ['CB-24F-3310', 'CB-24F-3342', 'CB-24F-3377'] },
+      { id: 'tub', code: 'TB200', name: '200Ah tubular battery', price: 420000, trade: 392000, stock: '14 here', serials: ['TB-200-88121', 'TB-200-88122', 'TB-200-88130'] },
+      { id: 'chain', code: '10B', name: '10B roller chain, per metre', price: 9500, trade: 8600, stock: '40 m in warehouse' }
+    ];
+  }
+  renderVals() {
+    const s = this.state, self = this, C = this.catalog();
+    const money = (n) => '₦' + Math.round(n).toLocaleString('en-NG');
+    const norm = (t) => String(t).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const q = norm(s.query);
+    const hits = q ? C.filter((p) => p.code.includes(q) || norm(p.name).includes(q)).slice(0, 4) : [];
+    const known = s.phone.replace(/\D/g, '') === '08031234567';
+    const priceOf = (p) => known ? p.trade : p.price;
+    const addItem = (p) => {
+      const cur = self.state.lines, at = cur.findIndex((l) => l.id === p.id);
+      const next = at >= 0 ? cur.map((l, i) => i === at ? Object.assign({}, l, { qty: l.qty + 1 }) : l) : cur.concat({ id: p.id, qty: 1, picked: [] });
+      self.setState({ lines: next, query: '', active: 0, flash: p.id, method: self.state.method, paid: false });
+      if (self.scan) self.scan.focus();
+    };
+    const lineData = s.lines.map((l) => ({ l, p: C.find((x) => x.id === l.id) }));
+    const subtotal = lineData.reduce((a, { l, p }) => a + l.qty * priceOf(p), 0);
+    const discPct = Math.min(100, Math.max(0, Number(String(s.discount).replace(/\D/g, '')) || 0));
+    const LIMIT = 5;
+    const overLimit = discPct > LIMIT;
+    const approved = s.asked === 'yes' && s.askedFor === discPct;
+    const waiting = s.asked === 'waiting' && s.askedFor === discPct;
+    const discUsed = overLimit && !approved ? 0 : discPct;
+    const discAmt = Math.round(subtotal * discUsed / 100);
+    const total = subtotal - discAmt;
+    const missingSerial = lineData.some(({ l, p }) => p.serials && l.picked.length < l.qty);
+    const creditLeft = 1250000;
+    const overCredit = s.method === 'Credit' && total > creditLeft;
+    const cashShort = s.method === 'Cash' && (s.tender == null || s.tender < total);
+    let blocker = '';
+    if (!s.lines.length) blocker = '';
+    else if (missingSerial) blocker = 'Pick the serial number for each battery.';
+    else if (waiting) blocker = 'Waiting for the owner on the discount.';
+    else if (overLimit && !approved) blocker = 'Discount is above your limit. Ask the owner, or lower it.';
+    else if (!s.method) blocker = 'Choose how they are paying.';
+    else if (cashShort) blocker = 'Choose the cash received.';
+    else if (overCredit) blocker = 'This is more than their credit left.';
+    const blocked = !s.lines.length || !!blocker;
+    const round = (n, to) => Math.ceil(n / to) * to;
+    const tenderOpts = [{ label: 'Exact', v: total }, { label: money(round(total, 1000)), v: round(total, 1000) }, { label: money(round(total, 5000)), v: round(total, 5000) }, { label: money(round(total, 10000)), v: round(total, 10000) }]
+      .filter((o, i, arr) => arr.findIndex((x) => x.v === o.v) === i);
+
+    const NOTES = [1000, 500, 200, 100, 50];
+    const counted = NOTES.reduce((a, n) => a + n * s.cash[n], 0);
+    const EXPECTED = 248000;
+    const diff = counted - EXPECTED;
+    const setCash = (n, v) => self.setState({ cash: Object.assign({}, s.cash, { [n]: Math.max(0, v) }) });
+    return {
+      tabX: s.tab * 120,
+      tabs: ['Sell', 'Close the till'].map((label, i) => ({ label, on: i === s.tab, pick: () => self.setState({ tab: i }) })),
+      isSell: s.tab === 0, isTill: s.tab === 1,
+      bindScan: this.bindScan, query: s.query,
+      onQuery: (e) => self.setState({ query: e.target.value, active: 0 }),
+      scanKey: (e) => {
+        if (e.key === 'ArrowDown' && hits.length) { e.preventDefault(); self.setState({ active: (s.active + 1) % hits.length }); }
+        if (e.key === 'ArrowUp' && hits.length) { e.preventDefault(); self.setState({ active: (s.active - 1 + hits.length) % hits.length }); }
+        if (e.key === 'Enter' && hits.length) { e.preventDefault(); addItem(hits[Math.min(s.active, hits.length - 1)]); }
+      },
+      hasHits: hits.length > 0, noHits: !!q && hits.length === 0, showQuick: !q,
+      hits: hits.map((p, i) => ({ name: p.name, stock: p.stock, price: money(priceOf(p)), on: i === s.active, bg: i === s.active ? '#EEF3FF' : 'transparent', pick: () => addItem(p) })),
+      quick: C.slice(0, 6).map((p) => ({ name: p.name, price: money(priceOf(p)), pick: () => addItem(p) })),
+      empty: !s.lines.length,
+      lines: lineData.map(({ l, p }) => {
+        const setLine = (patch) => self.setState({ lines: self.state.lines.map((x) => x.id === l.id ? Object.assign({}, x, patch) : x) });
+        const picks = l.picked;
+        return {
+          name: p.name, qty: l.qty, total: money(l.qty * priceOf(p)), cls: s.flash === p.id ? 'flash' : '',
+          priceNote: money(priceOf(p)) + ' each' + (known ? ', trade price' : ''),
+          qtyA: 'Quantity of ' + p.name, lessA: 'One fewer: ' + p.name, moreA: 'One more: ' + p.name,
+          less: () => { if (l.qty <= 1) self.setState({ lines: self.state.lines.filter((x) => x.id !== l.id) }); else setLine({ qty: l.qty - 1, picked: picks.slice(0, l.qty - 1) }); },
+          more: () => setLine({ qty: l.qty + 1 }),
+          needSerial: !!p.serials, serialBg: picks.length >= l.qty ? '#EEF9F4' : '#F4F6F8',
+          serialHint: picks.length >= l.qty ? 'Warranty starts today on the serial you chose.' : 'Scan the unit, or tap its serial. Give the oldest first: ' + (p.serials || [])[0] + '.',
+          serials: (p.serials || []).map((code) => {
+            const on = picks.includes(code);
+            return { code, on, bg: on ? '#10161E' : '#FFFFFF', fg: on ? '#FFFFFF' : '#10161E', border: on ? '#10161E' : 'rgba(16,24,34,.16)',
+              pick: () => setLine({ picked: on ? picks.filter((c) => c !== code) : (picks.length >= l.qty ? picks.slice(1).concat(code) : picks.concat(code)) }) };
+          })
+        };
+      }),
+      paying: !s.paid, paid: s.paid,
+      phone: s.phone, onPhone: (e) => { const d = e.target.value.replace(/\D/g, '').slice(0, 11); self.setState({ phone: d.length > 7 ? d.slice(0, 4) + ' ' + d.slice(4, 7) + ' ' + d.slice(7) : (d.length > 4 ? d.slice(0, 4) + ' ' + d.slice(4) : d), method: s.method === 'Credit' ? null : s.method }); }, known,
+      discount: s.discount, onDiscount: (e) => self.setState({ discount: e.target.value.replace(/\D/g, '').slice(0, 3), asked: null }),
+      discAsk: overLimit && !approved && !waiting,
+      discColor: overLimit && !approved ? '#92400E' : '#55606C',
+      discNote: approved ? 'Approved by the owner.' : (waiting ? 'Sent to the owner.' : (overLimit ? 'Your limit is ' + LIMIT + '%.' : (discPct ? 'Within your limit.' : ''))),
+      askText: 'Ask the owner for ' + discPct + '%',
+      askOwner: () => { self.setState({ asked: 'waiting', askedFor: discPct }); clearTimeout(self.ownerT); self.ownerT = setTimeout(() => self.setState({ asked: 'yes' }), 1500); },
+      subtotal: money(subtotal), discountAmt: discAmt ? '−' + money(discAmt) : money(0), total: money(total),
+      methods: ['Cash', 'POS', 'Transfer', 'Credit'].map((label) => {
+        const off = label === 'Credit' && !known, on = s.method === label;
+        return { label, on, off, o: off ? .45 : 1, bg: on ? '#10161E' : '#FFFFFF', fg: on ? '#FFFFFF' : '#10161E', border: on ? '#10161E' : 'rgba(16,24,34,.16)', pick: () => self.setState({ method: label, tender: null }) };
+      }),
+      isCash: s.method === 'Cash', isTransfer: s.method === 'Transfer', isCredit: s.method === 'Credit',
+      tender: tenderOpts.map((o) => { const on = s.tender === o.v; return { label: o.label, on, bg: on ? '#10161E' : '#FFFFFF', fg: on ? '#FFFFFF' : '#10161E', border: on ? '#10161E' : 'rgba(16,24,34,.16)', pick: () => self.setState({ tender: o.v }) }; }),
+      change: s.tender != null ? money(Math.max(0, s.tender - total)) : money(0), creditAfter: money(creditLeft - total),
+      blocker, blocked, completeBg: blocked ? '#8E99A4' : '#1B5CF0',
+      completeText: s.method === 'Transfer' ? 'Send to finance, hold goods' : 'Complete sale',
+      complete: () => { if (!blocked) self.setState({ paid: true, sales: s.sales + 1, receiptNo: 4210 + s.sales }); },
+      doneTitle: s.method === 'Transfer' ? 'Waiting on the bank' : 'Sale complete',
+      doneNote: s.method === 'Transfer' ? 'Finance has it. Release the goods once they confirm.' : (s.phone ? 'Saved to their record, with warranty and reminders.' : 'Stock and books are updated.'),
+      receiptNo: s.receiptNo, receipt: lineData.map(({ l, p }) => ({ name: l.qty + ' × ' + p.name, total: money(l.qty * priceOf(p)) })),
+      waText: s.waSent ? 'Sent on WhatsApp' : 'Send on WhatsApp', sendWa: () => self.setState({ waSent: true }),
+      newSale: () => { self.setState(self.fresh()); if (self.scan) self.scan.focus(); },
+
+      tillIntro: s.tillDone ? 'Your count is saved. It cannot be changed now.' : 'Count what is in the drawer. The system total stays hidden until you finish, so the count stays honest.',
+      notes: NOTES.map((n) => ({ label: '₦' + n.toLocaleString('en-NG'), count: s.cash[n], total: money(n * s.cash[n]), aria: 'Number of ₦' + n + ' notes', lessA: 'One fewer ₦' + n + ' note', moreA: 'One more ₦' + n + ' note', less: () => setCash(n, s.cash[n] - 1), more: () => setCash(n, s.cash[n] + 1), set: (e) => setCash(n, Number(e.target.value.replace(/\D/g, '').slice(0, 5)) || 0) })),
+      counted: money(counted), tillDone: s.tillDone, tillOpen: !s.tillDone, tillEmpty: counted === 0, tillBtn: counted === 0 ? '#8E99A4' : '#1B5CF0',
+      submitTill: () => { if (counted > 0) self.setState({ tillDone: true }); },
+      expected: money(EXPECTED), tillDiff: diff === 0 ? money(0) : (diff > 0 ? '+' : '−') + money(Math.abs(diff)),
+      tillBg: diff === 0 ? '#EEF9F4' : '#FDF4E7',
+      tillResult: diff === 0 ? 'The till balances' : (diff < 0 ? money(-diff) + ' short' : money(diff) + ' over'),
+      tillNext: diff === 0 ? 'Well done. The day is closed.' : 'Recorded in the books against this till and sent to the owner to review. It does not stop you closing.'
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reminder call list</title>
+<script src="./support.js"></script>
+<script src="/_blob/8894df7a6a20de073c579d8151803290"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+body{margin:0;background:#EEF1F4}
+a{color:inherit}
+.card{box-sizing:border-box;padding:20px;background:#FFFFFF;border:1px solid rgba(16,24,34,.07);border-radius:22px;min-width:0}
+.title{margin:0;font-size:17px;font-weight:600;letter-spacing:-.014em}
+.glass{background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.85);box-shadow:0 1px 2px rgba(16,24,34,.06),0 14px 32px rgba(16,24,34,.11)}
+.press{transition:background .15s,transform .1s,border-color .15s,color .15s}
+.press:active{transform:scale(.97)}
+.ghost{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 14px;box-sizing:border-box;border:1px solid rgba(16,24,34,.16);border-radius:13px;background:#FFFFFF;color:#10161E;font:500 14.5px Geist,system-ui,sans-serif;cursor:pointer;text-decoration:none}
+.chip{min-height:44px;padding:0 12px;border-radius:12px;font:500 14px Geist,system-ui,sans-serif;cursor:pointer}
+button:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid #1B5CF0;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.rise{animation:rise .28s cubic-bezier(.2,.7,.2,1) both}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+.tickdraw{stroke-dasharray:1;animation:draw .3s cubic-bezier(.3,.7,.2,1) both}
+.bar{transition:width .5s cubic-bezier(.25,.8,.25,1)}
+.side{position:sticky;top:76px}
+@media (max-width:860px){.side{position:static}}
+@media (prefers-reduced-motion:reduce){.rise,.tickdraw{animation-duration:.01ms}.bar{transition:none}}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; padding: 12px clamp(10px, 2vw, 28px) 96px; font-family: Geist, system-ui, -apple-system, 'Segoe UI', sans-serif; color: #10161E; background: radial-gradient(70% 380px at 70% 0, #FFFFFF 0%, rgba(255,255,255,0) 100%), #EEF1F4">
+
+<nav aria-label="Staff" class="glass" style="position: sticky; top: 12px; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 6px 18px; border-radius: 18px">
+<span style="display: inline-flex; align-items: center; min-height: 42px; font-weight: 650; font-size: 17px; letter-spacing: -.02em">Reminders</span>
+<span style="font-size: 13.5px; color: #434E5A">Ada, sales</span>
+</nav>
+
+<div style="max-width: 1180px; margin: 0 auto; padding-top: 20px">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 20px; margin: 0 2px">
+<h1 style="margin: 0; font-size: clamp(26px, 3vw, 36px); line-height: 1.08; font-weight: 600; letter-spacing: -.03em">{{heading}}</h1>
+<div aria-live="polite" style="font-size: 15px; font-weight: 500">{{doneText}}</div>
+</div>
+<div style="height: 8px; margin: 10px 2px 0; background: #DDE2E7; border-radius: 4px; overflow: hidden" role="img" aria-label="{{doneText}}"><div class="bar" style="width: {{donePct}}%; height: 100%; background: #1B5CF0; border-radius: 4px"></div></div>
+<p style="margin: 8px 2px 14px; font-size: 14.5px; line-height: 1.45; color: #434E5A">{{subline}}</p>
+
+<div role="group" aria-label="Show" style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px">
+<sc-for list="{{filters}}" as="f" hint-placeholder-count="4"><button type="button" onClick="{{f.pick}}" aria-pressed="{{f.on}}" class="chip press" style="border: 1px solid {{f.border}}; background: {{f.bg}}; color: {{f.fg}}">{{f.label}}</button></sc-for>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start">
+<div style="flex: 999 1 480px; min-width: 0">
+
+<sc-if value="{{hasFocus}}" hint-placeholder-val="{{ true }}">
+<section class="card rise" aria-labelledby="who" style="padding: 22px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px">
+<span style="padding: 4px 9px; background: {{kindBg}}; color: {{kindFg}}; border-radius: 8px; font-size: 13px; font-weight: 550">{{kindLabel}}</span>
+<span style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums">{{value}}</span>
+</div>
+<h2 id="who" style="margin: 10px 0 0; font-size: 24px; line-height: 1.12; font-weight: 600; letter-spacing: -.024em">{{name}}</h2>
+<div style="margin-top: 2px; font: 500 14.5px 'Geist Mono', monospace; color: #434E5A">{{phoneShown}}</div>
+<p style="margin: 8px 0 0; font-size: 15px; line-height: 1.45">{{reason}}</p>
+
+<sc-if value="{{isTodo}}" hint-placeholder-val="{{ true }}">
+<div class="rise">
+<label for="msg" style="display: block; margin: 14px 0 6px; font-size: 14px; font-weight: 550">Your message. Change anything before sending.</label>
+<textarea id="msg" value="{{message}}" onChange="{{onMessage}}" rows="7" style="width: 100%; box-sizing: border-box; padding: 12px 14px; border: 1px solid rgba(16,24,34,.16); border-radius: 14px; background: #FBFCFC; color: #10161E; font: 400 15px/1.5 Geist, system-ui, sans-serif; resize: vertical"></textarea>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px">
+<a href="{{waHref}}" target="_blank" rel="noopener noreferrer" onClick="{{opened}}" class="press" style="flex: 1 1 220px; display: flex; align-items: center; justify-content: center; min-height: 54px; background: #1B5CF0; color: #FFFFFF; border-radius: 15px; font-size: 16px; font-weight: 600; text-decoration: none; box-shadow: 0 8px 20px rgba(27,92,240,.22)">Open WhatsApp</a>
+<a href="{{telHref}}" class="ghost press" style="flex: 1 1 96px; min-height: 54px; border-radius: 15px">Call</a>
+<button type="button" onClick="{{skip}}" class="ghost press" style="flex: 1 1 120px; min-height: 54px; border-radius: 15px">Skip today</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isOpened}}" hint-placeholder-val="{{ false }}">
+<div class="rise" style="margin-top: 14px; padding: 14px; background: #F4F6F8; border-radius: 16px">
+<div style="font-size: 16px; font-weight: 600; letter-spacing: -.012em">Did you send it?</div>
+<div style="margin-top: 1px; font-size: 14px; color: #434E5A">We cannot see WhatsApp, so please tell us.</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px">
+<button type="button" onClick="{{confirmSent}}" class="press" style="flex: 1 1 200px; min-height: 54px; border: 0; border-radius: 15px; background: #1B5CF0; color: #FFFFFF; font: 600 16px Geist, system-ui, sans-serif; cursor: pointer">Yes, sent. Next.</button>
+<button type="button" onClick="{{notSent}}" class="ghost press" style="flex: 1 1 130px; min-height: 54px; border-radius: 15px">No, not sent</button>
+</div>
+</div>
+</sc-if>
+</section>
+</sc-if>
+
+<sc-if value="{{groupEmpty}}" hint-placeholder-val="{{ false }}">
+<div class="card rise" style="padding: 26px; text-align: center"><div style="font-size: 17px; font-weight: 600">Nothing left in this group</div><div style="margin-top: 3px; font-size: 14.5px; color: #55606C">Switch to All to see who is still due.</div></div>
+</sc-if>
+
+<sc-if value="{{allDone}}" hint-placeholder-val="{{ false }}">
+<div class="card rise" aria-live="polite" style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 26px; text-align: center">
+<div ref="{{bindDone}}" aria-hidden="true" style="width: 96px; height: 96px"></div>
+<div style="font-size: 20px; font-weight: 600; letter-spacing: -.02em">Today's list is done</div>
+<div style="font-size: 14.5px; line-height: 1.45; color: #434E5A">{{doneSummary}}</div>
+</div>
+</sc-if>
+
+<sc-if value="{{hasSent}}" hint-placeholder-val="{{ false }}">
+<section class="card rise" aria-labelledby="sent" style="margin-top: 12px">
+<h2 id="sent" class="title">Sent today</h2>
+<p style="margin: 2px 0 0; font-size: 14px; color: #55606C">When they reply, tap what they said. It sets the next step.</p>
+<sc-for list="{{sentRows}}" as="r" hint-placeholder-count="2">
+<div style="padding: 12px 0; border-bottom: 1px solid #F1F3F5">
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px"><span style="font-size: 15px; font-weight: 550">{{r.name}}</span><span style="flex: none; font-size: 13px; color: #55606C">{{r.kind}}</span></div>
+<sc-if value="{{r.open}}" hint-placeholder-val="{{ true }}">
+<div role="group" aria-label="{{r.aria}}" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px"><sc-for list="{{r.outcomes}}" as="o" hint-placeholder-count="5"><button type="button" onClick="{{o.pick}}" class="press" style="min-height: 44px; padding: 0 11px; border: 1px solid rgba(16,24,34,.14); border-radius: 11px; background: #F7F8FA; color: #10161E; font: 500 13.5px Geist, system-ui, sans-serif; cursor: pointer">{{o.label}}</button></sc-for></div>
+</sc-if>
+<sc-if value="{{r.closed}}" hint-placeholder-val="{{ false }}">
+<div class="rise" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; margin-top: 5px"><span style="font-size: 14px; line-height: 1.4; color: {{r.resultColor}}">{{r.result}}</span>
+<sc-if value="{{r.canQuote}}" hint-placeholder-val="{{ false }}"><a href="Counter.dc.html" class="ghost press" style="flex: none">Start the sale</a></sc-if></div>
+</sc-if>
+</div>
+</sc-for>
+</section>
+</sc-if>
+</div>
+
+<aside class="side" style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+<sc-if value="{{hasNext}}" hint-placeholder-val="{{ true }}">
+<section class="card" aria-labelledby="next" style="padding: 16px 18px 10px">
+<h2 id="next" class="title">Up next</h2>
+<div style="margin-top: 6px">
+<sc-for list="{{upNext}}" as="n" hint-placeholder-count="4">
+<button type="button" onClick="{{n.pick}}" class="press" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 52px; padding: 6px 0; border: 0; border-top: 1px solid #F1F3F5; background: transparent; color: #10161E; text-align: left; font-family: Geist, system-ui, sans-serif; cursor: pointer"><span style="min-width: 0"><span style="display: block; font-size: 14.5px; font-weight: 500">{{n.name}}</span><span style="display: block; font-size: 13px; color: #55606C">{{n.kind}}</span></span><span style="flex: none; font-size: 13.5px; font-weight: 550; font-variant-numeric: tabular-nums">{{n.value}}</span></button>
+</sc-for>
+</div>
+</section>
+</sc-if>
+
+<section class="card" aria-labelledby="email" style="padding: 16px 18px">
+<h2 id="email" class="title">Handled by email</h2>
+<p style="margin: 3px 0 0; font-size: 14px; line-height: 1.45; color: #434E5A">6 customers with an email got theirs this morning. Anyone who has not replied in a week comes onto this list.</p>
+</section>
+
+<section class="card" aria-labelledby="month" style="padding: 16px 18px">
+<h2 id="month" class="title">What reminders brought in, last 30 days</h2>
+<div style="display: flex; flex-direction: column; gap: 9px; margin-top: 10px">
+<sc-for list="{{funnel}}" as="b" hint-placeholder-count="3">
+<div style="font-size: 14px"><div style="display: flex; justify-content: space-between; gap: 10px"><span style="color: #434E5A">{{b.label}}</span><b style="font-weight: 600; font-variant-numeric: tabular-nums">{{b.n}}</b></div>
+<div style="height: 10px; margin-top: 4px; background: #E9ECEF; border-radius: 0 4px 4px 0" role="img" aria-label="{{b.aria}}"><div class="bar" style="width: {{b.pct}}%; height: 100%; background: #1B5CF0; border-radius: 0 4px 4px 0"></div></div></div>
+</sc-for>
+</div>
+<div style="margin-top: 10px; font-size: 15px; font-weight: 600">₦4,100,000 in sales from reminders</div>
+</section>
+</aside>
+</div>
+</div>
+
+<sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}">
+<div class="glass rise" role="status" style="position: fixed; left: 50%; bottom: 14px; z-index: 40; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: min(430px, calc(100% - 24px)); box-sizing: border-box; padding: 7px 7px 7px 16px; border-radius: 16px; transform: translateX(-50%); font-size: 14.5px; font-weight: 500"><span style="min-width: 0">{{toastText}}</span><button type="button" onClick="{{undo}}" class="press" style="flex: none; min-height: 44px; padding: 0 14px; border: 0; border-radius: 11px; background: #10161E; color: #FFFFFF; font: 500 14px Geist, system-ui, sans-serif; cursor: pointer">Undo</button></div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1100}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { filter: 'All', status: {}, edits: {}, outcomes: {}, focus: null, toast: null };
+    this.reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.bindDone = (el) => {
+      if (this.anim) { this.anim.destroy(); this.anim = null; }
+      if (!el) return;
+      const start = (tries) => {
+        if (!window.lottie) { if (tries < 50) setTimeout(() => start(tries + 1), 100); return; }
+        if (!el.isConnected || this.anim) return;
+        this.anim = window.lottie.loadAnimation({ container: el, renderer: 'svg', loop: false, autoplay: !this.reduced, path: '/_blob/21dabc68a83f1dbda6cac29c53bc20a1' });
+        if (this.reduced) this.anim.addEventListener('DOMLoaded', () => this.anim.goToAndStop(this.anim.totalFrames - 1, true));
+      };
+      start(0);
+    };
+  }
+  componentWillUnmount() { clearTimeout(this.toastT); if (this.anim) this.anim.destroy(); }
+  renderVals() {
+    const s = this.state, self = this;
+    const ME = 'Ada from Power Store';
+    const ITEMS = [
+      { id: 'q1', group: 'Money', kind: 'Quote ends today', name: 'Adeyemi Electricals', phone: '08021110042', value: '₦4,845,000', reason: 'Their price on quote 3381 holds until 6 PM today. After that it follows the dollar.',
+        msg: 'Hello Adeyemi Electricals, this is ' + ME + '. Your quote 3381 for ₦4,845,000 holds until 6 PM today. Would you like me to keep the goods for you? Reply STOP if you would rather not hear from us.' },
+      { id: 'i1', group: 'Money', kind: 'Instalment due today', name: 'Kano Plastics', phone: '08035550177', value: '₦350,000', reason: 'Third of four instalments on order 1077. The first two came on time.',
+        msg: 'Hello Kano Plastics, this is ' + ME + '. Your ₦350,000 instalment on order 1077 is due today. Please tell me if you need a few days. Reply STOP if you would rather not hear from us.' },
+      { id: 'r1', group: 'Replacement', kind: 'Batteries reaching usual age', name: 'Grace Hospital', phone: '08067770021', value: 'About ₦1,680,000', reason: '4 tubular batteries bought in March 2023. They usually last about 4 years.',
+        msg: 'Hello Grace Hospital, this is ' + ME + '. Your 4 tubular batteries from March 2023 are reaching their usual age. How long does your backup last now? We can test them for free, and old ones earn trade-in value. Reply STOP if you would rather not hear from us.' },
+      { id: 'm1', group: 'Replacement', kind: 'Machine parts due', name: 'Pure Water Ltd', phone: '08091230065', value: '₦19,200', reason: 'Line 2: A42 belts and 6205-2RS bearings are near their usual life.',
+        msg: 'Hello Pure Water Ltd, this is ' + ME + '. The belts and bearings on your Line 2 are close to their usual life. Would you like me to set aside the same parts before they stop the line? Reply STOP if you would rather not hear from us.' },
+      { id: 'c1', group: 'Replacement', kind: 'Car battery check', name: 'Bisi Lawal', phone: '08044410098', value: 'About ₦78,000', reason: 'Battery for a 2012 Toyota Camry, bought 18 months ago.',
+        msg: 'Hello Bisi, this is ' + ME + '. Your car battery is now 18 months old, so it is a good time to check it before it leaves you stranded. Bring the car in for a free test any day. Reply STOP if you would rather not hear from us.' },
+      { id: 'w1', group: 'Service', kind: 'Warranty ending in 30 days', name: 'Eze Motors', phone: '08028880134', value: 'No sale', reason: 'Inverter warranty ends on 1 December. If anything is wrong, now is the time.',
+        msg: 'Hello Eze Motors, this is ' + ME + '. The warranty on your inverter ends on 1 December. If it has given any trouble, tell me now so we can check it while it is covered. Reply STOP if you would rather not hear from us.' },
+      { id: 's1', group: 'Service', kind: 'Water check due', name: 'Lekki Estates', phone: '08053330156', value: 'No sale', reason: '8 tubular batteries. Last checked 3 months ago.',
+        msg: 'Hello Lekki Estates, this is ' + ME + '. Your batteries are due a water check this week. Top up with distilled water only, up to the mark. Reply STOP if you would rather not hear from us.' },
+      { id: 'b1', group: 'Service', kind: 'Back in stock', name: 'Ibrahim Solar', phone: '08012220087', value: 'About ₦480,000', reason: 'Asked to be told when 220Ah tubular batteries returned. 5 came in today.',
+        msg: 'Hello Ibrahim Solar, this is ' + ME + '. The 220Ah tubular batteries you asked about are back. We have 5 at Lekki. Would you like me to hold some? Reply STOP if you would rather not hear from us.' }
+    ];
+    const total = ITEMS.length;
+    const stat = (i) => s.status[i.id] || 'todo';
+    const pending = ITEMS.filter((i) => ['todo', 'opened'].includes(stat(i)));
+    const sent = ITEMS.filter((i) => stat(i) === 'sent');
+    const skipped = ITEMS.filter((i) => stat(i) === 'skipped');
+    const done = total - pending.length;
+    const queue = pending.filter((i) => s.filter === 'All' || i.group === s.filter);
+    const focus = queue.find((i) => i.id === s.focus) || queue[0] || null;
+    const msg = focus ? (s.edits[focus.id] != null ? s.edits[focus.id] : focus.msg) : '';
+    const intl = (p) => '234' + p.replace(/^0/, '');
+    const pretty = (p) => p.slice(0, 4) + ' ' + p.slice(4, 7) + ' ' + p.slice(7);
+    const say = (text, undoState) => {
+      self.setState({ toast: { text, undoState } });
+      clearTimeout(self.toastT);
+      self.toastT = setTimeout(() => self.setState({ toast: null }), 5000);
+    };
+    const setStatus = (id, v) => Object.assign({}, s.status, { [id]: v });
+    const OUTCOMES = [
+      { label: 'Wants it', text: 'Wants it. Start the sale when ready.', color: '#0A6E4B', quote: true },
+      { label: 'Not now', text: 'Not now. We will remind them again in 3 months.', color: '#434E5A' },
+      { label: 'Already done', text: 'Already done. Their record is updated.', color: '#434E5A' },
+      { label: 'Wrong number', text: 'Wrong number. Flagged for the counter to correct.', color: '#92400E' },
+      { label: 'Stop reminders', text: 'They will not get reminders again.', color: '#92400E' }
+    ];
+    const replies = 19 + sent.filter((i) => s.outcomes[i.id]).length;
+    const sentMonth = 62 + sent.length;
+    const FUNNEL = [{ label: 'Sent', n: sentMonth }, { label: 'Replied', n: replies }, { label: 'Bought', n: 7 }];
+    const FILTERS = ['All', 'Money', 'Replacement', 'Service'];
+    return {
+      heading: pending.length ? 'Who to message today' : 'All done for today',
+      doneText: done + ' of ' + total + ' done',
+      donePct: (done / total * 100).toFixed(1),
+      subline: 'Highest value first. Nothing here goes out by itself. Today is capped at 30, and 11 more are waiting for tomorrow.',
+      filters: FILTERS.map((f) => {
+        const n = f === 'All' ? pending.length : pending.filter((i) => i.group === f).length, on = s.filter === f;
+        return { label: f + ' ' + n, on, bg: on ? '#10161E' : '#FFFFFF', fg: on ? '#FFFFFF' : '#10161E', border: on ? '#10161E' : 'rgba(16,24,34,.16)', pick: () => self.setState({ filter: f, focus: null }) };
+      }),
+      hasFocus: !!focus, allDone: pending.length === 0, groupEmpty: pending.length > 0 && queue.length === 0,
+      kindLabel: focus ? focus.kind : '', kindBg: focus && focus.group === 'Money' ? '#FDF1E3' : '#E7EEFE', kindFg: focus && focus.group === 'Money' ? '#92400E' : '#1747C7',
+      value: focus ? focus.value : '', name: focus ? focus.name : '', phoneShown: focus ? pretty(focus.phone) : '', reason: focus ? focus.reason : '',
+      isTodo: !!focus && stat(focus) === 'todo', isOpened: !!focus && stat(focus) === 'opened',
+      message: msg, onMessage: (e) => self.setState({ edits: Object.assign({}, s.edits, { [focus.id]: e.target.value }) }),
+      waHref: focus ? 'https://wa.me/' + intl(focus.phone) + '?text=' + encodeURIComponent(msg) : '#', telHref: focus ? 'tel:+' + intl(focus.phone) : '#',
+      opened: () => { if (focus) self.setState({ status: setStatus(focus.id, 'opened'), focus: focus.id }); },
+      notSent: () => { if (focus) self.setState({ status: setStatus(focus.id, 'todo') }); },
+      confirmSent: () => {
+        if (!focus) return;
+        const before = s.status;
+        self.setState({ status: setStatus(focus.id, 'sent'), focus: null });
+        say('Sent to ' + focus.name + '.', { status: before, focus: focus.id });
+      },
+      skip: () => {
+        if (!focus) return;
+        const before = s.status;
+        self.setState({ status: setStatus(focus.id, 'skipped'), focus: null });
+        say(focus.name + ' moved to tomorrow.', { status: before, focus: focus.id });
+      },
+      toastOn: !!s.toast, toastText: s.toast ? s.toast.text : '',
+      undo: () => { if (s.toast) { clearTimeout(self.toastT); self.setState(Object.assign({ toast: null }, s.toast.undoState)); } },
+      bindDone: this.bindDone,
+      doneSummary: sent.length + ' sent' + (skipped.length ? ', ' + skipped.length + ' moved to tomorrow' : '') + '. Record replies below as they come in.',
+      hasNext: queue.length > 1,
+      upNext: queue.filter((i) => i !== focus).slice(0, 5).map((i) => ({ name: i.name, kind: i.kind, value: i.value, pick: () => self.setState({ focus: i.id }) })),
+      hasSent: sent.length > 0,
+      sentRows: sent.slice().reverse().map((i) => {
+        const o = s.outcomes[i.id];
+        const chosen = OUTCOMES.find((x) => x.label === o);
+        return {
+          name: i.name, kind: i.kind, aria: 'What ' + i.name + ' said', open: !o, closed: !!o, result: chosen ? chosen.text : '', resultColor: chosen ? chosen.color : '#434E5A', canQuote: !!(chosen && chosen.quote),
+          outcomes: OUTCOMES.map((x) => ({ label: x.label, pick: () => self.setState({ outcomes: Object.assign({}, s.outcomes, { [i.id]: x.label }) }) }))
+        };
+      }),
+      funnel: FUNNEL.map((b) => ({ label: b.label, n: b.n, pct: (b.n / sentMonth * 100).toFixed(1), aria: b.label + ': ' + b.n }))
+    };
+  }
+}
+</script>
+</body>
+</html>

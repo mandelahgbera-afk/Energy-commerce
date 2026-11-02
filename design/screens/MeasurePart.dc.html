@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Measure on screen</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+body{margin:0;background:#EEF1F4}
+a{color:inherit}
+.press{transition:background .18s,transform .12s,border-color .18s,color .18s}
+.press:active{transform:scale(.97)}
+.step{width:44px;height:44px;border:0;border-radius:12px;background:#F1F3F5;color:#10161E;font:400 21px Geist,system-ui,sans-serif;cursor:pointer}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #1B5CF0;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.rise{animation:rise .28s cubic-bezier(.2,.7,.2,1) both}
+.handle{cursor:grab;touch-action:none}
+input::placeholder{color:#5D6874;opacity:1}
+@media (prefers-reduced-motion:reduce){.rise{animation-duration:.01ms}}
+</style>
+</helmet>
+<div style="width: 100%; max-width: 430px; min-height: 100vh; box-sizing: border-box; margin: 0 auto; padding: 8px 14px 22px; font-family: Geist, system-ui, -apple-system, 'Segoe UI', sans-serif; color: #10161E; background: #EEF1F4">
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px">
+<a href="PartPage.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; font-size: 15px; font-weight: 500; text-decoration: none">Back</a>
+<div role="group" aria-label="What are you measuring" style="position: relative; display: grid; grid-template-columns: repeat(3, 74px); padding: 3px; background: #E2E6EA; border-radius: 12px">
+<span aria-hidden="true" style="position: absolute; top: 3px; bottom: 3px; left: 3px; width: 74px; background: #FFFFFF; border-radius: 9px; box-shadow: 0 1px 2px rgba(16,24,34,.1), 0 4px 10px rgba(16,24,34,.08); transform: translateX({{tabX}}px); transition: transform .3s cubic-bezier(.3,1.25,.5,1)"></span>
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="3"><button type="button" onClick="{{t.pick}}" aria-pressed="{{t.on}}" style="position: relative; height: 44px; border: 0; background: transparent; color: #10161E; font: 500 14px Geist, system-ui, sans-serif; cursor: pointer">{{t.label}}</button></sc-for>
+</div>
+</div>
+
+<sc-if value="{{calibrating}}" hint-placeholder-val="{{ false }}">
+<section class="rise" aria-labelledby="cal" style="padding-top: 6px">
+<h1 id="cal" style="margin: 0; font-size: 26px; line-height: 1.1; font-weight: 600; letter-spacing: -.028em">First, set your screen size</h1>
+<p style="margin: 6px 0 12px; font-size: 15px; line-height: 1.45; color: #434E5A">Every phone is different. Lay any bank card on the box, short side across. Adjust until the box is the same width as the card.</p>
+<div style="display: flex; justify-content: center; align-items: center; height: 260px; background: #FFFFFF; border-radius: 18px">
+<div style="width: {{cardW}}px; height: {{cardH}}px; box-sizing: border-box; border: 2px solid #1B5CF0; border-radius: 10px; background: rgba(27,92,240,.06)"></div>
+</div>
+<div style="display: flex; align-items: center; gap: 10px; margin-top: 12px">
+<button type="button" onClick="{{calLess}}" aria-label="Make the box narrower" class="step press">−</button>
+<input type="range" min="4" max="8" step="0.02" value="{{ppm}}" onChange="{{onPpm}}" aria-label="Box width" style="flex: 1; min-width: 0; height: 44px; margin: 0; accent-color: #1B5CF0">
+<button type="button" onClick="{{calMore}}" aria-label="Make the box wider" class="step press">+</button>
+</div>
+<button type="button" onClick="{{calDone}}" class="press" style="width: 100%; min-height: 52px; margin-top: 12px; border: 0; border-radius: 14px; background: #1B5CF0; color: #FFFFFF; font: 550 16px Geist, system-ui, sans-serif; cursor: pointer">It matches my card</button>
+<button type="button" onClick="{{calDone}}" class="press" style="width: 100%; min-height: 46px; margin-top: 6px; border: 0; background: transparent; color: #434E5A; font: 500 14.5px Geist, system-ui, sans-serif; cursor: pointer">I have no card, use an estimate</button>
+</section>
+</sc-if>
+
+<sc-if value="{{isBearing}}" hint-placeholder-val="{{ true }}">
+<section class="rise" aria-label="Measure a bearing">
+<h1 style="margin: 2px 0 2px; font-size: 22px; line-height: 1.15; font-weight: 600; letter-spacing: -.022em">Lay your bearing on the circles</h1>
+<p style="margin: 0 0 8px; font-size: 14.5px; line-height: 1.4; color: #434E5A">Drag the dots until the circles touch its edges.</p>
+<div ref="{{bindStage}}" onPointerDown="{{stageDown}}" onPointerMove="{{stageMove}}" onPointerUp="{{stageUp}}" onPointerCancel="{{stageUp}}" class="handle" style="position: relative; height: 340px; overflow: hidden; background: #FFFFFF; border-radius: 18px">
+<svg aria-hidden="true" width="100%" height="340" style="position: absolute; inset: 0">
+<defs><pattern id="ruler" width="{{tenMm}}" height="14" patternUnits="userSpaceOnUse"><rect width="1.5" height="12" style="fill: #8E99A4"></rect><rect x="{{fiveMm}}" width="1" height="7" style="fill: #B7BFC7"></rect></pattern></defs>
+<rect x="0" y="0" width="100%" height="14" fill="url(#ruler)"></rect>
+<circle cx="50%" cy="170" r="{{rO}}" style="fill: rgba(27,92,240,.07); stroke: #1B5CF0; stroke-width: 2"></circle>
+<circle cx="50%" cy="170" r="{{rB}}" style="fill: #FFFFFF; stroke: #1B5CF0; stroke-width: 2"></circle>
+<line x1="50%" y1="26" x2="50%" y2="330" style="stroke: rgba(27,92,240,.25); stroke-width: 1"></line>
+</svg>
+<div aria-hidden="true" style="position: absolute; left: calc(50% + {{rO}}px); top: 170px; width: 26px; height: 26px; margin: -13px 0 0 -13px; box-sizing: border-box; border: 3px solid #FFFFFF; border-radius: 50%; background: #1B5CF0; box-shadow: 0 2px 8px rgba(16,24,34,.3)"></div>
+<div aria-hidden="true" style="position: absolute; left: calc(50% + {{rB}}px); top: 170px; width: 26px; height: 26px; margin: -13px 0 0 -13px; box-sizing: border-box; border: 3px solid #FFFFFF; border-radius: 50%; background: #10161E; box-shadow: 0 2px 8px rgba(16,24,34,.3)"></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; margin-top: 8px; padding: 6px 12px; background: #FFFFFF; border-radius: 16px">
+<sc-for list="{{dims}}" as="d" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px">
+<span style="font-size: 14.5px">{{d.name}}</span>
+<div style="display: flex; align-items: center; gap: 4px"><button type="button" onClick="{{d.less}}" aria-label="{{d.lessA}}" class="step press">−</button><span aria-live="polite" style="width: 62px; text-align: center; font: 500 15.5px 'Geist Mono', monospace">{{d.val}} mm</span><button type="button" onClick="{{d.more}}" aria-label="{{d.moreA}}" class="step press">+</button></div>
+</div>
+</sc-for>
+</div>
+<div aria-live="polite" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; padding: 12px 14px; border-radius: 16px; background: {{matchBg}}; transition: background .25s">
+<div style="min-width: 0"><div style="font: 600 18px 'Geist Mono', monospace">{{matchTitle}}</div><div style="margin-top: 1px; font-size: 13.5px; line-height: 1.35; color: #434E5A">{{matchNote}}</div></div>
+<sc-if value="{{matched}}" hint-placeholder-val="{{ true }}"><a href="PartPage.dc.html" class="press" style="flex: none; display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; background: #1B5CF0; color: #FFFFFF; border-radius: 12px; font-size: 14.5px; font-weight: 550; text-decoration: none">See it</a></sc-if>
+</div>
+<button type="button" onClick="{{recal}}" style="min-height: 44px; margin-top: 2px; padding: 0 2px; border: 0; background: transparent; color: #1747C7; font: 500 14px Geist, system-ui, sans-serif; cursor: pointer">Set screen size again</button>
+</section>
+</sc-if>
+
+<sc-if value="{{isChain}}" hint-placeholder-val="{{ false }}">
+<section class="rise" aria-label="Measure a chain">
+<h1 style="margin: 2px 0 2px; font-size: 22px; line-height: 1.15; font-weight: 600; letter-spacing: -.022em">Lay your chain along the line</h1>
+<p style="margin: 0 0 8px; font-size: 14.5px; line-height: 1.4; color: #434E5A">Adjust until the dots sit on the chain's rollers. Pitch is the gap from one roller to the next.</p>
+<div style="display: flex; align-items: center; height: 170px; overflow: hidden; background: #FFFFFF; border-radius: 18px">
+<svg role="img" aria-label="{{chainAria}}" width="100%" height="120">
+<line x1="0" y1="60" x2="100%" y2="60" style="stroke: #C6CED6; stroke-width: {{chainH}}"></line>
+<line x1="0" y1="60" x2="100%" y2="60" style="stroke: #1B5CF0; stroke-width: {{rollerD}}; stroke-linecap: round; stroke-dasharray: 0 {{pitchPx}}"></line>
+</svg>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px">
+<sc-for list="{{chains}}" as="c" hint-placeholder-count="5"><button type="button" onClick="{{c.pick}}" aria-pressed="{{c.on}}" class="press" style="min-height: 44px; padding: 0 13px; border: 1px solid {{c.border}}; border-radius: 12px; background: {{c.bg}}; color: {{c.fg}}; font: 500 14px 'Geist Mono', monospace; cursor: pointer">{{c.code}}</button></sc-for>
+</div>
+<div aria-live="polite" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; padding: 12px 14px; border-radius: 16px; background: #EEF9F4">
+<div style="min-width: 0"><div style="font: 600 18px 'Geist Mono', monospace">{{chainCode}} chain</div><div style="margin-top: 1px; font-size: 13.5px; color: #434E5A">{{chainNote}}</div></div>
+<a href="PasteList.dc.html" class="press" style="flex: none; display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; background: #1B5CF0; color: #FFFFFF; border-radius: 12px; font-size: 14.5px; font-weight: 550; text-decoration: none">See it</a>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{isBelt}}" hint-placeholder-val="{{ false }}">
+<section class="rise" aria-label="Measure a belt">
+<h1 style="margin: 2px 0 2px; font-size: 22px; line-height: 1.15; font-weight: 600; letter-spacing: -.022em">Measure your belt</h1>
+<p style="margin: 0 0 10px; font-size: 14.5px; line-height: 1.4; color: #434E5A">Look for a number on the back first, such as A42. Worn off? Wrap string around the outside and measure the string.</p>
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 6px 12px; background: #FFFFFF; border-radius: 16px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px"><span style="font-size: 14.5px">Length around the outside</span><div style="display: flex; align-items: center; gap: 4px"><button type="button" onClick="{{lenLess}}" aria-label="Shorter" class="step press">−</button><span aria-live="polite" style="width: 74px; text-align: center; font: 500 15px 'Geist Mono', monospace">{{beltLen}} mm</span><button type="button" onClick="{{lenMore}}" aria-label="Longer" class="step press">+</button></div></div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px"><span style="font-size: 14.5px">Width across the top</span><div style="display: flex; align-items: center; gap: 4px"><button type="button" onClick="{{widLess}}" aria-label="Narrower" class="step press">−</button><span aria-live="polite" style="width: 74px; text-align: center; font: 500 15px 'Geist Mono', monospace">{{beltWid}} mm</span><button type="button" onClick="{{widMore}}" aria-label="Wider" class="step press">+</button></div></div>
+</div>
+<div aria-live="polite" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; padding: 12px 14px; border-radius: 16px; background: #EEF9F4">
+<div style="min-width: 0"><div style="font: 600 18px 'Geist Mono', monospace">{{beltCode}}</div><div style="margin-top: 1px; font-size: 13.5px; color: #434E5A">{{beltNote}}</div></div>
+<a href="PasteList.dc.html" class="press" style="flex: none; display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; background: #1B5CF0; color: #FFFFFF; border-radius: 12px; font-size: 14.5px; font-weight: 550; text-decoration: none">See it</a>
+</div>
+</section>
+</sc-if>
+
+<a href="#top" class="press" style="display: flex; align-items: center; justify-content: center; min-height: 48px; margin-top: 8px; border: 1px solid rgba(16,24,34,.14); border-radius: 14px; font-size: 15px; font-weight: 500; text-decoration: none">Not sure? Send a photo on WhatsApp</a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":430,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    let saved = 5.45;
+    let known = false;
+    try { const v = Number(localStorage.getItem('ps-ppm')); if (v > 3 && v < 9) { saved = v; known = true; } } catch (e) {}
+    this.state = { tab: 0, calibrating: !known, ppm: saved, od: 52, bore: 25, width: 15, pitch: 2, beltLen: 1117, beltWid: 13 };
+    this.bindStage = (el) => { this.stage = el; };
+  }
+  renderVals() {
+    const s = this.state, self = this;
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const TABLE = [
+      { code: '6202', b: 15, o: 35, w: 11 }, { code: '6203', b: 17, o: 40, w: 12 }, { code: '6204', b: 20, o: 47, w: 14 },
+      { code: '6205', b: 25, o: 52, w: 15 }, { code: '6206', b: 30, o: 62, w: 16 }, { code: '6005', b: 25, o: 47, w: 12 },
+      { code: '6304', b: 20, o: 52, w: 15 }, { code: '6305', b: 25, o: 62, w: 17 }
+    ];
+    const near = TABLE.map((t) => ({ t, gap: Math.abs(t.b - s.bore) + Math.abs(t.o - s.od) + Math.abs(t.w - s.width) * .6 })).sort((a, b) => a.gap - b.gap);
+    const hit = near[0].gap <= 2 ? near[0].t : null;
+    const setDim = (key, v) => {
+      const next = Object.assign({ od: s.od, bore: s.bore, width: s.width }, { [key]: v });
+      next.od = clamp(next.od, 30, 64); next.bore = clamp(next.bore, 8, next.od - 10); next.width = clamp(next.width, 6, 26);
+      self.setState(next);
+    };
+    const CHAINS = [{ code: '06B', p: 9.525 }, { code: '08B', p: 12.7 }, { code: '10B', p: 15.875 }, { code: '12B', p: 19.05 }, { code: '16B', p: 25.4 }];
+    const c = CHAINS[s.pitch];
+    const SECTIONS = [{ code: 'A', w: 13 }, { code: 'B', w: 17 }, { code: 'C', w: 22 }];
+    const sec = SECTIONS.slice().sort((a, b) => Math.abs(a.w - s.beltWid) - Math.abs(b.w - s.beltWid))[0];
+    const num = Math.round((s.beltLen - 50) / 25.4);
+    return {
+      tabX: s.tab * 74,
+      tabs: ['Bearing', 'Chain', 'Belt'].map((label, i) => ({ label, on: i === s.tab, pick: () => self.setState({ tab: i }) })),
+      calibrating: s.calibrating, ppm: s.ppm, cardW: (54 * s.ppm).toFixed(1), cardH: (34 * s.ppm).toFixed(1),
+      onPpm: (e) => self.setState({ ppm: Number(e.target.value) }),
+      calLess: () => self.setState({ ppm: Math.max(4, +(s.ppm - .02).toFixed(2)) }), calMore: () => self.setState({ ppm: Math.min(8, +(s.ppm + .02).toFixed(2)) }),
+      calDone: () => { try { localStorage.setItem('ps-ppm', String(s.ppm)); } catch (e) {} self.setState({ calibrating: false }); },
+      recal: () => self.setState({ calibrating: true }),
+      isBearing: !s.calibrating && s.tab === 0, isChain: !s.calibrating && s.tab === 1, isBelt: !s.calibrating && s.tab === 2,
+      bindStage: this.bindStage,
+      tenMm: (10 * s.ppm).toFixed(2), fiveMm: (5 * s.ppm).toFixed(2),
+      rO: (s.od / 2 * s.ppm).toFixed(1), rB: (s.bore / 2 * s.ppm).toFixed(1),
+      stageDown: (e) => {
+        if (!self.stage) return;
+        const r = self.stage.getBoundingClientRect(), d = Math.abs(e.clientX - (r.left + r.width / 2)) ;
+        const dO = Math.abs(d - s.od / 2 * s.ppm), dB = Math.abs(d - s.bore / 2 * s.ppm);
+        self.dragging = dO <= dB ? 'od' : 'bore';
+        e.currentTarget.setPointerCapture(e.pointerId);
+      },
+      stageMove: (e) => {
+        if (!self.dragging || !self.stage) return;
+        const r = self.stage.getBoundingClientRect();
+        const mm = Math.round(Math.abs(e.clientX - (r.left + r.width / 2)) * 2 / self.state.ppm);
+        const cur = self.state;
+        const od = self.dragging === 'od' ? clamp(mm, 30, 64) : cur.od;
+        const bore = self.dragging === 'bore' ? clamp(mm, 8, od - 10) : Math.min(cur.bore, od - 10);
+        if (od !== cur.od || bore !== cur.bore) self.setState({ od, bore });
+      },
+      stageUp: () => { self.dragging = null; },
+      dims: [
+        { name: 'Outside', key: 'od', val: s.od }, { name: 'Hole', key: 'bore', val: s.bore }, { name: 'Thickness', key: 'width', val: s.width }
+      ].map((d) => ({ name: d.name, val: d.val, lessA: d.name + ' one millimetre less', moreA: d.name + ' one millimetre more', less: () => setDim(d.key, d.val - 1), more: () => setDim(d.key, d.val + 1) })),
+      matched: !!hit, matchBg: hit ? '#EEF9F4' : '#F4F6F8',
+      matchTitle: hit ? hit.code + ' family' : 'No exact size yet',
+      matchNote: hit ? hit.b + ' x ' + hit.o + ' x ' + hit.w + ' mm. Comes sealed, shielded or open.' : 'Closest is ' + near[0].t.code + '. Keep adjusting, or send us a photo.',
+      pitchPx: (c.p * s.ppm).toFixed(1), rollerD: (c.p * .62 * s.ppm).toFixed(1), chainH: (c.p * .9 * s.ppm).toFixed(1),
+      chainAria: 'Actual-size chain with ' + c.p + ' millimetre pitch',
+      chains: CHAINS.map((x, i) => ({ code: x.code, on: i === s.pitch, bg: i === s.pitch ? '#10161E' : '#FFFFFF', fg: i === s.pitch ? '#FFFFFF' : '#10161E', border: i === s.pitch ? '#10161E' : 'rgba(16,24,34,.16)', pick: () => self.setState({ pitch: i }) })),
+      chainCode: c.code, chainNote: c.p + ' mm between rollers. Sold by the metre.',
+      beltLen: s.beltLen, beltWid: s.beltWid,
+      lenLess: () => self.setState({ beltLen: Math.max(400, s.beltLen - 25) }), lenMore: () => self.setState({ beltLen: Math.min(4000, s.beltLen + 25) }),
+      widLess: () => self.setState({ beltWid: Math.max(8, s.beltWid - 1) }), widMore: () => self.setState({ beltWid: Math.min(30, s.beltWid + 1) }),
+      beltCode: sec.code + num, beltNote: 'Section ' + sec.code + ', about ' + num + ' inches inside length. Estimate: confirm the number before fitting.'
+    };
+  }
+}
+</script>
+</body>
+</html>

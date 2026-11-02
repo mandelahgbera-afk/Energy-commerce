@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Product page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+body{margin:0;background:#EEF1F4}
+a{color:inherit}
+.card{box-sizing:border-box;padding:22px;background:#FFFFFF;border:1px solid rgba(16,24,34,.07);border-radius:22px;min-width:0}
+.title{margin:0;font-size:18px;font-weight:600;letter-spacing:-.015em}
+.glass{background:rgba(255,255,255,.68);-webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.85);box-shadow:0 1px 2px rgba(16,24,34,.06),0 14px 32px rgba(16,24,34,.11)}
+.press{transition:background .18s,transform .12s,border-color .18s,color .18s}
+.press:active{transform:scale(.97)}
+button:focus-visible,a:focus-visible{outline:2px solid #1B5CF0;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.rise{animation:rise .28s cubic-bezier(.2,.7,.2,1) both}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+.tickdraw{stroke-dasharray:1;animation:draw .32s cubic-bezier(.3,.7,.2,1) both}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin .75s linear infinite}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(27,92,240,.45)}80%{box-shadow:0 0 0 10px rgba(27,92,240,0)}100%{box-shadow:0 0 0 0 rgba(27,92,240,0)}}
+.ping{animation:ping 2.4s ease-out infinite}
+.bar{transition:width .5s cubic-bezier(.25,.8,.25,1)}
+.sumcard{position:sticky;top:84px}
+@media (max-width:820px){.sumcard{position:static}}
+@media (prefers-reduced-motion:reduce){.rise,.tickdraw{animation-duration:.01ms}.spin,.ping{animation:none}.bar{transition:none}}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; padding: 12px clamp(12px, 3vw, 44px) 48px; font-family: Geist, system-ui, -apple-system, 'Segoe UI', sans-serif; color: #10161E; background: radial-gradient(70% 460px at 30% 0, #FFFFFF 0%, rgba(255,255,255,0) 100%), #EEF1F4">
+
+<nav aria-label="Main" class="glass" style="position: sticky; top: 12px; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 12px 9px 20px; border-radius: 18px">
+<a href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 42px; font-weight: 650; font-size: 18px; letter-spacing: -.02em; text-decoration: none">Power Store</a>
+<a href="BagCheckout.dc.html" class="press" style="display: flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 14px; background: #10161E; color: #FFFFFF; border-radius: 12px; font-size: 14.5px; font-weight: 500; text-decoration: none">Bag<span ref="{{bindBag}}" style="display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; background: #FFFFFF; color: #10161E; border-radius: 10px; font-size: 12px; font-weight: 600">{{bag}}</span></a>
+</nav>
+
+<div style="max-width: 1180px; margin: 0 auto; padding-top: 20px">
+<div style="margin: 0 2px 12px; font-size: 14px; color: #434E5A"><a href="Main.dc.html" style="text-decoration: none">Store</a> / <a href="Category.dc.html" style="text-decoration: none">Solar batteries</a></div>
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+<div style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+
+<section aria-label="Product picture" style="position: relative; height: clamp(340px, 40vw, 460px); border-radius: 24px; overflow: hidden; background: radial-gradient(80% 90% at 60% 30%, #FFFFFF 0%, #E9EEF3 55%, #D6DFE8 100%); border: 1px solid rgba(16,24,34,.05)">
+<div style="position: absolute; left: 50%; top: 0; bottom: 0; aspect-ratio: 400 / 420; transform: translateX(-50%)">
+<svg role="img" aria-label="5 kilowatt-hour rack lithium battery" viewBox="0 0 400 420" style="position: absolute; inset: 0; width: 100%; height: 100%">
+<defs>
+<linearGradient id="gph" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4B5561"></stop><stop offset="1" stop-color="#191F27"></stop></linearGradient>
+<filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="11"></feGaussianBlur></filter>
+</defs>
+<ellipse cx="200" cy="386" rx="112" ry="11" filter="url(#soft)" style="fill: rgba(16,24,34,.4)"></ellipse>
+<rect x="150" y="34" width="100" height="26" rx="10" style="fill: none; stroke: #39424D; stroke-width: 9"></rect>
+<rect x="92" y="56" width="216" height="324" rx="18" fill="url(#gph)"></rect>
+<rect x="97" y="60" width="206" height="3" rx="1.5" style="fill: rgba(255,255,255,.22)"></rect>
+<rect x="92" y="160" width="216" height="2" style="fill: rgba(0,0,0,.45)"></rect><rect x="92" y="270" width="216" height="2" style="fill: rgba(0,0,0,.45)"></rect>
+<g style="fill: #63E3B9"><circle cx="122" cy="108" r="4"></circle><circle cx="138" cy="108" r="4"></circle><circle cx="154" cy="108" r="4"></circle><circle cx="170" cy="108" r="4"></circle><circle cx="122" cy="214" r="4"></circle><circle cx="138" cy="214" r="4"></circle><circle cx="154" cy="214" r="4"></circle><circle cx="170" cy="214" r="4"></circle><circle cx="122" cy="324" r="4"></circle><circle cx="138" cy="324" r="4"></circle><circle cx="154" cy="324" r="4"></circle><circle cx="170" cy="324" r="4"></circle></g>
+<g style="fill: #101720"><rect x="248" y="92" width="32" height="32" rx="7"></rect><rect x="248" y="198" width="32" height="32" rx="7"></rect><rect x="248" y="308" width="32" height="32" rx="7"></rect></g>
+</svg>
+<sc-for list="{{spots}}" as="h" hint-placeholder-count="3">
+<button type="button" onClick="{{h.pick}}" aria-expanded="{{h.on}}" aria-label="{{h.label}}" style="position: absolute; left: {{h.x}}%; top: {{h.y}}%; width: 44px; height: 44px; margin: -22px 0 0 -22px; padding: 0; border: 0; border-radius: 50%; background: transparent; cursor: pointer"><span class="ping" aria-hidden="true" style="display: block; width: 14px; height: 14px; margin: 15px; box-sizing: border-box; border: 3px solid #FFFFFF; border-radius: 50%; background: #1B5CF0"></span></button>
+</sc-for>
+</div>
+<sc-if value="{{spotOpen}}" hint-placeholder-val="{{ false }}">
+<div class="glass rise" role="status" style="position: absolute; left: 14px; bottom: 14px; max-width: min(320px, calc(100% - 28px)); padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,.86)"><div style="font-size: 14.5px; font-weight: 600">{{spotTitle}}</div><div style="margin-top: 1px; font-size: 13.5px; line-height: 1.4; color: #434E5A">{{spotBody}}</div></div>
+</sc-if>
+</section>
+
+<section class="card" aria-labelledby="runs">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px 16px">
+<div style="flex: 1 1 240px; min-width: 0"><h2 id="runs" class="title">How long it runs each appliance alone</h2><p style="margin: 3px 0 0; font-size: 14px; line-height: 1.45; color: #55606C">From a full charge, one appliance at a time.</p></div>
+<div role="group" aria-label="How many batteries" style="position: relative; flex: none; display: grid; grid-template-columns: repeat(3, 62px); padding: 3px; background: #E2E6EA; border-radius: 12px">
+<span aria-hidden="true" style="position: absolute; top: 3px; bottom: 3px; left: 3px; width: 62px; background: #FFFFFF; border-radius: 9px; box-shadow: 0 1px 2px rgba(16,24,34,.1), 0 4px 10px rgba(16,24,34,.08); transform: translateX({{packX}}px); transition: transform .3s cubic-bezier(.3,1.25,.5,1)"></span>
+<sc-for list="{{packs}}" as="p" hint-placeholder-count="3"><button type="button" onClick="{{p.pick}}" aria-pressed="{{p.on}}" style="position: relative; height: 44px; border: 0; background: transparent; color: #10161E; font: 500 14px Geist, system-ui, sans-serif; cursor: pointer">{{p.label}}</button></sc-for>
+</div>
+</div>
+<div style="margin-top: 14px; display: flex; flex-direction: column; gap: 9px">
+<sc-for list="{{runs}}" as="r" hint-placeholder-count="6">
+<div style="display: grid; grid-template-columns: minmax(96px, 150px) minmax(0, 1fr); align-items: center; gap: 10px; font-size: 14px">
+<span>{{r.name}}</span>
+<span style="display: flex; align-items: center; gap: 8px; min-width: 0"><span class="bar" style="display: block; flex: none; width: {{r.w}}%; height: 12px; background: #1B5CF0; border-radius: 0 4px 4px 0"></span><b style="flex: none; font-weight: 600; font-variant-numeric: tabular-nums">{{r.h}}</b></span>
+</div>
+</sc-for>
+</div>
+<a href="SizeCalculator.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; margin-top: 6px; font-size: 14.5px; font-weight: 550; color: #1747C7; text-decoration: none">Work out your whole home instead</a>
+</section>
+
+<section class="card" aria-labelledby="plain">
+<h2 id="plain" class="title">In plain words</h2>
+<dl style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 14px 22px; margin: 12px 0 0">
+<div><dt style="font-size: 13.5px; color: #55606C">What you can actually use</dt><dd style="margin: 1px 0 0; font-size: 15px; font-weight: 500">4.5 kWh of its 5 kWh</dd></div>
+<div><dt style="font-size: 13.5px; color: #55606C">Usually lasts</dt><dd style="margin: 1px 0 0; font-size: 15px; font-weight: 500">About 10 years with daily use</dd></div>
+<div><dt style="font-size: 13.5px; color: #55606C">Maintenance</dt><dd style="margin: 1px 0 0; font-size: 15px; font-weight: 500">None. No water top-up.</dd></div>
+<div><dt style="font-size: 13.5px; color: #55606C">Works with</dt><dd style="margin: 1px 0 0; font-size: 15px; font-weight: 500">48 V inverters only</dd></div>
+<div><dt style="font-size: 13.5px; color: #55606C">Weight</dt><dd style="margin: 1px 0 0; font-size: 15px; font-weight: 500">45 kg. Two people to lift.</dd></div>
+<div><dt style="font-size: 13.5px; color: #55606C">Warranty</dt><dd style="margin: 1px 0 0; font-size: 15px; font-weight: 500">5 years, checked by serial number</dd></div>
+</dl>
+</section>
+
+<section class="card" aria-labelledby="rev">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 14px"><h2 id="rev" class="title">From people who bought it</h2><span style="font-size: 13.5px; color: #55606C">Only verified orders can review</span></div>
+<sc-for list="{{reviews}}" as="r" hint-placeholder-count="2">
+<div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #F1F3F5">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 14px; font-weight: 550">{{r.who}}<span style="display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 500; color: #0A6E4B"><svg aria-hidden="true" viewBox="0 0 24 24" width="13" height="13" style="fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round"><path d="M5 12.500 10 17.500 19.500 7"></path></svg><span>{{r.age}}</span></span></div>
+<p style="margin: 3px 0 0; font-size: 14.5px; line-height: 1.5; color: #333C46">{{r.text}}</p>
+</div>
+</sc-for>
+</section>
+</div>
+
+<aside class="glass sumcard" aria-label="Buy this battery" style="flex: 1 1 340px; min-width: 0; box-sizing: border-box; padding: 24px; border-radius: 24px">
+<h1 style="margin: 0; font-size: clamp(24px, 2.4vw, 30px); line-height: 1.1; font-weight: 600; letter-spacing: -.028em">5 kWh lithium battery</h1>
+<div style="margin-top: 4px; font-size: 15px; color: #434E5A">48 V, rack mounted</div>
+<div style="margin-top: 14px; font-size: 32px; font-weight: 600; letter-spacing: -.03em">{{totalShown}}</div>
+<div style="font-size: 13px; color: #434E5A">Price checked today, 9:02 AM. Holds 48 hours on a quote.</div>
+
+<fieldset style="margin: 16px 0 0; padding: 0; border: 0">
+<legend style="padding: 0; margin-bottom: 7px; font-size: 14.5px; font-weight: 550">Where from?</legend>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{branches}}" as="b" hint-placeholder-count="3">
+<button type="button" onClick="{{b.pick}}" aria-pressed="{{b.on}}" class="press" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 52px; padding: 7px 13px; border: 1.5px solid {{b.border}}; border-radius: 13px; background: {{b.bg}}; color: #10161E; text-align: left; font-family: Geist, system-ui, sans-serif; cursor: pointer">
+<span style="min-width: 0"><span style="display: block; font-size: 14.5px; font-weight: 550">{{b.name}}</span><span style="display: block; font-size: 13px; color: #434E5A">{{b.when}}</span></span>
+<span style="flex: none; font-size: 13px; font-weight: 500; color: #0A6E4B">{{b.qty}}</span>
+</button>
+</sc-for>
+</div>
+</fieldset>
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px">
+<span id="qq" style="font-size: 14.5px; font-weight: 550">Quantity</span>
+<div role="group" aria-labelledby="qq" style="display: flex; align-items: center; background: rgba(255,255,255,.74); border-radius: 12px">
+<button type="button" onClick="{{less}}" aria-label="One fewer" class="press" style="width: 44px; height: 44px; border: 0; border-radius: 12px; background: transparent; color: #10161E; font: 400 21px Geist, system-ui, sans-serif; cursor: pointer">−</button>
+<span aria-live="polite" style="width: 30px; text-align: center; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums">{{qty}}</span>
+<button type="button" onClick="{{more}}" aria-label="One more" class="press" style="width: 44px; height: 44px; border: 0; border-radius: 12px; background: transparent; color: #10161E; font: 400 21px Geist, system-ui, sans-serif; cursor: pointer">+</button>
+</div>
+</div>
+
+<button type="button" onClick="{{add}}" disabled="{{adding}}" class="press" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 50px; margin-top: 14px; border: 0; border-radius: 14px; background: {{addBg}}; color: #FFFFFF; font: 550 15.5px Geist, system-ui, sans-serif; cursor: pointer; box-shadow: 0 8px 22px rgba(27,92,240,.24)">
+<sc-if value="{{busy}}" hint-placeholder-val="{{ false }}"><svg class="spin" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" style="fill: none; stroke: #FFFFFF; stroke-width: 2.6; stroke-linecap: round"><path d="M12 3a9 9 0 1 0 9 9"></path></svg></sc-if>
+<sc-if value="{{done}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" style="fill: none; stroke: #FFFFFF; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round"><path class="tickdraw" pathLength="1" d="M5 12.500 10 17.500 19.500 7"></path></svg></sc-if>
+<span>{{addText}}</span></button>
+<a href="#runs" class="press" style="display: flex; align-items: center; justify-content: center; min-height: 46px; margin-top: 8px; border: 1px solid rgba(16,24,34,.14); border-radius: 14px; font-size: 15px; font-weight: 500; text-decoration: none">Ask an engineer about this</a>
+<p style="margin: 12px 2px 0; font-size: 13px; line-height: 1.45; color: #434E5A">Delivery by car or van, advised at checkout from your order's weight. Installation is not included.</p>
+</aside>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1460}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { spot: null, pack: 1, branch: 'Ikeja', qty: 1, add: 'idle', bag: 2, shown: 1950000 };
+    this.bindBag = (el) => { this.bagEl = el; };
+    this.reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+  componentWillUnmount() { (this.timers || []).forEach(clearTimeout); clearTimeout(this.rollT); }
+  later(fn, ms) { (this.timers = this.timers || []).push(setTimeout(fn, ms)); }
+  roll(to) {
+    const from = this.state.shown, start = Date.now();
+    clearTimeout(this.rollT);
+    const step = () => {
+      const p = Math.min(1, (Date.now() - start) / 380);
+      this.setState({ shown: from + (to - from) * (1 - Math.pow(1 - p, 3)) });
+      if (p < 1) this.rollT = setTimeout(step, 16);
+    };
+    step();
+  }
+  renderVals() {
+    const s = this.state, self = this;
+    const money = (n) => '₦' + Math.round(n).toLocaleString('en-NG');
+    const SPOTS = [
+      { id: 'handle', label: 'About the handles', x: 50, y: 11, title: 'Carry handles', body: 'Two people can carry it. It must stay upright when moved.' },
+      { id: 'lights', label: 'About the status lights', x: 36, y: 26, title: 'Status lights', body: 'Show charge at a glance. Four lit means full.' },
+      { id: 'port', label: 'About the connection port', x: 66, y: 49, title: 'Connection port', body: 'Links extra batteries to the same inverter, so you can add more later.' }
+    ];
+    const open = SPOTS.find((x) => x.id === s.spot);
+    const APPS = [['Fridge', 75], ['3 fans', 210], ['TV', 100], ['Laptop', 60], ['Freezer', 100], ['1 HP air conditioner', 630]];
+    const usable = 4.5 * s.pack;
+    const hrs = APPS.map(([n, w]) => usable * 1000 / w);
+    const top = Math.max(...hrs);
+    const BR = [
+      { name: 'Ikeja', when: 'Ready in 2 hours', qty: '11 in stock' },
+      { name: 'Lekki', when: 'Ready in 2 hours', qty: '4 in stock' },
+      { name: 'Warehouse', when: 'At Ikeja by tomorrow', qty: '23 in stock' }
+    ];
+    return {
+      bag: s.bag, bindBag: this.bindBag,
+      spots: SPOTS.map((x) => ({ label: x.label, x: x.x, y: x.y, on: s.spot === x.id, pick: () => self.setState({ spot: s.spot === x.id ? null : x.id }) })),
+      spotOpen: !!open, spotTitle: open ? open.title : '', spotBody: open ? open.body : '',
+      packX: (s.pack - 1) * 62,
+      packs: [1, 2, 3].map((n) => ({ label: n === 1 ? '1 unit' : n + ' units', on: n === s.pack, pick: () => self.setState({ pack: n }) })),
+      runs: APPS.map(([name], i) => ({ name, w: Math.max(2, hrs[i] / top * 72).toFixed(1), h: hrs[i] >= 48 ? Math.round(hrs[i] / 24) + ' days' : Math.round(hrs[i]) + ' hours' })),
+      reviews: [
+        { who: 'Sample buyer, Ikeja', age: 'Verified, 8 months ago', text: 'Runs our fridge and fans through the night. Delivery came with two people who carried it to the store room.' },
+        { who: 'Sample buyer, Abuja', age: 'Verified, 3 months ago', text: 'The warranty page shows the serial and the end date, so I do not need to keep the receipt.' }
+      ],
+      totalShown: money(s.shown),
+      branches: BR.map((b) => ({ name: b.name, when: b.when, qty: b.qty, on: b.name === s.branch, border: b.name === s.branch ? '#1B5CF0' : 'rgba(16,24,34,.1)', bg: b.name === s.branch ? 'rgba(255,255,255,.92)' : 'rgba(255,255,255,.5)', pick: () => self.setState({ branch: b.name }) })),
+      qty: s.qty,
+      less: () => { if (s.qty > 1) { self.setState({ qty: s.qty - 1 }); self.roll((s.qty - 1) * 1950000); } },
+      more: () => { self.setState({ qty: s.qty + 1 }); self.roll((s.qty + 1) * 1950000); },
+      adding: s.add !== 'idle', busy: s.add === 'busy', done: s.add === 'done',
+      addText: s.add === 'busy' ? 'Adding' : (s.add === 'done' ? 'Added to bag' : 'Add to bag'), addBg: s.add === 'done' ? '#0E7A56' : '#1B5CF0',
+      add: () => {
+        self.setState({ add: 'busy' });
+        self.later(() => { self.setState({ add: 'done', bag: self.state.bag + self.state.qty }); if (self.bagEl && self.bagEl.animate && !self.reduced) self.bagEl.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.35)' }, { transform: 'scale(1)' }], { duration: 320, easing: 'cubic-bezier(.3,1.4,.5,1)' }); }, 480);
+        self.later(() => self.setState({ add: 'idle' }), 1800);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

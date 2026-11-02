@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Store home</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+body{margin:0;background:#EEF1F4}
+a{color:inherit}
+.glass{background:rgba(255,255,255,.56);-webkit-backdrop-filter:blur(20px) saturate(150%);backdrop-filter:blur(20px) saturate(150%);border:1px solid rgba(255,255,255,.78);box-shadow:0 1px 2px rgba(16,24,34,.05),0 14px 36px rgba(16,24,34,.09)}
+.lift{transition:transform .28s cubic-bezier(.2,.7,.2,1),box-shadow .28s}
+.lift:hover{transform:translateY(-3px);box-shadow:0 2px 4px rgba(16,24,34,.06),0 22px 46px rgba(16,24,34,.12)}
+.press{transition:background .2s,transform .12s}
+.press:active{transform:scale(.98)}
+.field:focus{outline:2px solid #1B5CF0;outline-offset:1px}
+a:focus-visible,button:focus-visible{outline:2px solid #1B5CF0;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.rise{animation:rise .75s cubic-bezier(.2,.7,.2,1) both}
+.d1{animation-delay:.08s}.d2{animation-delay:.18s}.d3{animation-delay:.3s}
+input::placeholder{color:#5D6874;opacity:1}
+@media (max-width:980px){.nav-links{display:none !important}.nav-search{order:5;flex:1 1 100% !important}.menu-btn{display:flex !important}}
+@media (max-width:980px){.hero-pad{margin-top:-126px !important;padding-top:160px !important}}
+@media (max-width:620px){.hero-pad{padding-left:18px !important;padding-right:18px !important;padding-bottom:92px !important}.chip-a{left:0 !important}.chip-b{right:0 !important}}
+</style>
+</helmet>
+<div style="position: relative; font-family: Geist, system-ui, -apple-system, 'Segoe UI', sans-serif; color: #10161E; background: #EEF1F4; font-variant-numeric: tabular-nums; padding-bottom: 40px">
+
+<svg aria-hidden="true" style="position: absolute; width: 0; height: 0">
+<defs>
+<linearGradient id="wht" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"></stop><stop offset="1" stop-color="#DDE3E9"></stop></linearGradient>
+<linearGradient id="gph" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#454F5B"></stop><stop offset="1" stop-color="#191F27"></stop></linearGradient>
+<linearGradient id="pv" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1D4A86"></stop><stop offset="1" stop-color="#0D2240"></stop></linearGradient>
+<linearGradient id="steel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F7F9FA"></stop><stop offset=".45" stop-color="#AEB7C0"></stop><stop offset=".7" stop-color="#EDF0F3"></stop><stop offset="1" stop-color="#8F99A3"></stop></linearGradient>
+<filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="9"></feGaussianBlur></filter>
+<symbol id="p-inverter" viewBox="0 0 200 290">
+<ellipse cx="100" cy="274" rx="78" ry="9" filter="url(#soft)" style="fill: rgba(16,24,34,.32)"></ellipse>
+<rect x="20" y="8" width="160" height="262" rx="16" fill="url(#wht)" style="stroke: rgba(16,24,34,.1); stroke-width: 1"></rect>
+<rect x="24" y="12" width="152" height="3" rx="1.5" style="fill: rgba(255,255,255,.95)"></rect>
+<rect x="50" y="46" width="100" height="60" rx="7" style="fill: #101720"></rect>
+<rect x="60" y="58" width="42" height="7" rx="2" style="fill: #63E3B9"></rect>
+<rect x="60" y="74" width="72" height="4" rx="2" style="fill: #56677A"></rect>
+<rect x="60" y="85" width="50" height="4" rx="2" style="fill: #56677A"></rect>
+<circle cx="84" cy="124" r="5" style="fill: #C4CCD4"></circle><circle cx="100" cy="124" r="5" style="fill: #C4CCD4"></circle><circle cx="116" cy="124" r="5" style="fill: #1B5CF0"></circle>
+<g style="fill: #C9D0D7"><rect x="50" y="196" width="100" height="3" rx="1.5"></rect><rect x="50" y="206" width="100" height="3" rx="1.5"></rect><rect x="50" y="216" width="100" height="3" rx="1.5"></rect><rect x="50" y="226" width="100" height="3" rx="1.5"></rect><rect x="50" y="236" width="100" height="3" rx="1.5"></rect></g>
+</symbol>
+<symbol id="p-lithium" viewBox="0 0 200 290">
+<ellipse cx="100" cy="274" rx="80" ry="9" filter="url(#soft)" style="fill: rgba(16,24,34,.38)"></ellipse>
+<rect x="18" y="34" width="164" height="236" rx="14" fill="url(#gph)"></rect>
+<rect x="66" y="16" width="68" height="20" rx="8" style="fill: none; stroke: #39424D; stroke-width: 7"></rect>
+<rect x="22" y="38" width="156" height="2.5" rx="1" style="fill: rgba(255,255,255,.2)"></rect>
+<rect x="18" y="112" width="164" height="1.5" style="fill: rgba(0,0,0,.45)"></rect><rect x="18" y="192" width="164" height="1.5" style="fill: rgba(0,0,0,.45)"></rect>
+<g style="fill: #63E3B9"><circle cx="40" cy="74" r="3"></circle><circle cx="52" cy="74" r="3"></circle><circle cx="64" cy="74" r="3"></circle><circle cx="76" cy="74" r="3"></circle></g>
+<g style="fill: #63E3B9"><circle cx="40" cy="152" r="3"></circle><circle cx="52" cy="152" r="3"></circle><circle cx="64" cy="152" r="3"></circle><circle cx="76" cy="152" r="3"></circle></g>
+<g style="fill: #63E3B9"><circle cx="40" cy="232" r="3"></circle><circle cx="52" cy="232" r="3"></circle><circle cx="64" cy="232" r="3"></circle><circle cx="76" cy="232" r="3"></circle></g>
+<g style="fill: #101720"><rect x="138" y="62" width="24" height="24" rx="5"></rect><rect x="138" y="140" width="24" height="24" rx="5"></rect><rect x="138" y="220" width="24" height="24" rx="5"></rect></g>
+</symbol>
+<symbol id="p-panel" viewBox="0 0 240 200">
+<path d="M44 14 L222 34 L202 176 L14 156 Z" filter="url(#soft)" transform="translate(0 12)" style="fill: rgba(16,24,34,.24)"></path>
+<path d="M44 14 L222 34 L202 176 L14 156 Z" style="fill: #D5DBE1"></path>
+<path d="M49 20 L216 39 L197 170 L21 151 Z" fill="url(#pv)"></path>
+<g style="fill: none; stroke: rgba(190,215,245,.32); stroke-width: 1">
+<path d="M82.400 23.800 L56.200 154.800"></path><path d="M115.800 27.600 L91.400 158.600"></path><path d="M149.200 31.400 L126.600 162.400"></path><path d="M182.600 35.200 L161.800 166.200"></path>
+<path d="M41.500 46.200 L212.200 65.200"></path><path d="M34 72.400 L208.400 91.400"></path><path d="M28.500 98.600 L204.600 117.600"></path><path d="M24.800 124.800 L200.800 143.800"></path>
+</g>
+<path d="M49 20 L120 28 L70 156 L21 151 Z" style="fill: rgba(255,255,255,.07)"></path>
+</symbol>
+<symbol id="p-car" viewBox="0 0 200 170">
+<ellipse cx="100" cy="156" rx="84" ry="7" filter="url(#soft)" style="fill: rgba(16,24,34,.34)"></ellipse>
+<rect x="40" y="10" width="24" height="16" rx="3" style="fill: #B0453B"></rect><rect x="136" y="10" width="24" height="16" rx="3" style="fill: #2A313A"></rect>
+<rect x="14" y="24" width="172" height="22" rx="7" style="fill: #3D4651"></rect>
+<rect x="20" y="42" width="160" height="108" rx="9" fill="url(#gph)"></rect>
+<rect x="46" y="70" width="108" height="50" rx="7" style="fill: #E9EEF2"></rect>
+<rect x="58" y="82" width="52" height="6" rx="3" style="fill: #10161E"></rect><rect x="58" y="96" width="84" height="4" rx="2" style="fill: #8E99A4"></rect><rect x="58" y="105" width="62" height="4" rx="2" style="fill: #8E99A4"></rect>
+</symbol>
+<symbol id="p-bearing" viewBox="0 0 200 200">
+<ellipse cx="100" cy="188" rx="72" ry="7" filter="url(#soft)" style="fill: rgba(16,24,34,.28)"></ellipse>
+<path d="M100 8 a90 90 0 1 0 .01 0 Z M100 34 a66 66 0 1 1 -.01 0 Z" fill="url(#steel)" style="fill-rule: evenodd"></path>
+<path d="M100 34 a66 66 0 1 0 .01 0 Z M100 58 a42 42 0 1 1 -.01 0 Z" style="fill: #1E252D; fill-rule: evenodd"></path>
+<path d="M100 58 a42 42 0 1 0 .01 0 Z M100 74 a26 26 0 1 1 -.01 0 Z" fill="url(#steel)" style="fill-rule: evenodd"></path>
+<circle cx="100" cy="98" r="54" style="fill: none; stroke: rgba(255,255,255,.08); stroke-width: 1"></circle>
+</symbol>
+<symbol id="p-belt" viewBox="0 0 200 200">
+<ellipse cx="100" cy="182" rx="76" ry="7" filter="url(#soft)" style="fill: rgba(16,24,34,.24)"></ellipse>
+<g transform="rotate(-16 100 96)">
+<ellipse cx="100" cy="96" rx="82" ry="58" style="fill: none; stroke: #1B2129; stroke-width: 15"></ellipse>
+<ellipse cx="100" cy="96" rx="82" ry="58" style="fill: none; stroke: #49535F; stroke-width: 2; stroke-dasharray: 3 7"></ellipse>
+</g>
+</symbol>
+</defs>
+</svg>
+
+<nav aria-label="Main" class="glass" style="position: sticky; top: 12px; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; margin: 12px clamp(12px, 3vw, 44px) 0; padding: 9px 12px 9px 20px; border-radius: 18px">
+<a href="#top" style="display: inline-flex; align-items: center; min-height: 42px; font-weight: 650; font-size: 18px; letter-spacing: -.02em; text-decoration: none">Power Store</a>
+<div class="nav-links" style="display: flex; gap: 20px; font-size: 14.5px; font-weight: 500">
+<a href="SizeCalculator.dc.html" style="text-decoration: none; padding: 10px 0">Solar and inverters</a>
+<a href="Category.dc.html" style="text-decoration: none; padding: 10px 0">Batteries</a>
+<a href="PartPage.dc.html" style="text-decoration: none; padding: 10px 0">Bearings and belts</a>
+<a href="Urgent.dc.html" style="text-decoration: none; padding: 10px 0">Machine stopped?</a>
+</div>
+<div class="nav-search" style="position: relative; flex: 1 1 220px; min-width: 0">
+<label for="q" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%)">Search the store</label>
+<input id="q" class="field" type="search" role="combobox" aria-expanded="{{searchOpen}}" aria-controls="q-list" autocomplete="off" value="{{query}}" onChange="{{onQuery}}" onFocus="{{queryFocus}}" onBlur="{{queryBlur}}" onKeyDown="{{queryKey}}" placeholder="Search name, part number or size" style="width: 100%; box-sizing: border-box; height: 42px; padding: 0 16px; border: 1px solid rgba(16,24,34,.12); border-radius: 12px; background: rgba(255,255,255,.72); color: #10161E; font: 400 14.5px Geist, system-ui, sans-serif">
+<sc-if value="{{searchOpen}}" hint-placeholder-val="{{ false }}">
+<div id="q-list" role="listbox" aria-label="Search results" class="rise" style="position: absolute; left: 0; right: 0; top: 48px; z-index: 40; box-sizing: border-box; padding: 6px; border-radius: 16px; background: rgba(255,255,255,.96); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); border: 1px solid rgba(16,24,34,.08); box-shadow: 0 2px 4px rgba(16,24,34,.06), 0 18px 40px rgba(16,24,34,.16); animation-duration: .18s">
+<sc-for list="{{results}}" as="r" hint-placeholder-count="3">
+<a href="{{r.href}}" role="option" aria-selected="{{r.on}}" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding: 6px 10px; border-radius: 11px; background: {{r.bg}}; text-decoration: none">
+<span style="min-width: 0"><span style="display: block; font-size: 14.5px; font-weight: 500">{{r.name}}</span><span style="display: block; font-size: 13px; color: #55606C">{{r.note}}</span></span>
+<span style="flex: none; text-align: right; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums">{{r.price}}</span>
+</a>
+</sc-for>
+<sc-if value="{{noResults}}" hint-placeholder-val="{{ false }}"><div style="padding: 10px; font-size: 14.5px; font-weight: 500">No match for that</div></sc-if>
+<div style="display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 4px 2px; border-top: 1px solid #F1F3F5">
+<a href="MeasurePart.dc.html" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 8px; font-size: 13.5px; font-weight: 550; color: #1747C7; text-decoration: none">Measure an old part</a>
+<a href="PasteList.dc.html" style="display: inline-flex; align-items: center; min-height: 40px; padding: 0 8px; font-size: 13.5px; font-weight: 550; color: #1747C7; text-decoration: none">Paste a parts list</a>
+</div>
+</div>
+</sc-if>
+</div>
+<a href="MyAccount.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; margin-left: auto; font-size: 14.5px; font-weight: 500; text-decoration: none">Account</a>
+<a href="BagCheckout.dc.html" class="press" style="display: flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 14px; background: #10161E; color: #FFFFFF; border-radius: 12px; font-size: 14.5px; font-weight: 500; text-decoration: none">Bag<span style="display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; background: #FFFFFF; color: #10161E; border-radius: 10px; font-size: 12px; font-weight: 600">{{bag}}</span></a>
+</nav>
+
+<section id="top" class="hero-pad" style="position: relative; margin: -66px 0 0; padding: 124px clamp(22px, 5vw, 72px) 110px; border-radius: 0 0 32px 32px; background: radial-gradient(90% 110% at 76% 34%, #FFFFFF 0%, #E9EEF3 46%, #D3DDE6 100%); overflow: hidden">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr)); gap: 28px; align-items: center; max-width: 1220px; margin: 0 auto">
+<div>
+<h1 class="rise" style="margin: 0; font-size: clamp(38px, 5vw, 66px); line-height: 1.03; font-weight: 600; letter-spacing: -.035em; text-wrap: balance">Solar, batteries and industrial parts, done properly.</h1>
+<p class="rise d1" style="margin: 20px 0 0; max-width: 500px; font-size: clamp(16.5px, 1.5vw, 19px); line-height: 1.5; color: #434E5A; text-wrap: pretty">See real stock and today's price. Work out the right system in two minutes. Check any warranty by its serial number.</p>
+<div class="rise d2" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px">
+<a href="SizeCalculator.dc.html" class="press" style="display: inline-flex; align-items: center; min-height: 50px; padding: 0 24px; background: #1B5CF0; color: #FFFFFF; border-radius: 14px; font-size: 16px; font-weight: 550; text-decoration: none; box-shadow: 0 8px 22px rgba(27,92,240,.28)">Work out my system</a>
+<a href="PartPage.dc.html" class="press glass" style="display: inline-flex; align-items: center; min-height: 50px; padding: 0 24px; border-radius: 14px; font-size: 16px; font-weight: 550; text-decoration: none">Find a part</a>
+</div>
+</div>
+
+<div class="rise d2" style="position: relative; height: clamp(360px, 40vw, 500px); min-width: 0">
+<svg role="img" aria-label="A hybrid inverter beside a lithium battery" viewBox="0 0 520 500" style="position: absolute; inset: 0; width: 100%; height: 100%">
+<use href="#p-lithium" x="238" y="62" width="250" height="363"></use>
+<use href="#p-inverter" x="48" y="48" width="262" height="380"></use>
+</svg>
+<div class="glass chip-a" style="position: absolute; left: 2%; top: 7%; padding: 11px 15px; border-radius: 14px">
+<div style="display: flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 600"><span aria-hidden="true" style="width: 7px; height: 7px; border-radius: 50%; background: #0D9465"></span>In stock, Ikeja</div>
+<div style="margin-top: 2px; font-size: 13px; color: #434E5A">Ready for pickup today</div>
+</div>
+<div class="glass chip-b" style="position: absolute; right: 0; bottom: 3%; padding: 13px 16px; border-radius: 16px; min-width: 190px; background: rgba(255,255,255,.84)">
+<div style="font-size: 13px; color: #434E5A">5 kVA hybrid inverter</div>
+<div style="margin-top: 1px; font-size: 21px; font-weight: 600; letter-spacing: -.02em">₦1,450,000</div>
+<div style="margin-top: 2px; font-size: 12.5px; color: #434E5A">Price checked today, 9:02 AM</div>
+</div>
+</div>
+</div>
+</section>
+
+<section id="finders" aria-label="Find what you need" style="position: relative; z-index: 2; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 14px; max-width: 1220px; margin: -66px auto 0; padding: 0 clamp(14px, 3vw, 24px)">
+<a href="SizeCalculator.dc.html" class="glass lift" style="display: flex; flex-direction: column; gap: 6px; padding: 22px; border-radius: 22px; text-decoration: none">
+<span style="font-size: 19px; font-weight: 600; letter-spacing: -.015em">Work out my system</span>
+<span style="font-size: 14.5px; line-height: 1.45; color: #434E5A">List your appliances. Get the right inverter, battery and panels, with today's prices.</span>
+<span style="margin-top: auto; padding-top: 12px; font-size: 14.5px; font-weight: 550; color: #1747C7">Open the calculator</span>
+</a>
+<div class="glass" style="display: flex; flex-direction: column; gap: 6px; padding: 22px; border-radius: 22px">
+<label for="car" style="font-size: 19px; font-weight: 600; letter-spacing: -.015em">Find a car battery</label>
+<span style="font-size: 14.5px; line-height: 1.45; color: #434E5A">Type your car. See what fits and what is ready today.</span>
+<div style="display: flex; gap: 8px; margin-top: auto; padding-top: 12px">
+<input id="car" class="field" type="text" placeholder="2012 Toyota Camry" style="flex: 1; min-width: 0; height: 44px; box-sizing: border-box; padding: 0 14px; border: 1px solid rgba(16,24,34,.14); border-radius: 12px; background: rgba(255,255,255,.75); font: 400 14.5px Geist, system-ui, sans-serif; color: #10161E">
+<a href="CarFinder.dc.html" class="press" style="display: inline-flex; align-items: center; flex: none; height: 44px; padding: 0 16px; border-radius: 12px; background: #10161E; color: #FFFFFF; font-size: 14.5px; font-weight: 500; text-decoration: none">Find</a>
+</div>
+</div>
+<div class="glass" style="display: flex; flex-direction: column; gap: 6px; padding: 22px; border-radius: 22px">
+<label for="part" style="font-size: 19px; font-weight: 600; letter-spacing: -.015em">Find a part</label>
+<span style="font-size: 14.5px; line-height: 1.45; color: #434E5A">Bearings, belts and chains. <a href="MeasurePart.dc.html" style="color: #1747C7; font-weight: 550">Measure the old one</a> or <a href="PasteList.dc.html" style="color: #1747C7; font-weight: 550">paste a list</a>.</span>
+<div style="display: flex; gap: 8px; margin-top: auto; padding-top: 12px">
+<input id="part" class="field" type="text" placeholder="6205-2RS or 25 x 52 x 15" style="flex: 1; min-width: 0; height: 44px; box-sizing: border-box; padding: 0 14px; border: 1px solid rgba(16,24,34,.14); border-radius: 12px; background: rgba(255,255,255,.75); font: 400 14px 'Geist Mono', monospace; color: #10161E">
+<a href="PartPage.dc.html" class="press" style="display: inline-flex; align-items: center; flex: none; height: 44px; padding: 0 16px; border-radius: 12px; background: #10161E; color: #FFFFFF; font-size: 14.5px; font-weight: 500; text-decoration: none">Find</a>
+</div>
+</div>
+</section>
+
+<section id="shop" style="max-width: 1220px; margin: 0 auto; padding: 52px clamp(14px, 3vw, 24px) 0">
+<h2 style="margin: 0 0 16px; font-size: 26px; font-weight: 600; letter-spacing: -.025em">Shop by category</h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 12px">
+<sc-for list="{{cats}}" as="c" hint-placeholder-count="6">
+<a href="{{c.href}}" class="lift" style="display: flex; flex-direction: column; gap: 10px; padding: 16px; background: #FFFFFF; border: 1px solid rgba(16,24,34,.07); border-radius: 18px; text-decoration: none">
+<svg aria-hidden="true" viewBox="{{c.box}}" style="display: block; width: 100%; height: 104px"><use href="{{c.sym}}" x="0" y="0" width="{{c.w}}" height="{{c.h}}"></use></svg>
+<span style="font-size: 15px; font-weight: 550; letter-spacing: -.01em">{{c.name}}</span>
+</a>
+</sc-for>
+</div>
+</section>
+
+<section style="max-width: 1220px; margin: 0 auto; padding: 44px clamp(14px, 3vw, 24px) 0">
+<h2 style="margin: 0 0 16px; font-size: 26px; font-weight: 600; letter-spacing: -.025em">In stock now</h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 12px">
+<sc-for list="{{items}}" as="p" hint-placeholder-count="4">
+<article class="lift" style="display: flex; flex-direction: column; padding: 14px; background: #FFFFFF; border: 1px solid rgba(16,24,34,.07); border-radius: 20px">
+<div style="display: flex; align-items: center; justify-content: center; height: 190px; border-radius: 14px; background: linear-gradient(160deg, #F6F8FA, #E6EBF0)">
+<svg aria-hidden="true" viewBox="{{p.box}}" style="display: block; width: 74%; height: 160px"><use href="{{p.sym}}" x="0" y="0" width="{{p.w}}" height="{{p.h}}"></use></svg>
+</div>
+<h3 style="margin: 14px 2px 0; font-size: 16px; font-weight: 550; letter-spacing: -.012em"><a href="{{p.href}}" style="text-decoration: none">{{p.name}}</a></h3>
+<div style="margin: 3px 2px 0; font-size: 13.5px; color: #434E5A">{{p.spec}}</div>
+<div style="display: flex; align-items: center; gap: 6px; margin: 8px 2px 0; font-size: 13px; font-weight: 500; color: #0A6E4B"><span aria-hidden="true" style="width: 6px; height: 6px; border-radius: 50%; background: #0D9465"></span>{{p.stock}}</div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 12px 2px 0">
+<span style="font-size: 18px; font-weight: 600; letter-spacing: -.02em">{{p.price}}</span>
+<button type="button" onClick="{{p.add}}" class="press" style="min-height: 44px; padding: 0 16px; border: 1px solid rgba(16,24,34,.16); border-radius: 12px; background: #FFFFFF; color: #10161E; font: 500 14.5px Geist, system-ui, sans-serif; cursor: pointer">Add</button>
+</div>
+</article>
+</sc-for>
+</div>
+</section>
+
+<section aria-label="What you get" style="max-width: 1220px; margin: 0 auto; padding: 44px clamp(14px, 3vw, 24px) 0">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 12px">
+<div style="padding: 20px 22px; background: #FFFFFF; border: 1px solid rgba(16,24,34,.07); border-radius: 18px"><b style="display: block; font-size: 15.5px; font-weight: 600">Today's price, with the time on it</b><span style="display: block; margin-top: 4px; font-size: 14.5px; line-height: 1.45; color: #434E5A">Quotes hold their price until the date shown.</span></div>
+<div style="padding: 20px 22px; background: #FFFFFF; border: 1px solid rgba(16,24,34,.07); border-radius: 18px"><b style="display: block; font-size: 15.5px; font-weight: 600">Warranty by serial number</b><span style="display: block; margin-top: 4px; font-size: 14.5px; line-height: 1.45; color: #434E5A">Check if a unit is genuine and how long it has left.</span></div>
+<div style="padding: 20px 22px; background: #FFFFFF; border: 1px solid rgba(16,24,34,.07); border-radius: 18px"><b style="display: block; font-size: 15.5px; font-weight: 600">Big orders, paid in parts</b><span style="display: block; margin-top: 4px; font-size: 14.5px; line-height: 1.45; color: #434E5A">Transfer over several days and see your balance update.</span></div>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1780}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { bag: 2, query: '', searching: false, active: 0 };
+  }
+  componentWillUnmount() { clearTimeout(this.blurT); }
+  renderVals() {
+    const self = this, s = this.state;
+    const add = () => this.setState({ bag: this.state.bag + 1 });
+    const INDEX = [
+      { name: '6205-2RS bearing', note: 'Sealed, 25 x 52 x 15 mm. 48 in Ikeja.', price: '₦4,800', key: '62052RS 25 52 15 BEARING SEALED', href: 'PartPage.dc.html' },
+      { name: '6205-ZZ bearing', note: 'Shielded, 25 x 52 x 15 mm. 30 in Ikeja.', price: '₦4,300', key: '6205ZZ 25 52 15 BEARING SHIELDED', href: 'PartPage.dc.html' },
+      { name: '6204-2RS bearing', note: 'Sealed, 20 x 47 x 14 mm. 8 in Ikeja.', price: '₦3,900', key: '62042RS 20 47 14 BEARING SEALED', href: 'PartPage.dc.html' },
+      { name: 'A42 V-belt', note: 'Section A, 42 inch. 15 in Ikeja.', price: '₦3,200', key: 'A42 VBELT BELT', href: 'PasteList.dc.html' },
+      { name: '10B roller chain', note: 'Per metre. 40 m in warehouse.', price: '₦9,500', key: '10B CHAIN ROLLER', href: 'PasteList.dc.html' },
+      { name: '5 kWh lithium battery', note: '48 V. 11 in Ikeja, 4 in Lekki.', price: '₦1,950,000', key: '5KWH LITHIUM BATTERY SOLAR 48V', href: 'ProductPage.dc.html' },
+      { name: '200Ah tubular battery', note: '12 V. 14 in Ikeja.', price: '₦420,000', key: '200AH TUBULAR BATTERY SOLAR 12V', href: 'Category.dc.html' },
+      { name: '5 kVA hybrid inverter', note: '48 V. 6 in Ikeja.', price: '₦1,450,000', key: '5KVA HYBRID INVERTER 48V', href: 'SizeCalculator.dc.html' },
+      { name: '550 W solar panel', note: 'Mono. 64 in warehouse.', price: '₦165,000', key: '550W SOLAR PANEL MONO', href: 'SizeCalculator.dc.html' },
+      { name: 'Car battery finder', note: 'Type your car to see what fits.', price: '', key: 'CAR BATTERY CAMRY COROLLA ACCORD TOYOTA HONDA', href: 'CarFinder.dc.html' }
+    ];
+    const norm = (t) => String(t).toUpperCase().replace(/[^A-Z0-9 ]/g, '').trim();
+    const q = norm(s.query), compact = q.replace(/ /g, '');
+    const hits = !q ? [] : INDEX.filter((x) => {
+      if (x.key.includes(q) || x.key.includes(compact)) return true;
+      return q.split(' ').every((w) => w && x.key.includes(w));
+    }).slice(0, 5);
+    const active = Math.min(s.active, Math.max(0, hits.length - 1));
+    const open = s.searching && !!q;
+    return {
+      bag: this.state.bag,
+      query: s.query, searchOpen: open, noResults: open && hits.length === 0,
+      onQuery: (e) => self.setState({ query: e.target.value, searching: true, active: 0 }),
+      queryFocus: () => { clearTimeout(self.blurT); self.setState({ searching: true }); },
+      queryBlur: () => { self.blurT = setTimeout(() => self.setState({ searching: false }), 180); },
+      queryKey: (e) => {
+        if (e.key === 'Escape') { self.setState({ searching: false }); return; }
+        if (!open || !hits.length) return;
+        if (e.key === 'ArrowDown') { e.preventDefault(); self.setState({ active: (active + 1) % hits.length }); }
+        if (e.key === 'ArrowUp') { e.preventDefault(); self.setState({ active: (active - 1 + hits.length) % hits.length }); }
+        if (e.key === 'Enter') { e.preventDefault(); const links = e.currentTarget.parentElement.querySelectorAll('[role=option]'); if (links[active]) links[active].click(); }
+      },
+      results: hits.map((x, i) => ({ name: x.name, note: x.note, price: x.price, href: x.href, on: i === active, bg: i === active ? '#F1F4F8' : 'transparent' })),
+      cats: [
+        { name: 'Solar panels', sym: '#p-panel', box: '0 0 240 200', w: 240, h: 200, href: 'SizeCalculator.dc.html' },
+        { name: 'Inverters', sym: '#p-inverter', box: '0 0 200 290', w: 200, h: 290, href: 'SizeCalculator.dc.html' },
+        { name: 'Solar batteries', sym: '#p-lithium', box: '0 0 200 290', w: 200, h: 290, href: 'Category.dc.html' },
+        { name: 'Car batteries', sym: '#p-car', box: '0 0 200 170', w: 200, h: 170, href: 'CarFinder.dc.html' },
+        { name: 'Bearings', sym: '#p-bearing', box: '0 0 200 200', w: 200, h: 200, href: 'PartPage.dc.html' },
+        { name: 'Belts and chains', sym: '#p-belt', box: '0 0 200 200', w: 200, h: 200, href: 'MeasurePart.dc.html' }
+      ],
+      items: [
+        { name: '5 kVA hybrid inverter', spec: '48 V, single phase', stock: '6 in Ikeja', price: '₦1,450,000', sym: '#p-inverter', box: '0 0 200 290', w: 200, h: 290, href: 'SizeCalculator.dc.html', add },
+        { name: '5 kWh lithium battery', spec: '48 V, rack mounted', stock: '11 in Ikeja, 4 in Lekki', price: '₦1,950,000', sym: '#p-lithium', box: '0 0 200 290', w: 200, h: 290, href: 'ProductPage.dc.html', add },
+        { name: '550 W solar panel', spec: 'Mono, 2.3 m long', stock: '64 in warehouse', price: '₦165,000', sym: '#p-panel', box: '0 0 240 200', w: 240, h: 200, href: 'SizeCalculator.dc.html', add },
+        { name: '6205-2RS bearing', spec: '25 x 52 x 15 mm, sealed', stock: '48 in Ikeja', price: '₦4,800', sym: '#p-bearing', box: '0 0 200 200', w: 200, h: 200, href: 'PartPage.dc.html', add }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

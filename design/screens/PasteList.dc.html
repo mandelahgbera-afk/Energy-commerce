@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Order from a list</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+body{margin:0;background:#EEF1F4}
+a{color:inherit}
+.glass{background:rgba(255,255,255,.68);-webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.85);box-shadow:0 1px 2px rgba(16,24,34,.06),0 14px 32px rgba(16,24,34,.11)}
+.card{box-sizing:border-box;padding:20px;background:#FFFFFF;border:1px solid rgba(16,24,34,.07);border-radius:22px;min-width:0}
+.press{transition:background .18s,transform .12s,border-color .18s,color .18s}
+.press:active{transform:scale(.97)}
+button:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid #1B5CF0;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.rise{animation:rise .22s cubic-bezier(.2,.7,.2,1) both}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+.tickdraw{stroke-dasharray:1;animation:draw .32s cubic-bezier(.3,.7,.2,1) both}
+.sumcard{position:sticky;top:84px}
+@media (max-width:860px){.sumcard{position:static}}
+@media (prefers-reduced-motion:reduce){.rise,.tickdraw{animation-duration:.01ms}}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; padding: 12px clamp(12px, 3vw, 44px) 48px; font-family: Geist, system-ui, -apple-system, 'Segoe UI', sans-serif; color: #10161E; background: radial-gradient(70% 420px at 30% 0, #FFFFFF 0%, rgba(255,255,255,0) 100%), #EEF1F4">
+<nav aria-label="Main" class="glass" style="position: sticky; top: 12px; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 12px 9px 20px; border-radius: 18px">
+<a href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 42px; font-weight: 650; font-size: 18px; letter-spacing: -.02em; text-decoration: none">Power Store</a>
+<a href="BagCheckout.dc.html" class="press" style="display: flex; align-items: center; min-height: 42px; padding: 0 14px; background: #10161E; color: #FFFFFF; border-radius: 12px; font-size: 14.5px; font-weight: 500; text-decoration: none">Bag</a>
+</nav>
+
+<div style="max-width: 1180px; margin: 0 auto; padding-top: 26px">
+<h1 style="margin: 0; font-size: clamp(30px, 3.6vw, 42px); line-height: 1.06; font-weight: 600; letter-spacing: -.032em">Order from a list</h1>
+<p style="margin: 8px 0 18px; max-width: 620px; font-size: 16.5px; line-height: 1.5; color: #434E5A">Paste your parts list, the way you would send it on WhatsApp. We price it as you type.</p>
+
+<div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start">
+<div style="flex: 1 1 340px; min-width: 0">
+<div class="card">
+<label for="list" style="display: block; margin-bottom: 8px; font-size: 15px; font-weight: 600">Your list</label>
+<textarea id="list" value="{{list}}" onChange="{{onList}}" rows="9" spellcheck="false" style="width: 100%; box-sizing: border-box; padding: 12px 14px; border: 1px solid rgba(16,24,34,.16); border-radius: 14px; background: #FBFCFC; color: #10161E; font: 400 15px/1.55 'Geist Mono', monospace; resize: vertical"></textarea>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px">
+<button type="button" onClick="{{useMachine}}" class="press" style="min-height: 44px; padding: 0 14px; border: 1px solid rgba(16,24,34,.16); border-radius: 12px; background: #FFFFFF; color: #10161E; font: 500 14px Geist, system-ui, sans-serif; cursor: pointer">Use Line 2's parts</button>
+<button type="button" onClick="{{clearList}}" class="press" style="min-height: 44px; padding: 0 14px; border: 1px solid rgba(16,24,34,.16); border-radius: 12px; background: #FFFFFF; color: #10161E; font: 500 14px Geist, system-ui, sans-serif; cursor: pointer">Clear</button>
+<a href="#send-photo" class="press" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid rgba(16,24,34,.16); border-radius: 12px; font-size: 14px; font-weight: 500; text-decoration: none">Send a photo of the list</a>
+</div>
+</div>
+</div>
+
+<div style="flex: 2 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+<section class="card" aria-label="What we found" style="padding: 8px 20px 10px">
+<sc-if value="{{empty}}" hint-placeholder-val="{{ false }}"><div class="rise" style="padding: 24px 0; text-align: center; font-size: 15px; color: #55606C">Your priced list appears here as you type.</div></sc-if>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+<div class="rise" style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 11px 0; border-bottom: 1px solid #F1F3F5">
+<div style="flex: 1 1 200px; min-width: 0">
+<div style="display: flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 500"><span aria-hidden="true" style="flex: none; display: flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: {{r.dot}}"><svg viewBox="0 0 24 24" width="12" height="12" style="fill: none; stroke: #FFFFFF; stroke-width: 3.4; stroke-linecap: round; stroke-linejoin: round"><path d="{{r.icon}}"></path></svg></span><span style="font-family: 'Geist Mono', monospace">{{r.title}}</span></div>
+<div style="margin: 2px 0 0 25px; font-size: 13.5px; line-height: 1.35; color: {{r.noteColor}}">{{r.note}}</div>
+<sc-if value="{{r.ask}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-wrap: wrap; gap: 5px; margin: 7px 0 0 25px"><sc-for list="{{r.choices}}" as="c" hint-placeholder-count="3"><button type="button" onClick="{{c.pick}}" aria-pressed="{{c.on}}" class="press" style="min-height: 44px; padding: 0 11px; border: 1px solid {{c.border}}; border-radius: 10px; background: {{c.bg}}; color: {{c.fg}}; font: 500 13px 'Geist Mono', monospace; cursor: pointer">{{c.code}}</button></sc-for></div></sc-if>
+</div>
+<div style="flex: none; text-align: right; font-variant-numeric: tabular-nums"><div style="font-size: 13.5px; color: #55606C">{{r.qtyText}}</div><div style="font-size: 15.5px; font-weight: 600">{{r.total}}</div></div>
+</div>
+</sc-for>
+</section>
+
+<section class="glass sumcard" aria-label="List total" style="padding: 18px; border-radius: 22px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px">
+<div style="min-width: 0"><div style="font-size: 13.5px; color: #434E5A" aria-live="polite">{{summary}}</div><div style="font-size: 28px; font-weight: 600; letter-spacing: -.028em">{{total}}</div></div>
+<button type="button" onClick="{{add}}" disabled="{{cantAdd}}" class="press" style="flex: 1 1 200px; display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 52px; border: 0; border-radius: 14px; background: {{addBg}}; color: #FFFFFF; font: 550 15.5px Geist, system-ui, sans-serif; cursor: pointer">
+<sc-if value="{{added}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" style="fill: none; stroke: #FFFFFF; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round"><path class="tickdraw" pathLength="1" d="M5 12.500 10 17.500 19.500 7"></path></svg></sc-if>
+<span>{{addText}}</span></button>
+</div>
+<p style="margin: 8px 0 0; font-size: 13px; line-height: 1.4; color: #434E5A">{{footnote}}</p>
+</section>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { list: '6205-2rs x 20\nA42 - 6\nbearing 6204 2rs 10\n6205 x 4\n10B chain 5m\nXYZ-991 x 2', picks: {}, added: false };
+  }
+  componentWillUnmount() { clearTimeout(this.t); }
+  renderVals() {
+    const s = this.state, self = this;
+    const money = (n) => '₦' + Math.round(n).toLocaleString('en-NG');
+    const PARTS = [
+      { code: '6205-2RS', note: 'Bearing, sealed', price: 4800, qty: 48 },
+      { code: '6205-ZZ', note: 'Bearing, shielded', price: 4300, qty: 30 },
+      { code: '6205', note: 'Bearing, open', price: 3900, qty: 12 },
+      { code: '6204-2RS', note: 'Bearing, sealed', price: 3900, qty: 8 },
+      { code: 'A42', note: 'V-belt, section A', price: 3200, qty: 15 },
+      { code: '10B-1', note: 'Roller chain, per metre', price: 9500, qty: 40, unit: 'm' }
+    ];
+    const norm = (t) => String(t).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const parse = (line) => {
+      let rest = line.replace(/\b(bearing|bearings|belt|belts|v-belt|chain|chains|pcs|pc|pieces|units?)\b/gi, ' ').trim();
+      let qty = 1, unit = '';
+      let m = rest.match(/(?:[x×*-]\s*)(\d+)\s*(m)?\s*$/i) || rest.match(/\s(\d+)\s*(m)?\s*$/i) || rest.match(/^(\d+)\s*(m)?\s*(?:[x×*-])\s*/i);
+      if (m) { qty = Number(m[1]); unit = (m[2] || '').toLowerCase(); rest = rest.replace(m[0], ' ').trim(); }
+      return { key: norm(rest), raw: rest, qty, unit };
+    };
+    const FAMILIES = { '6205': ['6205-2RS', '6205-ZZ', '6205'] };
+    const lines = s.list.split('\n').map((l) => l.trim()).filter(Boolean);
+    let okCount = 0, askCount = 0, missCount = 0, total = 0;
+    const tick = 'M5 12.500 10 17.500 19.500 7', q = 'M9.500 9a2.500 2.500 0 1 1 3.800 2.100c-.8.5-1.300 1-1.300 2M12 17v.01', ex = 'M7 7l10 10M17 7 7 17';
+    const rows = lines.map((line, i) => {
+      const { key, raw, qty } = parse(line);
+      const family = FAMILIES[key];
+      const direct = PARTS.find((p) => norm(p.code) === key || norm(p.code).replace(/1$/, '') === key);
+      const pickedCode = s.picks[i];
+      if (family && !pickedCode) {
+        askCount++;
+        return { title: raw.toUpperCase(), note: 'Which seal? These are not the same part.', noteColor: '#92400E', dot: '#D97A0B', icon: q, qtyText: qty + ' wanted', total: '', ask: true,
+          choices: family.map((code) => ({ code, on: false, bg: '#FFFFFF', fg: '#10161E', border: 'rgba(16,24,34,.16)', pick: () => self.setState({ picks: Object.assign({}, s.picks, { [i]: code }) }) })) };
+      }
+      const part = pickedCode ? PARTS.find((p) => p.code === pickedCode) : direct;
+      if (!part) {
+        missCount++;
+        return { title: raw.toUpperCase() || line, note: 'Not found. We will check this one and call you.', noteColor: '#92400E', dot: '#8E99A4', icon: ex, qtyText: qty + ' wanted', total: 'To confirm', ask: false, choices: [] };
+      }
+      okCount++;
+      const send = Math.min(qty, part.qty), short = qty - send;
+      total += send * part.price;
+      return {
+        title: part.code, note: part.note + (short ? '. ' + part.qty + ' in stock, ' + short + ' more in about 2 days.' : '. All in stock.'), noteColor: short ? '#92400E' : '#55606C',
+        dot: short ? '#D97A0B' : '#0D9465', icon: tick, qtyText: qty + (part.unit ? ' ' + part.unit : '') + ' × ' + money(part.price), total: money(send * part.price), ask: false, choices: []
+      };
+    });
+    const parts = [];
+    parts.push(okCount + (okCount === 1 ? ' line' : ' lines') + ' priced');
+    if (askCount) parts.push(askCount + ' to choose');
+    if (missCount) parts.push(missCount + ' to check');
+    const cantAdd = okCount === 0;
+    return {
+      list: s.list, onList: (e) => self.setState({ list: e.target.value, picks: {} }),
+      useMachine: () => self.setState({ list: 'A42 x 3\n6205-2rs x 2', picks: {} }), clearList: () => self.setState({ list: '', picks: {} }),
+      empty: rows.length === 0, rows,
+      summary: rows.length ? parts.join(', ') : 'Nothing yet',
+      total: money(total),
+      cantAdd, added: s.added, addBg: cantAdd ? '#8E99A4' : (s.added ? '#0E7A56' : '#1B5CF0'),
+      addText: s.added ? 'Added to bag' : (askCount ? 'Add what is ready' : 'Add all to bag'),
+      add: () => { self.setState({ added: true }); clearTimeout(self.t); self.t = setTimeout(() => self.setState({ added: false }), 1700); },
+      footnote: missCount ? 'We keep the unknown lines with your order and call you about them.' : 'Prices checked today, 9:02 AM.'
+    };
+  }
+}
+</script>
+</body>
+</html>

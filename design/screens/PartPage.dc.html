@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Part page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+body{margin:0;background:#EEF1F4}
+a{color:inherit}
+.glass{background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(20px) saturate(150%);backdrop-filter:blur(20px) saturate(150%);border:1px solid rgba(255,255,255,.82);box-shadow:0 1px 2px rgba(16,24,34,.05),0 14px 36px rgba(16,24,34,.09)}
+.press{transition:background .2s,transform .12s,border-color .2s,color .2s}
+.press:active{transform:scale(.97)}
+a:focus-visible,button:focus-visible{outline:2px solid #1B5CF0;outline-offset:2px}
+.sumcard{position:sticky;top:84px}
+@media (max-width:820px){.sumcard{position:static}}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; padding: 12px clamp(12px, 3vw, 44px) 44px; font-family: Geist, system-ui, -apple-system, 'Segoe UI', sans-serif; color: #10161E; background: radial-gradient(70% 460px at 30% 0, #FFFFFF 0%, rgba(255,255,255,0) 100%), #EEF1F4; font-variant-numeric: tabular-nums">
+
+<nav aria-label="Main" class="glass" style="position: sticky; top: 12px; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 12px 9px 20px; border-radius: 18px">
+<a href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 42px; font-weight: 650; font-size: 18px; letter-spacing: -.02em; text-decoration: none">Power Store</a>
+<a href="#bag" class="press" style="display: flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 14px; background: #10161E; color: #FFFFFF; border-radius: 12px; font-size: 14.5px; font-weight: 500; text-decoration: none">Bag<span style="display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; background: #FFFFFF; color: #10161E; border-radius: 10px; font-size: 12px; font-weight: 600">{{bag}}</span></a>
+</nav>
+
+<div style="max-width: 1180px; margin: 0 auto; padding-top: 22px">
+<div style="margin: 0 2px 14px; font-size: 14px; color: #434E5A">Bearings, belts and chains / Deep groove ball bearings</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+<div style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+
+<section aria-label="Measured drawing" style="position: relative; background: #FFFFFF; border: 1px solid rgba(16,24,34,.07); border-radius: 24px; overflow: hidden">
+<div style="display: flex; align-items: center; justify-content: center; height: clamp(340px, 38vw, 430px); background: linear-gradient(160deg, #F8FAFB, #E8EDF2)">
+<svg role="img" aria-label="{{drawLabel}}" viewBox="0 0 560 400" style="display: block; width: 100%; height: 100%; max-width: 620px">
+<defs>
+<linearGradient id="steel2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F7F9FA"></stop><stop offset=".45" stop-color="#B6BEC7"></stop><stop offset=".7" stop-color="#EEF1F4"></stop><stop offset="1" stop-color="#98A2AC"></stop></linearGradient>
+</defs>
+<circle cx="208" cy="200" r="{{rO}}" fill="url(#steel2)" style="stroke: rgba(16,24,34,.25); stroke-width: 1"></circle>
+<circle cx="208" cy="200" r="{{rS}}" style="fill: #1E252D"></circle>
+<circle cx="208" cy="200" r="{{rI}}" fill="url(#steel2)" style="stroke: rgba(16,24,34,.25); stroke-width: 1"></circle>
+<circle cx="208" cy="200" r="{{rB}}" style="fill: #EFF3F6; stroke: rgba(16,24,34,.35); stroke-width: 1"></circle>
+<path d="M28 200 H388 M208 20 V380" style="fill: none; stroke: rgba(27,92,240,.35); stroke-width: 1; stroke-dasharray: 8 4 2 4"></path>
+
+<rect x="{{sideX}}" y="{{outerTop}}" width="{{sideW}}" height="{{outerH}}" fill="url(#steel2)" style="stroke: rgba(16,24,34,.3); stroke-width: 1"></rect>
+<rect x="{{sideX}}" y="{{boreTop}}" width="{{sideW}}" height="{{boreH}}" style="fill: #EFF3F6; stroke: rgba(16,24,34,.35); stroke-width: 1"></rect>
+
+<g style="fill: none; stroke: #1747C7; stroke-width: 1.2">
+<path d="{{dimOD}}"></path>
+<path d="{{dimB}}"></path>
+<path d="{{dimW}}"></path>
+</g>
+<text x="208" y="{{odTextY}}" style="fill: #1747C7; font: 500 15px 'Geist Mono', monospace; text-anchor: middle">{{odLabel}}</text>
+<text x="208" y="{{bTextY}}" style="fill: #1747C7; font: 500 15px 'Geist Mono', monospace; text-anchor: middle">{{boreLabel}}</text>
+<text x="{{wTextX}}" y="{{wTextY}}" style="fill: #1747C7; font: 500 15px 'Geist Mono', monospace; text-anchor: middle">{{wLabel}}</text>
+</svg>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 14px 18px; border-top: 1px solid rgba(16,24,34,.07)">
+<span style="font-size: 14.5px; color: #434E5A">Drawn from this part's own measurements.</span>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{sizes}}" as="s" hint-placeholder-count="4">
+<button type="button" onClick="{{s.pick}}" aria-pressed="{{s.on}}" class="press" style="min-height: 44px; padding: 0 13px; border: 1px solid {{s.border}}; border-radius: 11px; background: {{s.bg}}; color: {{s.fg}}; font: 500 14px 'Geist Mono', monospace; cursor: pointer">{{s.code}}</button>
+</sc-for>
+</div>
+</div>
+</section>
+
+<section aria-labelledby="sub" style="background: #FFFFFF; border: 1px solid rgba(16,24,34,.07); border-radius: 22px; padding: 20px 22px">
+<h2 id="sub" style="margin: 0 0 4px; font-size: 18px; font-weight: 600; letter-spacing: -.015em">If you need a different seal</h2>
+<p style="margin: 0 0 10px; font-size: 14.5px; line-height: 1.45; color: #434E5A">Same size, but not the same part. Check with us before changing the seal type on a machine.</p>
+<sc-for list="{{subs}}" as="x" hint-placeholder-count="2">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid rgba(16,24,34,.07)">
+<div style="min-width: 0"><div style="font: 500 15px 'Geist Mono', monospace">{{x.code}}</div><div style="font-size: 13.5px; color: #434E5A">{{x.note}}</div></div>
+<a href="#sub" class="press" style="flex: none; display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid rgba(16,24,34,.16); border-radius: 12px; font-size: 14px; font-weight: 500; text-decoration: none">Ask us</a>
+</div>
+</sc-for>
+</section>
+
+<section aria-labelledby="meas" style="background: #FFFFFF; border: 1px solid rgba(16,24,34,.07); border-radius: 22px; padding: 20px 22px">
+<h2 id="meas" style="margin: 0 0 4px; font-size: 18px; font-weight: 600; letter-spacing: -.015em">Not sure this is your part?</h2>
+<p style="margin: 0 0 12px; font-size: 14.5px; line-height: 1.45; color: #434E5A">On a phone, lay your old bearing on the screen and adjust the circle until it matches. We find the size from that. You can also send a photo.</p>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<a href="MeasurePart.dc.html" class="press" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; background: #10161E; color: #FFFFFF; border-radius: 12px; font-size: 14.5px; font-weight: 500; text-decoration: none">Measure on screen</a>
+<a href="#meas" class="press" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border: 1px solid rgba(16,24,34,.16); border-radius: 12px; font-size: 14.5px; font-weight: 500; text-decoration: none">Send a photo on WhatsApp</a>
+</div>
+</section>
+</div>
+
+<aside class="glass sumcard" aria-label="Buy this part" style="flex: 1 1 340px; min-width: 0; box-sizing: border-box; padding: 24px; border-radius: 24px">
+<h1 style="margin: 0; font: 500 clamp(26px, 2.6vw, 32px)/1.1 'Geist Mono', monospace; letter-spacing: -.03em">{{code}}-2RS</h1>
+<div style="margin-top: 6px; font-size: 15px; color: #434E5A">Deep groove ball bearing, sealed both sides</div>
+<dl style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 16px 0 0">
+<div style="padding: 10px 12px; background: rgba(255,255,255,.72); border-radius: 12px"><dt style="font-size: 12.5px; color: #434E5A">Hole</dt><dd style="margin: 2px 0 0; font-size: 16px; font-weight: 600">{{bore}} mm</dd></div>
+<div style="padding: 10px 12px; background: rgba(255,255,255,.72); border-radius: 12px"><dt style="font-size: 12.5px; color: #434E5A">Outside</dt><dd style="margin: 2px 0 0; font-size: 16px; font-weight: 600">{{od}} mm</dd></div>
+<div style="padding: 10px 12px; background: rgba(255,255,255,.72); border-radius: 12px"><dt style="font-size: 12.5px; color: #434E5A">Width</dt><dd style="margin: 2px 0 0; font-size: 16px; font-weight: 600">{{w}} mm</dd></div>
+</dl>
+
+<fieldset style="margin: 18px 0 0; padding: 0; border: 0">
+<legend style="padding: 0; margin-bottom: 8px; font-size: 14.5px; font-weight: 550">Choose a brand level</legend>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{brands}}" as="b" hint-placeholder-count="3">
+<button type="button" onClick="{{b.pick}}" aria-pressed="{{b.on}}" class="press" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 58px; padding: 8px 14px; text-align: left; border: 1.5px solid {{b.border}}; border-radius: 13px; background: {{b.bg}}; color: #10161E; cursor: pointer; font-family: Geist, system-ui, sans-serif">
+<span style="min-width: 0"><span style="display: block; font-size: 15px; font-weight: 550">{{b.name}}</span><span style="display: block; font-size: 13px; color: #0A6E4B; font-weight: 500">{{b.stock}}</span></span>
+<span style="flex: none; font-size: 16px; font-weight: 600">{{b.price}}</span>
+</button>
+</sc-for>
+</div>
+</fieldset>
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px">
+<span id="qtyl" style="font-size: 14.5px; font-weight: 550">Quantity</span>
+<div role="group" aria-labelledby="qtyl" style="display: flex; align-items: center; gap: 2px; background: rgba(255,255,255,.72); border-radius: 12px">
+<button type="button" onClick="{{less}}" aria-label="One fewer" class="press" style="width: 44px; height: 44px; border: 0; border-radius: 12px; background: transparent; color: #10161E; font: 400 22px/1 Geist, system-ui, sans-serif; cursor: pointer">−</button>
+<span aria-live="polite" style="width: 30px; text-align: center; font-size: 16px; font-weight: 550">{{qty}}</span>
+<button type="button" onClick="{{more}}" aria-label="One more" class="press" style="width: 44px; height: 44px; border: 0; border-radius: 12px; background: transparent; color: #10161E; font: 400 22px/1 Geist, system-ui, sans-serif; cursor: pointer">+</button>
+</div>
+</div>
+
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 14px">
+<span style="font-size: 14.5px; color: #434E5A">Total</span>
+<span style="font-size: 26px; font-weight: 600; letter-spacing: -.025em">{{total}}</span>
+</div>
+<div style="margin-top: 2px; text-align: right; font-size: 13px; color: #434E5A">Price checked today, 9:02 AM</div>
+
+<button type="button" onClick="{{add}}" class="press" style="width: 100%; min-height: 50px; margin-top: 14px; border: 0; background: #1B5CF0; color: #FFFFFF; border-radius: 14px; font: 550 15.5px Geist, system-ui, sans-serif; cursor: pointer; box-shadow: 0 8px 22px rgba(27,92,240,.26)">{{addLabel}}</button>
+<a href="Urgent.dc.html" class="press" style="display: flex; align-items: center; justify-content: center; min-height: 46px; margin-top: 8px; border: 1px solid rgba(16,24,34,.14); border-radius: 14px; font-size: 15px; font-weight: 500; text-decoration: none">Machine stopped? Send it today</a>
+</aside>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1120}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { size: 1, brand: 1, qty: 2, bag: 2, added: false };
+  }
+  componentWillUnmount() { clearTimeout(this.t); }
+  renderVals() {
+    const SIZES = [
+      { code: '6204', bore: 20, od: 47, w: 14, base: 3900 },
+      { code: '6205', bore: 25, od: 52, w: 15, base: 4800 },
+      { code: '6206', bore: 30, od: 62, w: 16, base: 6200 },
+      { code: '6305', bore: 25, od: 62, w: 17, base: 7400 }
+    ];
+    const LEVELS = [
+      { name: 'Premium brand', mult: 1.9, stock: '12 in Ikeja' },
+      { name: 'Standard brand', mult: 1, stock: '48 in Ikeja, 20 in warehouse' },
+      { name: 'Value brand', mult: .6, stock: '90 in warehouse' }
+    ];
+    const s = SIZES[this.state.size], lvl = LEVELS[this.state.brand], qty = this.state.qty;
+    const money = (n) => '₦' + (Math.round(n / 50) * 50).toLocaleString('en-NG');
+    const scale = 2.55;
+    const rO = s.od * scale, rB = s.bore * scale;
+    const gap = rO - rB, rS = rO - gap * .24, rI = rB + gap * .24;
+    const cx = 208, cy = 200;
+    const sideW = s.w * scale, sideX = 452 - sideW / 2;
+    const dimY = cy - rO - 14;
+    const dimOD = `M${cx - rO} ${dimY} H${cx + rO} M${cx - rO} ${dimY - 6} V${dimY + 6} M${cx + rO} ${dimY - 6} V${dimY + 6}`;
+    const dimB = `M${cx - rB} ${cy} H${cx + rB} M${cx - rB} ${cy - 6} V${cy + 6} M${cx + rB} ${cy - 6} V${cy + 6}`;
+    const wY = cy + rO + 16;
+    const dimW = `M${sideX} ${wY} H${sideX + sideW} M${sideX} ${wY - 6} V${wY + 6} M${sideX + sideW} ${wY - 6} V${wY + 6}`;
+    const self = this;
+    return {
+      bag: this.state.bag, code: s.code, bore: s.bore, od: s.od, w: s.w, qty,
+      drawLabel: 'Drawing of a ' + s.code + ' bearing: ' + s.bore + ' mm hole, ' + s.od + ' mm outside, ' + s.w + ' mm wide',
+      rO, rS, rI, rB,
+      odLabel: s.od + ' mm outside', boreLabel: s.bore + ' mm hole', wLabel: s.w + ' mm wide',
+      sideX, sideW, outerTop: cy - rO, outerH: rO * 2, boreTop: cy - rB, boreH: rB * 2,
+      dimOD, dimB, dimW,
+      odTextY: dimY - 10, bTextY: cy - 8, wTextX: sideX + sideW / 2, wTextY: wY + 22,
+      sizes: SIZES.map((x, i) => ({
+        code: x.code, on: i === self.state.size,
+        bg: i === self.state.size ? '#10161E' : '#FFFFFF', fg: i === self.state.size ? '#FFFFFF' : '#10161E', border: i === self.state.size ? '#10161E' : 'rgba(16,24,34,.16)',
+        pick: () => self.setState({ size: i })
+      })),
+      subs: [
+        { code: s.code + '-ZZ', note: 'Metal shields. Keeps out dust, less protection from water.' },
+        { code: s.code, note: 'Open, no seal. For machines with their own oil supply.' }
+      ],
+      brands: LEVELS.map((b, i) => ({
+        name: b.name, stock: b.stock, price: money(s.base * b.mult), on: i === self.state.brand,
+        border: i === self.state.brand ? '#1B5CF0' : 'rgba(16,24,34,.12)', bg: i === self.state.brand ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.5)',
+        pick: () => self.setState({ brand: i })
+      })),
+      less: () => self.setState({ qty: Math.max(1, qty - 1) }),
+      more: () => self.setState({ qty: Math.min(500, qty + 1) }),
+      total: money(s.base * lvl.mult * qty),
+      addLabel: this.state.added ? 'Added to bag' : 'Add to bag',
+      add: () => {
+        clearTimeout(self.t);
+        self.setState({ bag: self.state.bag + qty, added: true });
+        self.t = setTimeout(() => self.setState({ added: false }), 1600);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

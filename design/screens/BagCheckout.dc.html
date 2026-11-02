@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bag and part payment</title>
+<script src="./support.js"></script>
+<script src="/_blob/8894df7a6a20de073c579d8151803290"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+body{margin:0;background:#EEF1F4}
+a{color:inherit}
+.card{box-sizing:border-box;padding:20px;background:#FFFFFF;border:1px solid rgba(16,24,34,.07);border-radius:22px;min-width:0}
+.title{margin:0;font-size:18px;font-weight:600;letter-spacing:-.015em}
+.glass{background:rgba(255,255,255,.66);-webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.85);box-shadow:0 1px 2px rgba(16,24,34,.06),0 14px 32px rgba(16,24,34,.11)}
+.press{transition:background .18s,transform .12s,border-color .18s,color .18s,box-shadow .18s}
+.press:active{transform:scale(.97)}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #1B5CF0;outline-offset:2px}
+.icon-btn{width:44px;height:44px;border:0;border-radius:12px;background:transparent;color:#10161E;font:400 21px Geist,system-ui,sans-serif;cursor:pointer}
+.ghost{min-height:44px;padding:0 14px;border:1px solid rgba(16,24,34,.16);border-radius:12px;background:#FFFFFF;color:#10161E;font:500 14px Geist,system-ui,sans-serif;cursor:pointer}
+.solid{min-height:44px;padding:0 16px;border:0;border-radius:12px;background:#10161E;color:#FFFFFF;font:500 14px Geist,system-ui,sans-serif;cursor:pointer}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.rise{animation:rise .3s cubic-bezier(.2,.7,.2,1) both}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+.tickdraw{stroke-dasharray:1;animation:draw .34s cubic-bezier(.3,.7,.2,1) both}
+@keyframes flow{from{background-position:0 0}to{background-position:28px 0}}
+.line-open{height:2px;background:repeating-linear-gradient(90deg,#B45309 0 6px,transparent 6px 11px)}
+.line-ok{height:2px;background:repeating-linear-gradient(90deg,#1B5CF0 0 18px,#86A9F7 18px 28px);background-size:28px 2px;animation:flow 1s linear infinite}
+@keyframes sweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.sweep{animation:sweep 1.05s ease-in-out infinite}
+.slot{transition:background .28s,border-color .28s,transform .28s cubic-bezier(.3,1.5,.5,1)}
+.grow{transition:width .6s cubic-bezier(.2,.7,.2,1)}
+.opt{transition:border-color .2s,background .2s,box-shadow .2s}
+.lift{transition:opacity .25s}
+@media (prefers-reduced-motion:reduce){.line-ok,.sweep{animation:none}.rise,.tickdraw{animation-duration:.01ms}}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; padding: 12px clamp(12px, 3vw, 44px) 48px; font-family: Geist, system-ui, -apple-system, 'Segoe UI', sans-serif; color: #10161E; background: radial-gradient(70% 420px at 76% 0, #FFFFFF 0%, rgba(255,255,255,0) 100%), #EEF1F4">
+
+<svg aria-hidden="true" style="position: absolute; width: 0; height: 0">
+<defs>
+<linearGradient id="wht" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"></stop><stop offset="1" stop-color="#DDE3E9"></stop></linearGradient>
+<linearGradient id="gph" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#454F5B"></stop><stop offset="1" stop-color="#191F27"></stop></linearGradient>
+<linearGradient id="pv" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1D4A86"></stop><stop offset="1" stop-color="#0D2240"></stop></linearGradient>
+<symbol id="p-inverter" viewBox="0 0 200 280"><rect x="20" y="8" width="160" height="262" rx="16" fill="url(#wht)" style="stroke: rgba(16,24,34,.12); stroke-width: 1.5"></rect><rect x="50" y="46" width="100" height="60" rx="7" style="fill: #101720"></rect><rect x="60" y="58" width="42" height="7" rx="2" style="fill: #63E3B9"></rect><g style="fill: #C9D0D7"><rect x="50" y="196" width="100" height="4" rx="2"></rect><rect x="50" y="210" width="100" height="4" rx="2"></rect><rect x="50" y="224" width="100" height="4" rx="2"></rect></g></symbol>
+<symbol id="p-batt" viewBox="0 0 200 170"><rect x="40" y="10" width="24" height="16" rx="3" style="fill: #B0453B"></rect><rect x="136" y="10" width="24" height="16" rx="3" style="fill: #2A313A"></rect><rect x="14" y="24" width="172" height="22" rx="7" style="fill: #3D4651"></rect><rect x="20" y="42" width="160" height="108" rx="9" fill="url(#gph)"></rect><rect x="46" y="70" width="108" height="50" rx="7" style="fill: #E9EEF2"></rect></symbol>
+<symbol id="p-panel" viewBox="0 0 240 190"><path d="M44 14 L222 34 L202 176 L14 156 Z" style="fill: #D5DBE1"></path><path d="M49 20 L216 39 L197 170 L21 151 Z" fill="url(#pv)"></path><g style="fill: none; stroke: rgba(190,215,245,.35); stroke-width: 1.5"><path d="M115.800 27.600 L91.400 158.600"></path><path d="M34 72.400 L208.400 91.400"></path><path d="M28.500 98.600 L204.600 117.600"></path></g></symbol>
+<symbol id="p-kit" viewBox="0 0 200 170"><g style="fill: none; stroke: #55606C; stroke-width: 9; stroke-linecap: round"><path d="M30 130 L170 50"></path><path d="M30 92 L130 36"></path></g><circle cx="150" cy="118" r="26" style="fill: none; stroke: #1B2129; stroke-width: 11"></circle></symbol>
+</defs>
+</svg>
+
+<nav aria-label="Main" class="glass" style="position: sticky; top: 12px; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 12px 9px 20px; border-radius: 18px">
+<a href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 42px; font-weight: 650; font-size: 18px; letter-spacing: -.02em; text-decoration: none">Power Store</a>
+<div role="group" aria-label="Checkout steps" style="position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: min(330px, 62%); padding: 3px; background: rgba(16,24,34,.07); border-radius: 12px">
+<span aria-hidden="true" style="position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px) / 3); background: #FFFFFF; border-radius: 9px; box-shadow: 0 1px 2px rgba(16,24,34,.12), 0 4px 10px rgba(16,24,34,.08); transform: translateX({{stepX}}%); transition: transform .32s cubic-bezier(.3,1.2,.5,1)"></span>
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="3">
+<button type="button" onClick="{{s.pick}}" aria-current="{{s.current}}" style="position: relative; height: 42px; padding: 0 2px; border: 0; background: transparent; color: #10161E; font: 500 13.5px Geist, system-ui, sans-serif; cursor: pointer">{{s.label}}</button>
+</sc-for>
+</div>
+</nav>
+
+<div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; max-width: 1220px; margin: 20px auto 0">
+<div style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+
+<sc-if value="{{isBag}}" hint-placeholder-val="{{ true }}">
+<section class="card rise" aria-labelledby="h-bag" style="padding-bottom: 10px">
+<h1 id="h-bag" class="title" style="font-size: 22px; letter-spacing: -.022em">Your bag</h1>
+<sc-if value="{{empty}}" hint-placeholder-val="{{ false }}">
+<div class="rise" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 26px 10px 28px; text-align: center">
+<div ref="{{bindEmpty}}" aria-hidden="true" style="width: 120px; height: 120px"></div>
+<div style="font-size: 17px; font-weight: 600">Your bag is empty</div>
+<div style="font-size: 14.5px; color: #55606C">Work out a system, or search for a part.</div>
+<a href="SizeCalculator.dc.html" class="solid press" style="display: inline-flex; align-items: center; margin-top: 10px; text-decoration: none">Work out my system</a>
+</div>
+</sc-if>
+<sc-for list="{{lines}}" as="l" hint-placeholder-count="3">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 0; border-bottom: 1px solid #F1F3F5">
+<span aria-hidden="true" style="flex: none; display: flex; align-items: center; justify-content: center; width: 60px; height: 60px; border-radius: 13px; background: linear-gradient(160deg, #F6F8FA, #E6EBF0)"><svg width="44" height="44"><use href="{{l.sym}}" x="0" y="0" width="44" height="44"></use></svg></span>
+<div style="flex: 1 1 170px; min-width: 0">
+<div style="font-size: 15.5px; font-weight: 550; letter-spacing: -.01em">{{l.name}}</div>
+<div style="display: flex; align-items: center; gap: 6px; margin-top: 1px; font-size: 13.5px; color: #0A6E4B; font-weight: 500"><span aria-hidden="true" style="width: 6px; height: 6px; border-radius: 50%; background: #0D9465"></span>{{l.stock}}</div>
+</div>
+<div role="group" aria-label="{{l.qtyAria}}" style="flex: none; display: flex; align-items: center; background: #F1F3F5; border-radius: 12px">
+<button type="button" onClick="{{l.less}}" aria-label="{{l.lessAria}}" class="icon-btn press">−</button>
+<span aria-live="polite" style="width: 28px; text-align: center; font-size: 15.5px; font-weight: 600; font-variant-numeric: tabular-nums">{{l.qty}}</span>
+<button type="button" onClick="{{l.more}}" aria-label="{{l.moreAria}}" class="icon-btn press">+</button>
+</div>
+<div style="flex: 0 0 104px; text-align: right; font-size: 15.5px; font-weight: 600; font-variant-numeric: tabular-nums">{{l.total}}</div>
+</div>
+</sc-for>
+</section>
+
+<sc-if value="{{hasSystem}}" hint-placeholder-val="{{ true }}">
+<section class="card rise" aria-labelledby="h-check" style="background: {{checkBg}}; transition: background .35s">
+<h2 id="h-check" class="title">{{checkTitle}}</h2>
+<p aria-live="polite" style="margin: 3px 0 0; font-size: 14.5px; line-height: 1.45; color: #434E5A">{{checkBody}}</p>
+<div role="img" aria-label="{{mapAria}}" style="display: flex; align-items: center; margin-top: 16px; overflow: hidden">
+<div style="flex: none; text-align: center; font-size: 13px; font-weight: 500"><div style="display: flex; align-items: center; justify-content: center; width: 64px; height: 44px; background: #FFFFFF; border: 1px solid rgba(16,24,34,.12); border-radius: 11px; font-size: 15px; font-weight: 600">{{panelCount}}</div><div style="margin-top: 4px">Panels</div></div>
+<div class="{{lineA}}" style="flex: 1; min-width: 12px; margin: 0 6px 20px"></div>
+<div style="flex: none; text-align: center; font-size: 13px; font-weight: 500"><div style="display: flex; align-items: center; justify-content: center; width: 64px; height: 44px; background: #10161E; color: #FFFFFF; border-radius: 11px; font-size: 14px; font-weight: 600">48 V</div><div style="margin-top: 4px">Inverter</div></div>
+<div class="{{lineB}}" style="flex: 1; min-width: 12px; margin: 0 6px 20px"></div>
+<div style="flex: none; text-align: center; font-size: 13px; font-weight: 500">
+<div style="display: flex; gap: 4px; height: 44px; align-items: center">
+<sc-for list="{{slots}}" as="b" hint-placeholder-count="4"><span class="slot" style="width: 18px; height: 38px; box-sizing: border-box; border-radius: 5px; background: {{b.bg}}; border: 1.5px {{b.style}} {{b.border}}; transform: scale({{b.scale}}); transition-delay: {{b.delay}}"></span></sc-for>
+</div>
+<div style="margin-top: 4px">{{battLabel}}</div>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px">
+<sc-if value="{{needBatt}}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{addBatt}}" class="solid press">{{addBattText}}</button></sc-if>
+<sc-if value="{{needKit}}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{addKit}}" class="ghost press">Add rails, cable and breakers, ₦350,000</button></sc-if>
+</div>
+</section>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{isDelivery}}" hint-placeholder-val="{{ false }}">
+<section class="card rise" aria-labelledby="h-del">
+<h1 id="h-del" class="title" style="font-size: 22px; letter-spacing: -.022em">Getting it to you</h1>
+<p style="margin: 3px 0 0; font-size: 14.5px; line-height: 1.45; color: #434E5A">{{loadWhy}}</p>
+<div style="margin-top: 14px; padding: 14px; background: #F4F6F8; border-radius: 16px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px"><span style="font-weight: 550">Load on the {{vehName}}</span><span style="font-variant-numeric: tabular-nums">{{kg}} kg of {{cap}} kg</span></div>
+<div style="height: 10px; margin-top: 7px; background: #DDE2E7; border-radius: 5px; overflow: hidden" role="img" aria-label="{{loadAria}}"><div class="grow" style="width: {{loadPct}}%; height: 100%; background: #1B5CF0; border-radius: 5px"></div></div>
+</div>
+<div role="radiogroup" aria-label="Delivery choice" style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px">
+<sc-for list="{{options}}" as="o" hint-placeholder-count="3">
+<button type="button" role="radio" aria-checked="{{o.on}}" onClick="{{o.pick}}" class="opt" style="display: flex; align-items: center; gap: 14px; padding: 12px 14px; text-align: left; border: 1.5px solid {{o.border}}; border-radius: 15px; background: {{o.bg}}; color: #10161E; font-family: Geist, system-ui, sans-serif; cursor: pointer">
+<svg aria-hidden="true" viewBox="0 0 48 28" width="48" height="28" style="flex: none; fill: none; stroke: #434E5A; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round"><path d="{{o.icon}}"></path></svg>
+<span style="flex: 1; min-width: 0"><span style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 15.5px; font-weight: 550">{{o.name}}<sc-if value="{{o.best}}" hint-placeholder-val="{{ false }}"><span style="padding: 2px 7px; background: #E7EEFE; color: #1747C7; border-radius: 6px; font-size: 12.5px; font-weight: 500">Recommended</span></sc-if></span><span style="display: block; margin-top: 1px; font-size: 13.5px; color: #55606C">{{o.note}}</span></span>
+<span style="flex: none; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums">{{o.fee}}</span>
+</button>
+</sc-for>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{isPay}}" hint-placeholder-val="{{ false }}">
+<section class="card rise" aria-labelledby="h-pay">
+<h1 id="h-pay" class="title" style="font-size: 22px; letter-spacing: -.022em">Pay in one go, or in parts</h1>
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 14px">
+<span style="font-size: 30px; font-weight: 600; letter-spacing: -.03em">{{paidShown}}</span><span style="font-size: 14px; color: #55606C">paid of {{totalText}}</span>
+</div>
+<div style="position: relative; height: 12px; margin-top: 7px; background: #E6EAEE; border-radius: 6px; overflow: hidden" role="img" aria-label="{{paidAria}}">
+<div class="grow" style="width: {{paidPct}}%; height: 100%; background: #1B5CF0; border-radius: 6px"></div>
+<sc-if value="{{waiting}}" hint-placeholder-val="{{ false }}"><div class="sweep" aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.75), transparent)"></div></sc-if>
+</div>
+
+<sc-if value="{{payOpen}}" hint-placeholder-val="{{ true }}">
+<div style="margin-top: 16px; font-size: 14.5px; font-weight: 550">How much are you paying now?</div>
+<div role="group" aria-label="Amount" style="position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 3px; margin-top: 7px; background: #E6EAEE; border-radius: 13px">
+<span aria-hidden="true" style="position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px) / 3); background: #FFFFFF; border-radius: 10px; box-shadow: 0 1px 2px rgba(16,24,34,.1), 0 4px 10px rgba(16,24,34,.08); transform: translateX({{amtX}}%); transition: transform .3s cubic-bezier(.3,1.2,.5,1)"></span>
+<sc-for list="{{amounts}}" as="a" hint-placeholder-count="3">
+<button type="button" onClick="{{a.pick}}" aria-pressed="{{a.on}}" style="position: relative; min-height: 50px; padding: 4px; border: 0; background: transparent; color: #10161E; font: 500 13.5px/1.25 Geist, system-ui, sans-serif; cursor: pointer">{{a.label}}<br><b style="font-weight: 600; font-variant-numeric: tabular-nums">{{a.value}}</b></button>
+</sc-for>
+</div>
+
+<div style="margin-top: 14px; padding: 14px; background: #F4F6F8; border-radius: 16px">
+<div style="font-size: 13.5px; color: #434E5A">Send exactly <b style="font-weight: 600; color: #10161E">{{amountText}}</b> to this account, made for this order only</div>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px">
+<div style="min-width: 0"><div style="font: 500 21px 'Geist Mono', monospace; letter-spacing: .02em">0123 456 789</div><div style="font-size: 13.5px; color: #55606C">[BANK NAME], Power Store</div></div>
+<button type="button" onClick="{{copy}}" class="press" style="flex: none; display: flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border: 0; border-radius: 11px; background: {{copyBg}}; color: #FFFFFF; font: 500 14px Geist, system-ui, sans-serif; cursor: pointer">
+<sc-if value="{{copied}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" style="fill: none; stroke: #FFFFFF; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round"><path class="tickdraw" pathLength="1" d="M5 12.500 10 17.500 19.500 7"></path></svg></sc-if>
+<span aria-live="polite">{{copyText}}</span></button>
+</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px">
+<button type="button" onClick="{{sent}}" disabled="{{waiting}}" class="press" style="flex: 1 1 200px; min-height: 50px; border: 0; border-radius: 14px; background: {{sentBg}}; color: #FFFFFF; font: 550 15.5px Geist, system-ui, sans-serif; cursor: pointer; box-shadow: 0 8px 20px rgba(27,92,240,.22)">{{sentText}}</button>
+<button type="button" onClick="{{share}}" class="ghost press" style="flex: 1 1 180px; min-height: 50px; border-radius: 14px; font-size: 15px">{{shareText}}</button>
+</div>
+<p aria-live="polite" style="margin: 8px 2px 0; font-size: 13.5px; line-height: 1.4; color: #434E5A">{{payHint}}</p>
+</sc-if>
+
+<sc-if value="{{paidFull}}" hint-placeholder-val="{{ false }}">
+<div class="rise" style="display: flex; align-items: center; gap: 14px; margin-top: 14px; padding: 12px; background: #EEF9F4; border-radius: 16px">
+<div ref="{{bindDone}}" aria-hidden="true" style="flex: none; width: 76px; height: 76px"></div>
+<div style="min-width: 0"><div style="font-size: 17px; font-weight: 600; letter-spacing: -.015em">Paid in full. Order 2214 is confirmed.</div><div style="margin-top: 2px; font-size: 14px; color: #434E5A">Your goods are being packed. You can follow them from your account.</div>
+<a href="MyAccount.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; font-size: 14.5px; font-weight: 550; color: #1747C7; text-decoration: none">Go to my account</a></div>
+</div>
+</sc-if>
+
+<sc-if value="{{hasPayments}}" hint-placeholder-val="{{ false }}">
+<div style="margin-top: 14px">
+<div style="font-size: 14.5px; font-weight: 550">Payments so far</div>
+<sc-for list="{{payments}}" as="p" hint-placeholder-count="1">
+<div class="rise" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 0; border-bottom: 1px solid #F1F3F5; font-size: 14.5px">
+<span style="display: flex; align-items: center; gap: 8px"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" style="flex: none; fill: none; stroke: #0D9465; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round"><path d="M5 12.500 10 17.500 19.500 7"></path></svg>{{p.note}}</span>
+<b style="font-weight: 600; font-variant-numeric: tabular-nums">{{p.amount}}</b>
+</div>
+</sc-for>
+</div>
+</sc-if>
+</section>
+</sc-if>
+</div>
+
+<aside class="glass" aria-label="Order summary" style="flex: 1 1 320px; min-width: 0; position: sticky; top: 84px; box-sizing: border-box; padding: 22px; border-radius: 24px">
+<div style="font-size: 14px; font-weight: 500; color: #434E5A">Total</div>
+<div style="font-size: 36px; line-height: 1.1; font-weight: 600; letter-spacing: -.032em">{{totalShown}}</div>
+<dl style="display: grid; grid-template-columns: 1fr auto; gap: 8px 14px; margin: 14px 0 0; font-size: 14.5px; font-variant-numeric: tabular-nums">
+<dt style="color: #434E5A">Items</dt><dd style="margin: 0; text-align: right">{{itemsText}}</dd>
+<dt style="color: #434E5A">Delivery</dt><dd style="margin: 0; text-align: right">{{deliveryText}}</dd>
+<dt style="color: #434E5A">Weight</dt><dd style="margin: 0; text-align: right">{{kg}} kg</dd>
+</dl>
+<sc-if value="{{payOpen}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 10px 12px; background: rgba(255,255,255,.7); border-radius: 13px">
+<svg aria-hidden="true" viewBox="0 0 44 44" width="32" height="32" style="flex: none; transform: rotate(-90deg)"><circle cx="22" cy="22" r="18" style="fill: none; stroke: #DDE2E7; stroke-width: 5"></circle><circle cx="22" cy="22" r="18" pathLength="100" style="fill: none; stroke: #1B5CF0; stroke-width: 5; stroke-linecap: round; stroke-dasharray: {{holdPct}} 100; transition: stroke-dasharray 1s linear"></circle></svg>
+<div style="min-width: 0; font-size: 13.5px; line-height: 1.3"><b style="font-weight: 600; font-variant-numeric: tabular-nums">{{holdLeft}}</b> left on this price<br><span style="color: #434E5A">Checked today, 9:02 AM</span></div>
+</div>
+</sc-if>
+<sc-if value="{{showNext}}" hint-placeholder-val="{{ true }}">
+<button type="button" onClick="{{next}}" disabled="{{empty}}" class="press" style="width: 100%; min-height: 50px; margin-top: 14px; border: 0; border-radius: 14px; background: {{nextBg}}; color: #FFFFFF; font: 550 15.5px Geist, system-ui, sans-serif; cursor: pointer; box-shadow: 0 8px 20px rgba(27,92,240,.22)">{{nextText}}</button>
+</sc-if>
+</aside>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1240}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      step: 0, qty: { inv: 1, batt: 2, panel: 8, kit: 0 }, delivery: null, amt: 1,
+      paid: 0, paidShown: 0, payments: [], waiting: false, copied: null, shared: false,
+      hold: 47 * 3600 + 59 * 60 + 12, totalShown: null
+    };
+    this.anims = {};
+    this.reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const mount = (name, path, loop) => (el) => {
+      if (this.anims[name]) { this.anims[name].destroy(); delete this.anims[name]; }
+      if (!el) return;
+      const start = (tries) => {
+        if (!window.lottie) { if (tries < 50) setTimeout(() => start(tries + 1), 100); return; }
+        if (!el.isConnected || this.anims[name]) return;
+        const a = window.lottie.loadAnimation({ container: el, renderer: 'svg', loop: !!loop && !this.reduced, autoplay: !this.reduced, path });
+        if (this.reduced) a.addEventListener('DOMLoaded', () => a.goToAndStop(a.totalFrames - 1, true));
+        this.anims[name] = a;
+      };
+      start(0);
+    };
+    this.bindEmpty = mount('empty', '/_blob/a9eb19d879e12d2c46e8f3e8322d658f', true);
+    this.bindDone = mount('done', '/_blob/21dabc68a83f1dbda6cac29c53bc20a1');
+  }
+  componentDidMount() { this.holdTimer = setInterval(() => this.setState({ hold: Math.max(0, this.state.hold - 1) }), 1000); }
+  componentWillUnmount() { clearInterval(this.holdTimer); Object.values(this.anims).forEach((a) => a.destroy()); (this.timers || []).forEach(clearTimeout); }
+  later(fn, ms) { (this.timers = this.timers || []).push(setTimeout(fn, ms)); }
+  tween(key, from, to, dur) {
+    const start = Date.now();
+    clearTimeout(this['t_' + key]);
+    const step = () => {
+      const p = Math.min(1, (Date.now() - start) / (dur || 450));
+      this.setState({ [key]: from + (to - from) * (1 - Math.pow(1 - p, 3)) });
+      if (p < 1) this['t_' + key] = setTimeout(step, 16);
+    };
+    step();
+  }
+  componentDidUpdate() {
+    const target = this.calcTotal();
+    if (this.lastTarget !== target) {
+      const from = this.lastTarget == null ? target : (this.state.totalShown == null ? this.lastTarget : this.state.totalShown);
+      this.lastTarget = target;
+      this.tween('totalShown', from, target);
+    }
+  }
+  catalog() {
+    return {
+      inv: { name: '5 kVA hybrid inverter, 48 V', sym: '#p-inverter', price: 1450000, kg: 30, m: .6, stock: '6 in Ikeja' },
+      batt: { name: '200Ah tubular battery, 12 V', sym: '#p-batt', price: 420000, kg: 60, m: .5, stock: '14 in Ikeja' },
+      panel: { name: '550 W solar panel', sym: '#p-panel', price: 165000, kg: 28, m: 2.3, stock: '64 in warehouse' },
+      kit: { name: 'Rails, cable and breakers', sym: '#p-kit', price: 350000, kg: 40, m: 2.4, stock: '9 in Ikeja' }
+    };
+  }
+  measure() {
+    const C = this.catalog(), q = this.state.qty;
+    let items = 0, kg = 0, longest = 0;
+    Object.keys(C).forEach((k) => { const n = q[k] || 0; items += n * C[k].price; kg += n * C[k].kg; if (n) longest = Math.max(longest, C[k].m); });
+    return { items, kg, longest };
+  }
+  deliveryOptions() {
+    const { kg, longest } = this.measure(), Lagos = true;
+    const carOk = kg <= 180 && longest <= 1.5, vanOk = kg <= 1000;
+    const icons = {
+      store: 'M6 12h36v14H6zM4 12l4-9h32l4 9M20 26V17h8v9',
+      car: 'M4 20V14l6-1 5-7h15l6 7 7 2v5M10 20a3.500 3.500 0 1 0 0 .01M34 20a3.500 3.500 0 1 0 0 .01M14 20h16',
+      van: 'M2 21V5h28v16M30 9h9l7 7v5M10 21a3.500 3.500 0 1 0 0 .01M36 21a3.500 3.500 0 1 0 0 .01M14 21h18',
+      truck: 'M2 21V3h30v18M32 9h7l7 7v5M9 21a3.500 3.500 0 1 0 0 .01M17 21a3.500 3.500 0 1 0 0 .01M38 21a3.500 3.500 0 1 0 0 .01M21 21h13'
+    };
+    const main = carOk
+      ? { id: 'car', name: 'Our car', icon: icons.car, fee: 12000, cap: 180, note: 'Tomorrow morning. One driver.' }
+      : (vanOk
+        ? { id: 'van', name: 'Our van, with 2 people', icon: icons.van, fee: 45000, cap: 1000, note: 'Tomorrow, 9 AM to 1 PM. They carry it inside.' }
+        : { id: 'truck', name: 'Hired truck, with 3 people', icon: icons.truck, fee: 120000, cap: 3000, note: 'In 2 days. We call you to agree a time.' });
+    return [
+      Object.assign({ best: true }, main),
+      { id: 'pickup', name: 'Pick up from Ikeja', icon: icons.store, fee: 0, cap: main.cap, note: 'Ready in 2 hours. Bring a vehicle that fits ' + kg + ' kg.' },
+      { id: 'park', name: 'Motor park, for other states', icon: icons.truck, fee: 30000, cap: main.cap, note: 'We load it and send you the waybill photo. Fare is paid at the park.' }
+    ];
+  }
+  calcTotal() {
+    const opts = this.deliveryOptions();
+    const chosen = opts.find((o) => o.id === this.state.delivery) || opts[0];
+    return this.measure().items + chosen.fee;
+  }
+  renderVals() {
+    const s = this.state, self = this, C = this.catalog();
+    const money = (n) => '₦' + Math.round(n).toLocaleString('en-NG');
+    const { items, kg, longest } = this.measure();
+    const opts = this.deliveryOptions();
+    const chosen = opts.find((o) => o.id === s.delivery) || opts[0];
+    const total = items + chosen.fee;
+    const q = s.qty;
+    const setQ = (k, v) => self.setState({ qty: Object.assign({}, q, { [k]: Math.max(0, Math.min(99, v)) }) });
+    const batt = q.batt, full = batt > 0 && batt % 4 === 0;
+    const needMore = batt === 0 ? 4 : (4 - (batt % 4)) % 4;
+    const hasPanels = q.panel > 0, needKit = hasPanels && !q.kit;
+    const hasSystem = q.inv > 0;
+    const ok = hasSystem && needMore === 0 && !needKit;
+    const empty = !Object.values(q).some((v) => v > 0);
+
+    const remaining = Math.max(0, total - s.paid);
+    const amountOptions = [{ label: 'All of it', v: remaining }, { label: 'Half', v: Math.min(Math.round(total / 2), remaining) }, { label: 'A part', v: Math.min(500000, remaining) }];
+    const amountNow = amountOptions[s.amt].v;
+    const paidFull = s.paid >= total && total > 0;
+    const pad = (n) => String(n).padStart(2, '0');
+    const h = Math.floor(s.hold / 3600), m = Math.floor(s.hold % 3600 / 60), sec = s.hold % 60;
+
+    const STEP = ['Bag', 'Delivery', 'Payment'];
+    return {
+      stepX: s.step * 100,
+      steps: STEP.map((label, i) => ({ label, current: i === s.step ? 'step' : 'false', pick: () => { if (!empty) self.setState({ step: i }); } })),
+      isBag: s.step === 0, isDelivery: s.step === 1, isPay: s.step === 2, empty,
+      bindEmpty: this.bindEmpty, bindDone: this.bindDone,
+      lines: Object.keys(C).filter((k) => q[k] > 0).map((k) => ({
+        name: C[k].name, sym: C[k].sym, stock: C[k].stock, qty: q[k], total: money(q[k] * C[k].price),
+        qtyAria: 'Quantity of ' + C[k].name, lessAria: 'One fewer: ' + C[k].name, moreAria: 'One more: ' + C[k].name,
+        less: () => setQ(k, q[k] - 1), more: () => setQ(k, q[k] + 1)
+      })),
+      hasSystem, checkBg: ok ? '#EEF9F4' : '#FFFFFF',
+      checkTitle: ok ? 'Your set is complete' : (needMore ? 'Your set is missing something' : 'Almost complete'),
+      checkBody: ok ? 'Everything in your bag works together. Your installer will have all they need.'
+        : (needMore ? 'A 48 V inverter needs 12 V batteries in fours. You have ' + batt + ', so it needs ' + needMore + ' more.' : 'Your panels need rails, cable and breakers to connect.'),
+      mapAria: 'Panels connect to a 48 volt inverter, which connects to ' + batt + ' batteries. ' + (needMore ? needMore + ' more needed.' : 'Complete.'),
+      panelCount: q.panel, lineA: hasPanels && !needKit ? 'line-ok' : 'line-open', lineB: needMore === 0 && batt > 0 ? 'line-ok' : 'line-open',
+      slots: [0, 1, 2, 3].map((i) => {
+        const shownBatt = needMore === 0 ? 4 : batt % 4, f = i < shownBatt;
+        return { bg: f ? '#1B5CF0' : 'transparent', border: f ? '#1B5CF0' : '#B45309', style: f ? 'solid' : 'dashed', scale: f ? 1 : .94, delay: (i * 70) + 'ms' };
+      }),
+      battLabel: batt + (batt === 1 ? ' battery' : ' batteries'),
+      needBatt: needMore > 0, addBattText: 'Add ' + needMore + ' more, ' + money(needMore * C.batt.price), addBatt: () => setQ('batt', batt + needMore),
+      needKit, addKit: () => setQ('kit', 1),
+
+      loadWhy: 'We picked this from your order: ' + kg + ' kg in total, longest item ' + longest + ' m' + (q.batt > 0 ? ', and the batteries must stay upright.' : '.'),
+      vehName: chosen.id === 'car' ? 'car' : (chosen.id === 'truck' ? 'truck' : 'van'), cap: chosen.cap.toLocaleString('en-NG'), kg: kg.toLocaleString('en-NG'),
+      loadPct: Math.min(100, kg / chosen.cap * 100).toFixed(1), loadAria: kg + ' kilograms of ' + chosen.cap + ' kilogram capacity',
+      options: opts.map((o) => ({
+        name: o.name, note: o.note, icon: o.icon, best: !!o.best, on: o.id === chosen.id, fee: o.fee === 0 ? 'Free' : money(o.fee),
+        border: o.id === chosen.id ? '#1B5CF0' : 'rgba(16,24,34,.12)', bg: o.id === chosen.id ? '#F6F9FF' : '#FFFFFF',
+        pick: () => self.setState({ delivery: o.id })
+      })),
+
+      totalShown: money(s.totalShown == null ? total : s.totalShown), totalText: money(total),
+      itemsText: money(items), deliveryText: chosen.fee === 0 ? 'Free' : money(chosen.fee),
+      holdPct: (s.hold / (48 * 3600) * 100).toFixed(2), holdLeft: pad(h) + ':' + pad(m) + ':' + pad(sec),
+
+      paidShown: money(s.paidShown), paidPct: Math.min(100, s.paid / total * 100).toFixed(1), paidAria: money(s.paid) + ' paid of ' + money(total),
+      waiting: s.waiting, payOpen: !paidFull, paidFull,
+      amtX: s.amt * 100,
+      amounts: amountOptions.map((o, i) => ({ label: o.label, value: money(Math.min(o.v, remaining)), on: i === s.amt, pick: () => self.setState({ amt: i }) })),
+      amountText: money(amountNow),
+      copied: s.copied === 'ok', copyText: s.copied === 'ok' ? 'Copied' : (s.copied === 'fail' ? 'Press and hold' : 'Copy'), copyBg: s.copied === 'ok' ? '#0E7A56' : '#10161E',
+      copy: () => {
+        const done = (r) => { self.setState({ copied: r }); self.later(() => self.setState({ copied: null }), 1800); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText('0123456789').then(() => done('ok'), () => done('fail')); else done('fail');
+      },
+      sentText: s.waiting ? 'Waiting for the bank' : 'I have sent it', sentBg: s.waiting ? '#5D6874' : '#1B5CF0',
+      sent: () => {
+        if (s.waiting) return;
+        self.setState({ waiting: true });
+        self.later(() => {
+          const to = self.state.paid + amountNow;
+          self.setState({ waiting: false, paid: to, payments: self.state.payments.concat({ note: 'Transfer, confirmed by the bank', amount: money(amountNow) }) });
+          self.tween('paidShown', s.paid, to, 700);
+        }, 1700);
+      },
+      shareText: s.shared ? 'Link ready to send' : 'Ask someone else to pay', share: () => self.setState({ shared: !s.shared }),
+      payHint: s.waiting ? 'This updates by itself when the bank confirms. A screenshot alone does not count.' : (s.shared ? 'Send this link to your company or family. They see the amount and account, not your details.' : money(remaining) + ' left. Pay it in parts over several days if your bank limits you.'),
+      hasPayments: s.payments.length > 0, payments: s.payments,
+
+      showNext: s.step < 2,
+      nextText: s.step === 0 ? 'Continue to delivery' : 'Continue to payment',
+      nextBg: empty ? '#8E99A4' : '#1B5CF0',
+      next: () => { if (!empty) self.setState({ step: s.step + 1 }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Customer account</title>
+<script src="./support.js"></script>
+<script src="/_blob/8894df7a6a20de073c579d8151803290"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+body{margin:0;background:#EEF1F4}
+a{color:inherit}
+.card{box-sizing:border-box;padding:22px;background:#FFFFFF;border:1px solid rgba(16,24,34,.07);border-radius:22px;min-width:0}
+.title{margin:0;font-size:18px;font-weight:600;letter-spacing:-.015em}
+.sub{margin:3px 0 0;font-size:14px;line-height:1.45;color:#55606C}
+.glass{background:rgba(255,255,255,.66);-webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.85);box-shadow:0 1px 2px rgba(16,24,34,.06),0 14px 32px rgba(16,24,34,.11)}
+.press{transition:background .18s,transform .12s,border-color .18s,color .18s}
+.press:active{transform:scale(.97)}
+.ghost{min-height:44px;padding:0 14px;border:1px solid rgba(16,24,34,.16);border-radius:12px;background:#FFFFFF;color:#10161E;font:500 14px Geist,system-ui,sans-serif;cursor:pointer}
+.solid{min-height:44px;padding:0 16px;border:0;border-radius:12px;background:#10161E;color:#FFFFFF;font:500 14px Geist,system-ui,sans-serif;cursor:pointer}
+button:focus-visible,input:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid #1B5CF0;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.rise{animation:rise .32s cubic-bezier(.2,.7,.2,1) both}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+.drawn{stroke-dasharray:1;animation:draw 1s cubic-bezier(.3,.7,.2,1) both}
+.tickdraw{stroke-dasharray:1;animation:draw .34s cubic-bezier(.3,.7,.2,1) both}
+.bar{transition:width .6s cubic-bezier(.25,.8,.25,1),background .25s}
+.row{display:grid;transition:grid-template-rows .36s cubic-bezier(.3,.7,.2,1),opacity .28s,margin .36s}
+.row>div{overflow:hidden;min-height:0}
+.dot{transition:top .25s cubic-bezier(.25,.8,.25,1),background .2s}
+.tbl{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+.tbl th{padding:8px 10px;text-align:right;font-weight:500;color:#55606C;border-bottom:1px solid #E6EAEE}
+.tbl td{padding:8px 10px;text-align:right;border-bottom:1px solid #F1F3F5}
+.tbl th:first-child,.tbl td:first-child{text-align:left}
+input[type=range]{accent-color:#1B5CF0}
+@media (prefers-reduced-motion:reduce){.drawn,.tickdraw,.rise{animation-duration:.01ms}.bar,.row,.dot{transition:none}}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; padding: 12px clamp(12px, 3vw, 44px) 48px; font-family: Geist, system-ui, -apple-system, 'Segoe UI', sans-serif; color: #10161E; background: radial-gradient(70% 420px at 76% 0, #FFFFFF 0%, rgba(255,255,255,0) 100%), #EEF1F4">
+
+<nav aria-label="Main" class="glass" style="position: sticky; top: 12px; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 12px 9px 20px; border-radius: 18px">
+<a href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 42px; font-weight: 650; font-size: 18px; letter-spacing: -.02em; text-decoration: none">Power Store</a>
+<a href="BagCheckout.dc.html" class="press" style="display: flex; align-items: center; min-height: 42px; padding: 0 14px; background: #10161E; color: #FFFFFF; border-radius: 12px; font-size: 14.5px; font-weight: 500; text-decoration: none">Bag</a>
+</nav>
+
+<div style="max-width: 1100px; margin: 0 auto; padding-top: 24px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; margin: 0 2px 16px">
+<h1 style="margin: 0; font-size: clamp(26px, 3vw, 36px); line-height: 1.1; font-weight: 600; letter-spacing: -.03em">Your account</h1>
+<div role="group" aria-label="Sections" style="position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: min(390px, 100%); padding: 3px; background: #E2E6EA; border-radius: 13px">
+<span aria-hidden="true" style="position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px) / 3); background: #FFFFFF; border-radius: 10px; box-shadow: 0 1px 2px rgba(16,24,34,.1), 0 4px 10px rgba(16,24,34,.08); transform: translateX({{tabX}}%); transition: transform .32s cubic-bezier(.3,1.2,.5,1)"></span>
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+<button type="button" onClick="{{t.pick}}" aria-pressed="{{t.on}}" style="position: relative; height: 40px; padding: 0 2px; border: 0; background: transparent; color: #10161E; font: 500 14px Geist, system-ui, sans-serif; cursor: pointer">{{t.label}}</button>
+</sc-for>
+</div>
+</div>
+
+<sc-if value="{{isSystem}}" hint-placeholder-val="{{ true }}">
+<div class="rise" style="display: flex; flex-direction: column">
+<sc-for list="{{reminders}}" as="r" hint-placeholder-count="2">
+<div class="row" style="grid-template-rows: {{r.rows}}; opacity: {{r.opacity}}; margin-bottom: {{r.gap}}">
+<div>
+<div class="card" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; background: {{r.bg}}; transition: background .25s">
+<sc-if value="{{r.open}}" hint-placeholder-val="{{ true }}">
+<div style="flex: 1 1 280px; min-width: 0"><div style="font-size: 16px; font-weight: 600; letter-spacing: -.012em">{{r.title}}</div><div style="margin-top: 1px; font-size: 14.5px; line-height: 1.4; color: #434E5A">{{r.body}}</div></div>
+<div style="flex: none; display: flex; gap: 8px"><button type="button" onClick="{{r.later}}" class="ghost press">Remind me later</button><button type="button" onClick="{{r.done}}" class="solid press">I did it</button></div>
+</sc-if>
+<sc-if value="{{r.closed}}" hint-placeholder-val="{{ false }}"><div class="rise" style="display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 500; color: #0A6E4B"><svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" style="flex: none; fill: none; stroke: #0D9465; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round"><path class="tickdraw" pathLength="1" d="M5 12.500 10 17.500 19.500 7"></path></svg>{{r.closedText}}</div></sc-if>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+
+<section class="card rise" aria-labelledby="w-t" style="margin-bottom: 12px">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 14px">
+<div><h2 id="w-t" class="title">Warranty left on your system</h2><p class="sub">Tap a row for its serial numbers.</p></div>
+<div style="display: flex; flex-wrap: wrap; gap: 14px; font-size: 13.5px">
+<span style="display: flex; align-items: center; gap: 7px"><span aria-hidden="true" style="width: 12px; height: 10px; border-radius: 2px; background: #1B5CF0"></span>Time left</span>
+<span style="display: flex; align-items: center; gap: 7px"><span aria-hidden="true" style="width: 12px; height: 10px; border-radius: 2px; background: #C6D2E4"></span>Used</span>
+</div>
+</div>
+<div style="margin-top: 14px">
+<sc-for list="{{units}}" as="u" hint-placeholder-count="3">
+<div style="border-top: 1px solid #F1F3F5">
+<button type="button" onClick="{{u.pick}}" aria-expanded="{{u.on}}" style="display: block; width: 100%; padding: 12px 0; border: 0; background: transparent; color: #10161E; text-align: left; font-family: Geist, system-ui, sans-serif; cursor: pointer">
+<span style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; font-size: 15px"><span style="font-weight: 500">{{u.name}}</span><span style="font-size: 14px; font-weight: 550; font-variant-numeric: tabular-nums">{{u.left}}</span></span>
+<span style="display: flex; gap: 2px; height: 12px; margin-top: 7px; width: {{u.span}}%" role="img" aria-label="{{u.aria}}">
+<span style="flex: {{u.used}} 1 0; min-width: 3px; background: #C6D2E4; border-radius: 4px 0 0 4px"></span>
+<span style="flex: {{u.remain}} 1 0; background: #1B5CF0; border-radius: 0 4px 4px 0"></span>
+</span>
+</button>
+<sc-if value="{{u.on}}" hint-placeholder-val="{{ false }}">
+<div class="rise" style="padding: 0 0 12px; font-size: 14px; line-height: 1.6; color: #434E5A">Bought {{u.bought}}. Ends {{u.ends}}.<br>Serial: <span style="font-family: 'Geist Mono', monospace; color: #10161E">{{u.serial}}</span></div>
+</sc-if>
+</div>
+</sc-for>
+<div aria-hidden="true" style="display: flex; justify-content: space-between; padding-top: 6px; border-top: 1px solid #DDE1E5; font-size: 12.5px; color: #55606C"><span>2026</span><span>2031</span><span>2036</span></div>
+</div>
+</section>
+
+<section class="card rise" aria-labelledby="h-t">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 14px">
+<div><h2 id="h-t" class="title">Is your battery healthy?</h2><p class="sub">Tell us how long your backup lasts now. We compare it with what is usual for its age.</p></div>
+<button type="button" onClick="{{toggleHealthTable}}" aria-pressed="{{healthTable}}" class="ghost press" style="min-height: 40px">{{healthTableText}}</button>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 10px">
+<label for="hrs" style="font-size: 14.5px; font-weight: 550">It lasts about {{hours}} hours now</label>
+<input id="hrs" type="range" min="1" max="10" step="0.5" value="{{hours}}" onChange="{{onHours}}" style="flex: 1 1 180px; min-width: 0; height: 44px; margin: 0">
+</div>
+<sc-if value="{{healthChart}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; margin-top: 8px">
+<div aria-hidden="true" style="position: relative; flex: none; width: 34px; height: 210px; font-size: 12.5px; color: #55606C; font-variant-numeric: tabular-nums">
+<sc-for list="{{hy}}" as="y" hint-placeholder-count="3"><span style="position: absolute; left: 0; top: {{y.top}}%; transform: translateY(-50%)">{{y.label}}</span></sc-for>
+</div>
+<div ref="{{bindPlot}}" tabIndex="0" role="img" aria-label="{{healthAria}}" onPointerMove="{{plotMove}}" onPointerLeave="{{plotLeave}}" onKeyDown="{{plotKey}}" onFocus="{{plotFocus}}" onBlur="{{plotLeave}}" style="position: relative; flex: 1; min-width: 0; height: 210px; touch-action: pan-y; border-radius: 4px">
+<sc-for list="{{hy}}" as="y" hint-placeholder-count="3"><div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: {{y.top}}%; height: 1px; background: #E9ECEF"></div></sc-for>
+<svg aria-hidden="true" viewBox="0 0 1000 210" preserveAspectRatio="none" style="position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible">
+<path d="{{bandPath}}" style="fill: rgba(27,92,240,.09)"></path>
+<path class="drawn" pathLength="1" d="{{curve}}" style="fill: none; stroke: #1B5CF0; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke"></path>
+</svg>
+<div class="dot" aria-hidden="true" style="position: absolute; left: {{youLeft}}%; top: {{youTop}}%; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: {{youColor}}; box-shadow: 0 0 0 2px #FFFFFF; pointer-events: none"></div>
+<div class="dot" aria-hidden="true" style="position: absolute; left: calc({{youLeft}}% + 8px); top: {{youTop}}%; transform: translateY(-125%); font-size: 13px; font-weight: 600; white-space: nowrap; pointer-events: none">You, {{hours}} hours</div>
+<sc-if value="{{hasHover}}" hint-placeholder-val="{{ false }}">
+<div aria-hidden="true" style="position: absolute; top: 0; bottom: 0; left: {{hLeft}}%; width: 1px; background: #9AA4AF; pointer-events: none"></div>
+<div class="glass" style="position: absolute; top: 6px; left: {{tipL}}; right: {{tipR}}; padding: 8px 11px; border-radius: 12px; background: rgba(255,255,255,.9); font-size: 13.5px; white-space: nowrap; pointer-events: none"><div style="color: #55606C">{{hAge}}</div><b style="font-weight: 600">{{hVal}}</b></div>
+</sc-if>
+</div>
+</div>
+<div aria-hidden="true" style="display: flex; justify-content: space-between; margin: 5px 0 0 34px; font-size: 12.5px; color: #55606C"><span>New</span><span>1 yr</span><span>2 yrs</span><span>3 yrs</span><span>4 yrs</span><span>5 yrs</span></div>
+<div style="display: flex; flex-wrap: wrap; gap: 14px; margin-top: 8px; font-size: 13.5px">
+<span style="display: flex; align-items: center; gap: 7px"><span aria-hidden="true" style="width: 16px; height: 3px; border-radius: 2px; background: #1B5CF0"></span>Usual backup for its age</span>
+<span style="display: flex; align-items: center; gap: 7px"><span aria-hidden="true" style="width: 12px; height: 10px; border-radius: 2px; background: rgba(27,92,240,.14)"></span>Normal range</span>
+</div>
+</sc-if>
+<sc-if value="{{healthTable}}" hint-placeholder-val="{{ false }}">
+<table class="tbl" style="margin-top: 10px"><thead><tr><th scope="col">Battery age</th><th scope="col">Usual backup</th></tr></thead><tbody><sc-for list="{{healthRows}}" as="r" hint-placeholder-count="6"><tr><td>{{r.age}}</td><td>{{r.val}}</td></tr></sc-for></tbody></table>
+</sc-if>
+<div aria-live="polite" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; padding: 12px 14px; background: {{verdictBg}}; border-radius: 14px; transition: background .3s">
+<div style="flex: 1 1 260px; min-width: 0"><div style="font-size: 15.5px; font-weight: 600; letter-spacing: -.012em">{{verdict}}</div><div style="font-size: 13.5px; line-height: 1.4; color: #434E5A">{{verdictNote}}</div></div>
+<sc-if value="{{verdictAct}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{bookTest}}" class="solid press" style="flex: none">{{testText}}</button></sc-if>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{isMachines}}" hint-placeholder-val="{{ false }}">
+<div class="rise" style="display: flex; flex-direction: column; gap: 12px">
+<sc-for list="{{machines}}" as="m" hint-placeholder-count="2">
+<section class="card">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px">
+<div><h2 class="title">{{m.name}}</h2><p class="sub">{{m.site}}</p></div>
+<button type="button" onClick="{{m.reorder}}" class="press" style="display: flex; align-items: center; gap: 7px; min-height: 46px; padding: 0 16px; border: 0; border-radius: 13px; background: {{m.btnBg}}; color: #FFFFFF; font: 550 14.5px Geist, system-ui, sans-serif; cursor: pointer">
+<sc-if value="{{m.added}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17" style="fill: none; stroke: #FFFFFF; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round"><path class="tickdraw" pathLength="1" d="M5 12.500 10 17.500 19.500 7"></path></svg></sc-if><span>{{m.btnText}}</span></button>
+</div>
+<div style="margin-top: 12px">
+<sc-for list="{{m.parts}}" as="p" hint-placeholder-count="2">
+<div style="padding: 11px 0; border-top: 1px solid #F1F3F5">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px">
+<div style="min-width: 0"><span style="font: 500 15px 'Geist Mono', monospace">{{p.qty}} × {{p.code}}</span>
+<div style="display: flex; align-items: center; gap: 5px; margin-top: 1px; font-size: 13.5px; color: {{p.noteColor}}"><sc-if value="{{p.warn}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" viewBox="0 0 16 16" width="13" height="13" style="flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round"><path d="M8 2 15 14H1ZM8 6.500v3.500M8 12v.01"></path></svg></sc-if>{{p.note}}</div></div>
+<button type="button" onClick="{{p.reset}}" class="ghost press" style="flex: none">Changed it today</button>
+</div>
+<div style="height: 8px; margin-top: 8px; background: #E6EAEE; border-radius: 4px; overflow: hidden" role="img" aria-label="{{p.aria}}"><div class="bar" style="width: {{p.pct}}%; height: 100%; background: {{p.color}}; border-radius: 4px"></div></div>
+</div>
+</sc-for>
+</div>
+</section>
+</sc-for>
+<p style="margin: 2px; font-size: 13.5px; line-height: 1.45; color: #55606C">You set how long each part usually lasts on your machine. Nothing here connects to your machines. We only go by the dates.</p>
+</div>
+</sc-if>
+
+<sc-if value="{{isOrders}}" hint-placeholder-val="{{ false }}">
+<div class="rise" style="display: flex; flex-direction: column; gap: 12px">
+<section class="card" aria-labelledby="o-t">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 14px">
+<div><h2 id="o-t" class="title">Order 2214</h2><p class="sub">{{orderSub}}</p></div>
+<sc-if value="{{notDelivered}}" hint-placeholder-val="{{ true }}">
+<div style="padding: 8px 12px; background: #F1F3F5; border-radius: 12px; text-align: right"><div style="font-size: 12.5px; color: #55606C">Give the driver this code</div><div style="font: 500 20px 'Geist Mono', monospace; letter-spacing: .08em">482 913</div></div>
+</sc-if>
+</div>
+<ol style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 18px 0 0; padding: 0; list-style: none; position: relative">
+<li aria-hidden="true" style="position: absolute; left: 12.5%; right: 12.5%; top: 11px; height: 3px; background: #E6EAEE; border-radius: 2px"><span class="bar" style="display: block; height: 100%; width: {{trackPct}}%; background: #1B5CF0; border-radius: 2px"></span></li>
+<sc-for list="{{track}}" as="t" hint-placeholder-count="4">
+<li aria-current="{{t.current}}" style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; font-size: 13.5px; font-weight: {{t.weight}}">
+<span aria-hidden="true" style="display: flex; align-items: center; justify-content: center; width: 25px; height: 25px; border-radius: 50%; background: {{t.bg}}; box-shadow: 0 0 0 3px #FFFFFF; transition: background .3s">
+<sc-if value="{{t.done}}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 24 24" width="15" height="15" style="fill: none; stroke: #FFFFFF; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round"><path class="tickdraw" pathLength="1" d="M5 12.500 10 17.500 19.500 7"></path></svg></sc-if></span>{{t.label}}</li>
+</sc-for>
+</ol>
+<sc-if value="{{isDelivered}}" hint-placeholder-val="{{ false }}">
+<div class="rise" style="display: flex; align-items: center; gap: 12px; margin-top: 14px; padding: 10px 14px; background: #EEF9F4; border-radius: 14px">
+<div ref="{{bindDelivered}}" aria-hidden="true" style="flex: none; width: 76px; height: 76px"></div>
+<div style="min-width: 0"><div style="font-size: 16px; font-weight: 600; letter-spacing: -.012em">Delivered and signed for</div><div style="font-size: 14px; line-height: 1.4; color: #434E5A">8 units are now on your warranty list, with their serial numbers.</div></div>
+</div>
+</sc-if>
+<button type="button" onClick="{{advance}}" class="ghost press" style="margin-top: 14px">{{advanceText}}</button>
+</section>
+
+<section class="card" aria-labelledby="s-t">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px"><div><h2 id="s-t" class="title">Statement</h2><p class="sub">Balance: nothing owed</p></div><button type="button" class="ghost press">Download as PDF</button></div>
+<div tabIndex="0" style="overflow-x: auto; margin-top: 10px">
+<table class="tbl" style="min-width: 420px"><thead><tr><th scope="col">Date</th><th scope="col" style="text-align: left">What</th><th scope="col">Amount</th></tr></thead>
+<tbody><sc-for list="{{statement}}" as="r" hint-placeholder-count="4"><tr><td>{{r.date}}</td><td style="text-align: left">{{r.what}}</td><td>{{r.amount}}</td></tr></sc-for></tbody></table>
+</div>
+</section>
+</div>
+</sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1400}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      tab: 0, closed: {}, leaving: {}, gone: {}, unit: null, hours: 7.5, hover: null, healthTable: false, tested: false,
+      used: { b1: 5, b2: 7, c1: 2, a1: 11, a2: 3 }, added: {}, trackStep: 2
+    };
+    this.bindPlot = (el) => { this.plot = el; };
+    this.reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.bindDelivered = (el) => {
+      if (this.dl) { this.dl.destroy(); this.dl = null; }
+      if (!el) return;
+      const start = (tries) => {
+        if (!window.lottie) { if (tries < 50) setTimeout(() => start(tries + 1), 100); return; }
+        if (!el.isConnected || this.dl) return;
+        this.dl = window.lottie.loadAnimation({ container: el, renderer: 'svg', loop: false, autoplay: !this.reduced, path: '/_blob/d958c69b62fe952ba71f58e4d9f56e3e' });
+        if (this.reduced) this.dl.addEventListener('DOMLoaded', () => this.dl.goToAndStop(this.dl.totalFrames - 1, true));
+      };
+      start(0);
+    };
+  }
+  componentWillUnmount() { (this.timers || []).forEach(clearTimeout); if (this.dl) this.dl.destroy(); }
+  later(fn, ms) { (this.timers = this.timers || []).push(setTimeout(fn, ms)); }
+  renderVals() {
+    const s = this.state, self = this;
+    const money = (n) => '₦' + Math.round(n).toLocaleString('en-NG');
+
+    const close = (id, text) => {
+      self.setState({ closed: Object.assign({}, s.closed, { [id]: text }) });
+      self.later(() => self.setState({ leaving: Object.assign({}, self.state.leaving, { [id]: true }) }), 1400);
+      self.later(() => self.setState({ gone: Object.assign({}, self.state.gone, { [id]: true }) }), 1800);
+    };
+    const REM = [
+      { id: 'water', title: 'Water check due in 12 days', body: 'Your 4 tubular batteries. Top up with distilled water only, up to the mark.', doneText: 'Noted. We will remind you again in 3 months.', laterText: 'We will remind you next week.' },
+      { id: 'panels', title: 'Clean your panels before harmattan', body: 'Dust can lower what they produce. Plain water and a soft cloth, in the early morning.', doneText: 'Noted. We will remind you again next season.', laterText: 'We will remind you next week.' }
+    ];
+
+    const span = 10, NOW = 2026 + 10 / 12;
+    const UNITS = [
+      { id: 'inv', name: '5 kVA hybrid inverter', start: 2026 + 2 / 12, years: 5, left: '4 years, 4 months left', bought: '14 March 2026', ends: '14 March 2031', serial: 'PS-5K-204417' },
+      { id: 'bat', name: '4 × 200Ah tubular batteries', start: 2026 + 2 / 12, years: 2, left: '1 year, 4 months left', bought: '14 March 2026', ends: '14 March 2028', serial: 'TB-200-88121, 88122, 88123, 88124' },
+      { id: 'pan', name: '8 × 550 W solar panels', start: 2026 + 2 / 12, years: 10, left: '9 years, 4 months left', bought: '14 March 2026', ends: '14 March 2036', serial: 'SP-550-44190 to 44197' }
+    ];
+
+    // Sample curve: usual backup hours fall as the battery ages. The real one comes from the shop's own figures.
+    const expected = (age) => 8 * Math.max(.2, 1 - .05 * age - .022 * age * age);
+    const X = (age) => age / 5 * 1000, Y = (h) => 210 - h / 10 * 210;
+    const samples = Array.from({ length: 26 }, (_, i) => i / 5);
+    const curve = samples.map((a, i) => (i ? 'L' : 'M') + X(a).toFixed(1) + ' ' + Y(expected(a)).toFixed(1)).join(' ');
+    const upper = samples.map((a, i) => (i ? 'L' : 'M') + X(a).toFixed(1) + ' ' + Y(Math.min(10, expected(a) * 1.12)).toFixed(1)).join(' ');
+    const lower = samples.slice().reverse().map((a) => 'L' + X(a).toFixed(1) + ' ' + Y(expected(a) * .82).toFixed(1)).join(' ');
+    const AGE = 8 / 12;
+    const exp = expected(AGE), ratio = s.hours / exp;
+    const good = ratio >= .82, poor = ratio < .6;
+    const hv = s.hover;
+    const fmtAge = (a) => a < 1 / 12 ? 'New' : (a < 1 ? Math.round(a * 12) + ' months old' : a.toFixed(1).replace(/\.0$/, '') + ' years old');
+
+    const PARTS = {
+      m1: { name: 'Line 2, packaging', site: 'Agbara plant', parts: [
+        { id: 'b1', code: 'A42', kind: 'belt', qty: 3, life: 6, price: 3200 },
+        { id: 'b2', code: '6205-2RS', kind: 'bearing', qty: 2, life: 8, price: 4800 }] },
+      m2: { name: 'Borehole pump', site: 'Agbara plant', parts: [
+        { id: 'c1', code: '6305-ZZ', kind: 'bearing', qty: 2, life: 12, price: 7400 },
+        { id: 'a1', code: 'B58', kind: 'belt', qty: 1, life: 12, price: 5600 }] }
+    };
+
+    const STEPS = ['Paid', 'Packed', 'On the way', 'Delivered'];
+    const NOTES = ['Paid in full. We are packing it now.', 'Packed. Waiting for the van.', 'With Musa, in the van. Arrives today, 9 AM to 1 PM.', 'Delivered this morning.'];
+
+    return {
+      tabX: s.tab * 100, isSystem: s.tab === 0, isMachines: s.tab === 1, isOrders: s.tab === 2,
+      tabs: ['My system', 'My machines', 'Orders'].map((label, i) => ({ label, on: i === s.tab, pick: () => self.setState({ tab: i, hover: null }) })),
+      reminders: REM.filter((r) => !s.gone[r.id]).map((r) => {
+        const c = s.closed[r.id], leaving = !!s.leaving[r.id];
+        return { title: r.title, body: r.body, open: !c, closed: !!c, closedText: c, rows: leaving ? '0fr' : '1fr', opacity: leaving ? 0 : 1, gap: leaving ? '0' : '10px', bg: c ? '#EEF9F4' : '#FFFFFF',
+          done: () => close(r.id, r.doneText), later: () => close(r.id, r.laterText) };
+      }),
+      units: UNITS.map((u) => {
+        const used = NOW - u.start, remain = u.years - used;
+        return { name: u.name, left: u.left, bought: u.bought, ends: u.ends, serial: u.serial, on: s.unit === u.id,
+          span: (u.years / span * 100).toFixed(1), used: used.toFixed(2), remain: remain.toFixed(2), aria: u.name + ': ' + u.left,
+          pick: () => self.setState({ unit: s.unit === u.id ? null : u.id }) };
+      }),
+
+      hours: s.hours, onHours: (e) => self.setState({ hours: Number(e.target.value), tested: false }),
+      hy: [0, 5, 10].map((h) => ({ top: (100 - h * 10).toFixed(0), label: h + ' h' })),
+      curve, bandPath: upper + ' ' + lower + ' Z', bindPlot: this.bindPlot,
+      youLeft: (AGE / 5 * 100).toFixed(2), youTop: ((10 - s.hours) / 10 * 100).toFixed(2), youColor: good ? '#10161E' : '#D97A0B',
+      healthAria: 'Usual backup falls from 8 hours when new to about ' + expected(5).toFixed(1) + ' hours at 5 years. At 8 months old it is about ' + exp.toFixed(1) + ' hours. You said ' + s.hours + ' hours.',
+      plotMove: (e) => { if (!self.plot) return; const r = self.plot.getBoundingClientRect(); const a = Math.round(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * 20) / 4; if (a !== self.state.hover) self.setState({ hover: a }); },
+      plotLeave: () => self.setState({ hover: null }),
+      plotFocus: () => { if (self.state.hover == null) self.setState({ hover: 1 }); },
+      plotKey: (e) => { if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return; e.preventDefault(); const cur = self.state.hover == null ? 1 : self.state.hover; self.setState({ hover: Math.max(0, Math.min(5, cur + (e.key === 'ArrowLeft' ? -.25 : .25))) }); },
+      hasHover: hv != null, hLeft: hv != null ? (hv / 5 * 100).toFixed(2) : 0, hAge: hv != null ? fmtAge(hv) : '', hVal: hv != null ? 'Usually about ' + expected(hv).toFixed(1) + ' hours' : '',
+      tipL: hv != null && hv > 3 ? 'auto' : 'calc(' + (hv != null ? (hv / 5 * 100).toFixed(2) : 0) + '% + 10px)',
+      tipR: hv != null && hv > 3 ? 'calc(' + (100 - hv / 5 * 100).toFixed(2) + '% + 10px)' : 'auto',
+      healthChart: !s.healthTable, healthTable: s.healthTable, healthTableText: s.healthTable ? 'View as graph' : 'View as table',
+      toggleHealthTable: () => self.setState({ healthTable: !s.healthTable, hover: null }),
+      healthRows: [0, 1, 2, 3, 4, 5].map((a) => ({ age: a === 0 ? 'New' : a + (a === 1 ? ' year' : ' years'), val: expected(a).toFixed(1) + ' hours' })),
+      verdict: good ? 'That is normal for 8 months old' : (poor ? 'That is much lower than usual' : 'That is a little lower than usual'),
+      verdictNote: good ? 'Usual is about ' + exp.toFixed(1) + ' hours. Nothing to do. We will ask you again in 3 months.' : (poor ? 'Usual is about ' + exp.toFixed(1) + ' hours, and this is still under warranty. Bring it in for a free test.' : 'Usual is about ' + exp.toFixed(1) + ' hours. Check for extra appliances on it, or bring it in for a test.'),
+      verdictBg: good ? '#EEF9F4' : (poor ? '#FDF1E3' : '#FBF6E9'), verdictAct: !good,
+      testText: s.tested ? 'Test requested' : 'Book a free test', bookTest: () => self.setState({ tested: true }),
+
+      machines: Object.keys(PARTS).map((k) => {
+        const m = PARTS[k], total = m.parts.reduce((a, p) => a + p.qty * p.price, 0), added = !!s.added[k];
+        return {
+          name: m.name, site: m.site, added, btnBg: added ? '#0E7A56' : '#1B5CF0',
+          btnText: added ? 'Added to bag' : 'Reorder all, ' + money(total),
+          reorder: () => { self.setState({ added: Object.assign({}, s.added, { [k]: true }) }); self.later(() => self.setState({ added: Object.assign({}, self.state.added, { [k]: false }) }), 1900); },
+          parts: m.parts.map((p) => {
+            const u = s.used[p.id], left = p.life - u, ratio = u / p.life, warn = ratio >= .8;
+            return { code: p.code, qty: p.qty, warn, pct: (Math.min(1, ratio) * 100).toFixed(1), color: warn ? '#D97A0B' : '#1B5CF0',
+              note: u === 0 ? 'Changed today. Usually lasts ' + p.life + ' months.' : (left <= 0 ? 'Past its usual ' + p.life + ' months. Change it soon.' : (warn ? 'Due in about ' + left + (left === 1 ? ' month' : ' months') + '. Usually lasts ' + p.life + '.' : u + ' of about ' + p.life + ' months used.')),
+              noteColor: warn ? '#92400E' : '#55606C', aria: p.code + ': ' + u + ' of ' + p.life + ' months used',
+              reset: () => self.setState({ used: Object.assign({}, s.used, { [p.id]: 0 }) }) };
+          })
+        };
+      }),
+
+      orderSub: NOTES[s.trackStep], notDelivered: s.trackStep < 3, isDelivered: s.trackStep === 3, bindDelivered: this.bindDelivered,
+      trackPct: (s.trackStep / 3 * 100).toFixed(1),
+      track: STEPS.map((label, i) => ({ label, done: i <= s.trackStep, current: i === s.trackStep ? 'step' : 'false', bg: i <= s.trackStep ? '#1B5CF0' : '#DDE2E7', weight: i === s.trackStep ? 600 : 450 })),
+      advanceText: s.trackStep < 3 ? 'Preview the next step' : 'Start the preview again',
+      advance: () => self.setState({ trackStep: s.trackStep < 3 ? s.trackStep + 1 : 0 }),
+      statement: [
+        { date: '1 Nov 2026', what: 'Transfer, invoice 2214', amount: '₦2,422,500' },
+        { date: '30 Oct 2026', what: 'Transfer, invoice 2214', amount: '₦2,422,500' },
+        { date: '30 Oct 2026', what: 'Invoice 2214', amount: '₦4,845,000' },
+        { date: '14 Mar 2026', what: 'Invoice 1187, paid', amount: '₦3,920,000' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-11-01T17:00:00Z" },
+  "title": "Power Store signature designs",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1280, "h": 1800, "title": "Store home, with search", "expand": "fill", "is_interactive": true },
+    "Category.dc.html": { "x": 1360, "y": 0, "w": 1280, "h": 1320, "title": "Category and compare", "expand": "fill", "is_interactive": true },
+    "ProductPage.dc.html": { "x": 2720, "y": 0, "w": 1280, "h": 1460, "title": "Product page", "expand": "fill", "is_interactive": true },
+    "PartPage.dc.html": { "x": 4080, "y": 0, "w": 1280, "h": 1120, "title": "Part page", "expand": "fill", "is_interactive": true },
+    "SizeCalculator.dc.html": { "x": 5440, "y": 0, "w": 1280, "h": 2060, "title": "System calculator, with graphs", "expand": "fill", "is_interactive": true },
+    "CarFinder.dc.html": { "x": 0, "y": 2460, "w": 1280, "h": 1060, "title": "Car battery finder", "expand": "fill", "is_interactive": true },
+    "MeasurePart.dc.html": { "x": 1360, "y": 2460, "w": 430, "h": 900, "title": "Measure on screen", "is_interactive": true },
+    "PasteList.dc.html": { "x": 1870, "y": 2460, "w": 1280, "h": 900, "title": "Order from a list", "expand": "fill", "is_interactive": true },
+    "Urgent.dc.html": { "x": 3230, "y": 2460, "w": 1280, "h": 1120, "title": "Machine stopped", "expand": "fill", "is_interactive": true },
+    "BagCheckout.dc.html": { "x": 0, "y": 3940, "w": 1280, "h": 1240, "title": "Bag and part payment", "expand": "fill", "is_interactive": true },
+    "MyAccount.dc.html": { "x": 1360, "y": 3940, "w": 1280, "h": 1500, "title": "Customer account", "expand": "fill", "is_interactive": true },
+    "Kit.dc.html": { "x": 2720, "y": 3940, "w": 1280, "h": 1680, "title": "Components and feel", "expand": "fill", "is_interactive": true },
+    "OwnerToday.dc.html": { "x": 0, "y": 6020, "w": 1280, "h": 2420, "title": "Owner: today", "expand": "fill", "is_interactive": true },
+    "Counter.dc.html": { "x": 1360, "y": 6020, "w": 1280, "h": 1020, "title": "Counter sale and till close", "expand": "fill", "is_interactive": true },
+    "StockRoom.dc.html": { "x": 2720, "y": 6020, "w": 1280, "h": 1000, "title": "Stock room: receive, pack, count", "expand": "fill", "is_interactive": true },
+    "Dispatch.dc.html": { "x": 4080, "y": 6020, "w": 1280, "h": 1040, "title": "Dispatch board", "expand": "fill", "is_interactive": true },
+    "DriverApp.dc.html": { "x": 5440, "y": 6020, "w": 430, "h": 900, "title": "Driver app", "is_interactive": true },
+    "Books.dc.html": { "x": 5950, "y": 6020, "w": 1280, "h": 1100, "title": "Books and ledger", "expand": "fill", "is_interactive": true },
+    "CallList.dc.html": { "x": 7310, "y": 6020, "w": 1280, "h": 1100, "title": "Reminder call list", "expand": "fill", "is_interactive": true }
+  },
+  "order": [
+    "Main.dc.html", "Category.dc.html", "ProductPage.dc.html", "PartPage.dc.html", "SizeCalculator.dc.html",
+    "CarFinder.dc.html", "MeasurePart.dc.html", "PasteList.dc.html", "Urgent.dc.html",
+    "BagCheckout.dc.html", "MyAccount.dc.html", "Kit.dc.html",
+    "OwnerToday.dc.html", "Counter.dc.html", "StockRoom.dc.html", "Dispatch.dc.html", "DriverApp.dc.html", "Books.dc.html", "CallList.dc.html"
+  ],
+  "notes": {
+    "samples": { "x": 0, "y": -180, "w": 460, "size": "m", "fill": "orange", "text": "All prices, stock, names and locations are samples to judge the look and feel. Product pictures are drawn stand-ins until real photos arrive. The sizing, payback and battery-age maths are demos, not the final engine." },
+    "row2": { "x": 0, "y": 2150, "text": "Faster ways to find the right thing", "kind": "title1", "maxW": 4510 },
+    "row3": { "x": 0, "y": 3630, "text": "Buying and owning", "kind": "title1", "maxW": 4000 },
+    "row4": { "x": 0, "y": 5710, "text": "Running the shop", "kind": "title1", "maxW": 8590 }
+  },
+  "designSystems": []
+}

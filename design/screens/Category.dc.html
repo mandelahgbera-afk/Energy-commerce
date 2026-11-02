@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Category and compare</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+body{margin:0;background:#EEF1F4}
+a{color:inherit}
+.glass{background:rgba(255,255,255,.7);-webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.85);box-shadow:0 1px 2px rgba(16,24,34,.06),0 14px 32px rgba(16,24,34,.12)}
+.press{transition:background .18s,transform .12s,border-color .18s,color .18s}
+.press:active{transform:scale(.97)}
+.lift{transition:transform .26s cubic-bezier(.2,.7,.2,1),box-shadow .26s}
+.lift:hover{transform:translateY(-3px);box-shadow:0 2px 4px rgba(16,24,34,.06),0 20px 42px rgba(16,24,34,.11)}
+.chip{min-height:44px;padding:0 13px;border-radius:12px;font:500 14px Geist,system-ui,sans-serif;cursor:pointer}
+button:focus-visible,input:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid #1B5CF0;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.rise{animation:rise .32s cubic-bezier(.2,.7,.2,1) both}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+.tickdraw{stroke-dasharray:1;animation:draw .32s cubic-bezier(.3,.7,.2,1) both}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin .75s linear infinite}
+.bar{transition:width .5s cubic-bezier(.25,.8,.25,1)}
+input[type=range]{accent-color:#1B5CF0}
+@media (prefers-reduced-motion:reduce){.rise,.tickdraw{animation-duration:.01ms}.spin{animation:none}.bar,.lift{transition:none}}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; padding: 12px clamp(12px, 3vw, 44px) 110px; font-family: Geist, system-ui, -apple-system, 'Segoe UI', sans-serif; color: #10161E; background: radial-gradient(70% 420px at 76% 0, #FFFFFF 0%, rgba(255,255,255,0) 100%), #EEF1F4">
+
+<svg aria-hidden="true" style="position: absolute; width: 0; height: 0">
+<defs>
+<linearGradient id="gph" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#454F5B"></stop><stop offset="1" stop-color="#191F27"></stop></linearGradient>
+<filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="9"></feGaussianBlur></filter>
+<symbol id="p-lithium" viewBox="0 0 200 290"><ellipse cx="100" cy="274" rx="80" ry="9" filter="url(#soft)" style="fill: rgba(16,24,34,.38)"></ellipse><rect x="18" y="34" width="164" height="236" rx="14" fill="url(#gph)"></rect><rect x="66" y="16" width="68" height="20" rx="8" style="fill: none; stroke: #39424D; stroke-width: 7"></rect><rect x="18" y="112" width="164" height="1.5" style="fill: rgba(0,0,0,.45)"></rect><rect x="18" y="192" width="164" height="1.5" style="fill: rgba(0,0,0,.45)"></rect><g style="fill: #63E3B9"><circle cx="40" cy="74" r="3"></circle><circle cx="52" cy="74" r="3"></circle><circle cx="64" cy="74" r="3"></circle><circle cx="40" cy="152" r="3"></circle><circle cx="52" cy="152" r="3"></circle><circle cx="64" cy="152" r="3"></circle></g><g style="fill: #101720"><rect x="138" y="62" width="24" height="24" rx="5"></rect><rect x="138" y="140" width="24" height="24" rx="5"></rect><rect x="138" y="220" width="24" height="24" rx="5"></rect></g></symbol>
+<symbol id="p-batt" viewBox="0 0 200 170"><ellipse cx="100" cy="156" rx="84" ry="7" filter="url(#soft)" style="fill: rgba(16,24,34,.34)"></ellipse><rect x="40" y="10" width="24" height="16" rx="3" style="fill: #B0453B"></rect><rect x="136" y="10" width="24" height="16" rx="3" style="fill: #2A313A"></rect><rect x="14" y="24" width="172" height="22" rx="7" style="fill: #3D4651"></rect><rect x="20" y="42" width="160" height="108" rx="9" fill="url(#gph)"></rect><rect x="46" y="70" width="108" height="50" rx="7" style="fill: #E9EEF2"></rect><rect x="58" y="82" width="52" height="6" rx="3" style="fill: #10161E"></rect><rect x="58" y="96" width="84" height="4" rx="2" style="fill: #8E99A4"></rect></symbol>
+</defs>
+</svg>
+
+<nav aria-label="Main" class="glass" style="position: sticky; top: 12px; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 12px 9px 20px; border-radius: 18px">
+<a href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 42px; font-weight: 650; font-size: 18px; letter-spacing: -.02em; text-decoration: none">Power Store</a>
+<a href="BagCheckout.dc.html" class="press" style="display: flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 14px; background: #10161E; color: #FFFFFF; border-radius: 12px; font-size: 14.5px; font-weight: 500; text-decoration: none">Bag<span ref="{{bindBag}}" style="display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; background: #FFFFFF; color: #10161E; border-radius: 10px; font-size: 12px; font-weight: 600">{{bag}}</span></a>
+</nav>
+
+<div style="max-width: 1220px; margin: 0 auto; padding-top: 22px">
+<div style="margin: 0 2px; font-size: 14px; color: #434E5A"><a href="Main.dc.html" style="text-decoration: none">Store</a> / Solar batteries</div>
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 20px; margin: 6px 2px 16px">
+<h1 style="margin: 0; font-size: clamp(30px, 3.6vw, 44px); line-height: 1.06; font-weight: 600; letter-spacing: -.032em">Solar batteries</h1>
+<p aria-live="polite" style="margin: 0; font-size: 15px; color: #434E5A">{{countText}}</p>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start">
+<aside aria-label="Filters" style="flex: 1 1 240px; min-width: 0; box-sizing: border-box; padding: 18px; background: #FFFFFF; border: 1px solid rgba(16,24,34,.07); border-radius: 22px">
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+<fieldset style="margin: 0 0 16px; padding: 0; border: 0">
+<legend style="padding: 0; margin-bottom: 8px; font-size: 14.5px; font-weight: 600">{{g.name}}</legend>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{g.options}}" as="o" hint-placeholder-count="3">
+<button type="button" onClick="{{o.pick}}" aria-pressed="{{o.on}}" class="chip press" style="border: 1px solid {{o.border}}; background: {{o.bg}}; color: {{o.fg}}">{{o.label}}</button>
+</sc-for>
+</div>
+</fieldset>
+</sc-for>
+<button type="button" role="switch" aria-checked="{{stockOnly}}" onClick="{{toggleStock}}" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 48px; padding: 0; border: 0; background: transparent; color: #10161E; font: 500 14.5px Geist, system-ui, sans-serif; cursor: pointer; text-align: left">In stock only
+<span aria-hidden="true" style="flex: none; position: relative; width: 46px; height: 28px; border-radius: 14px; background: {{stockBg}}; transition: background .22s"><span style="position: absolute; left: 3px; top: 3px; width: 22px; height: 22px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 1px 3px rgba(16,24,34,.25); transform: translateX({{stockX}}px); transition: transform .26s cubic-bezier(.3,1.35,.5,1)"></span></span></button>
+<sc-if value="{{hasFilters}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{clear}}" class="rise" style="min-height: 44px; padding: 0; border: 0; background: transparent; color: #1747C7; font: 500 14px Geist, system-ui, sans-serif; cursor: pointer">Clear filters</button></sc-if>
+</aside>
+
+<div style="flex: 999 1 560px; min-width: 0">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; padding: 12px 16px; margin-bottom: 12px; background: #FFFFFF; border: 1px solid rgba(16,24,34,.07); border-radius: 18px">
+<label for="load" style="flex: 0 1 auto; font-size: 14.5px; font-weight: 550">Your home uses about {{loadText}} kW</label>
+<input id="load" type="range" min="0.2" max="3" step="0.05" value="{{load}}" onChange="{{onLoad}}" style="flex: 1 1 140px; min-width: 0; height: 44px; margin: 0">
+<div style="display: flex; align-items: center; gap: 8px">
+<label for="sort" style="font-size: 14px; color: #434E5A">Sort</label>
+<select id="sort" value="{{sort}}" onChange="{{onSort}}" style="height: 44px; padding: 0 10px; border: 1px solid rgba(16,24,34,.16); border-radius: 11px; background: #FFFFFF; color: #10161E; font: 500 14px Geist, system-ui, sans-serif"><option value="pop">Most bought</option><option value="low">Price, low first</option><option value="high">Price, high first</option><option value="long">Longest backup</option></select>
+</div>
+</div>
+
+<sc-if value="{{none}}" hint-placeholder-val="{{ false }}">
+<div class="rise" style="padding: 40px 20px; text-align: center; background: #FFFFFF; border: 1px solid rgba(16,24,34,.07); border-radius: 22px"><div style="font-size: 17px; font-weight: 600">Nothing matches those filters</div><div style="margin-top: 4px; font-size: 14.5px; color: #55606C">Try fewer filters, or ask an engineer.</div></div>
+</sc-if>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr)); gap: 12px">
+<sc-for list="{{cards}}" as="p" hint-placeholder-count="6">
+<article class="lift rise" style="display: flex; flex-direction: column; padding: 12px; background: #FFFFFF; border: 1px solid rgba(16,24,34,.07); border-radius: 20px">
+<a href="ProductPage.dc.html" style="display: block; text-decoration: none">
+<span style="display: flex; align-items: center; justify-content: center; height: 156px; border-radius: 13px; background: linear-gradient(160deg, #F6F8FA, #E6EBF0)"><svg aria-hidden="true" width="130" height="130"><use href="{{p.sym}}" x="0" y="0" width="130" height="130"></use></svg></span>
+<span style="display: block; margin: 12px 2px 0; font-size: 15.5px; font-weight: 550; letter-spacing: -.012em">{{p.name}}</span>
+<span style="display: block; margin: 2px 2px 0; font-size: 13.5px; color: #434E5A">{{p.spec}}</span>
+</a>
+<div style="margin: 10px 2px 0"><div style="display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px"><span>Backup for your home</span><b style="font-weight: 600">{{p.hours}}</b></div>
+<div style="height: 6px; margin-top: 5px; background: #E6EAEE; border-radius: 3px; overflow: hidden" role="img" aria-label="{{p.hoursAria}}"><div class="bar" style="width: {{p.bar}}%; height: 100%; background: #1B5CF0; border-radius: 3px"></div></div></div>
+<div style="display: flex; align-items: center; gap: 6px; margin: 9px 2px 0; font-size: 13px; font-weight: 500; color: {{p.stockColor}}"><span aria-hidden="true" style="width: 6px; height: 6px; border-radius: 50%; background: {{p.stockDot}}"></span>{{p.stock}}</div>
+<div style="margin: 8px 2px 0; font-size: 19px; font-weight: 600; letter-spacing: -.02em">{{p.price}}</div>
+<div style="display: flex; gap: 8px; margin-top: 10px">
+<button type="button" onClick="{{p.add}}" disabled="{{p.off}}" class="press" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; border: 0; border-radius: 12px; background: {{p.addBg}}; color: #FFFFFF; font: 500 14.5px Geist, system-ui, sans-serif; cursor: pointer">
+<sc-if value="{{p.busy}}" hint-placeholder-val="{{ false }}"><svg class="spin" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" style="fill: none; stroke: #FFFFFF; stroke-width: 2.6; stroke-linecap: round"><path d="M12 3a9 9 0 1 0 9 9"></path></svg></sc-if>
+<sc-if value="{{p.done}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" style="fill: none; stroke: #FFFFFF; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round"><path class="tickdraw" pathLength="1" d="M5 12.500 10 17.500 19.500 7"></path></svg></sc-if>
+<span>{{p.addText}}</span></button>
+<button type="button" onClick="{{p.compare}}" aria-pressed="{{p.cmp}}" class="press" style="flex: none; min-height: 44px; padding: 0 12px; border: 1px solid {{p.cmpBorder}}; border-radius: 12px; background: {{p.cmpBg}}; color: {{p.cmpFg}}; font: 500 14px Geist, system-ui, sans-serif; cursor: pointer">{{p.cmpText}}</button>
+</div>
+</article>
+</sc-for>
+</div>
+</div>
+</div>
+</div>
+
+<sc-if value="{{hasCompare}}" hint-placeholder-val="{{ false }}">
+<div class="glass rise" style="position: fixed; left: 50%; bottom: 14px; z-index: 40; display: flex; align-items: center; gap: 14px; width: min(520px, calc(100% - 24px)); box-sizing: border-box; padding: 8px 8px 8px 16px; border-radius: 18px; transform: translateX(-50%)">
+<div style="flex: 1; min-width: 0; font-size: 14.5px; font-weight: 500" aria-live="polite">{{compareText}}</div>
+<button type="button" onClick="{{clearCompare}}" class="press" style="flex: none; min-height: 44px; padding: 0 12px; border: 0; background: transparent; color: #10161E; font: 500 14px Geist, system-ui, sans-serif; cursor: pointer">Clear</button>
+<button type="button" onClick="{{openCompare}}" disabled="{{cantCompare}}" class="press" style="flex: none; min-height: 44px; padding: 0 16px; border: 0; border-radius: 12px; background: {{compareBg}}; color: #FFFFFF; font: 500 14.5px Geist, system-ui, sans-serif; cursor: pointer">Compare</button>
+</div>
+</sc-if>
+
+<sc-if value="{{sheet}}" hint-placeholder-val="{{ false }}">
+<div role="dialog" aria-modal="true" aria-label="Compare batteries" onKeyDown="{{sheetKey}}" style="position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; background: rgba(16,24,34,.34); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px)">
+<div class="rise" style="width: min(860px, 100%); max-height: 88%; overflow: auto; box-sizing: border-box; padding: 22px clamp(16px, 3vw, 28px) 26px; background: rgba(255,255,255,.94); border-radius: 26px 26px 0 0">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px"><h2 style="margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -.022em">Side by side</h2><button type="button" onClick="{{closeSheet}}" ref="{{bindClose}}" class="press" style="min-height: 44px; padding: 0 14px; border: 1px solid rgba(16,24,34,.16); border-radius: 12px; background: #FFFFFF; color: #10161E; font: 500 14px Geist, system-ui, sans-serif; cursor: pointer">Close</button></div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 14px; margin-top: 14px">
+<sc-for list="{{compared}}" as="c" hint-placeholder-count="2">
+<div style="min-width: 0; padding: 14px; background: #FFFFFF; border: 1px solid rgba(16,24,34,.08); border-radius: 18px">
+<div style="font-size: 15.5px; font-weight: 600; letter-spacing: -.012em">{{c.name}}</div>
+<div style="margin-top: 2px; font-size: 19px; font-weight: 600; letter-spacing: -.02em">{{c.price}}</div>
+<sc-for list="{{c.rows}}" as="r" hint-placeholder-count="4">
+<div style="margin-top: 11px"><div style="display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px"><span style="color: #434E5A">{{r.label}}</span><b style="font-weight: 600; text-align: right">{{r.value}}</b></div>
+<div style="height: 6px; margin-top: 4px; background: #E6EAEE; border-radius: 3px; overflow: hidden"><div class="bar" style="width: {{r.pct}}%; height: 100%; background: {{r.color}}; border-radius: 3px"></div></div></div>
+</sc-for>
+<div style="margin-top: 12px; font-size: 13.5px; line-height: 1.4; color: #434E5A">{{c.note}}</div>
+</div>
+</sc-for>
+</div>
+<p style="margin: 14px 0 0; font-size: 15px; line-height: 1.45"><b style="font-weight: 600">{{verdictHead}}</b> {{verdictRest}}</p>
+</div>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1320}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { type: 'all', volt: 'all', branch: 'any', stockOnly: false, load: .55, sort: 'pop', cmp: [], adding: {}, bag: 2, sheet: false };
+    this.bindBag = (el) => { this.bagEl = el; };
+    this.bindClose = (el) => { if (el) el.focus(); };
+    this.reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+  componentWillUnmount() { (this.timers || []).forEach(clearTimeout); }
+  later(fn, ms) { (this.timers = this.timers || []).push(setTimeout(fn, ms)); }
+  renderVals() {
+    const s = this.state, self = this;
+    const money = (n) => '₦' + Math.round(n).toLocaleString('en-NG');
+    const P = [
+      { id: 'l5', name: '5 kWh lithium battery', spec: '48 V, rack mounted', type: 'Lithium', volt: 48, kwh: 4.5, kg: 45, price: 1950000, life: 10, warr: 5, stock: { Ikeja: 11, Lekki: 4 }, sym: '#p-lithium', pop: 1 },
+      { id: 't200', name: '200Ah tubular battery', spec: '12 V. A 48 V inverter needs four.', type: 'Tubular', volt: 12, kwh: 1.2, kg: 60, price: 420000, life: 4, warr: 2, stock: { Ikeja: 14 }, sym: '#p-batt', pop: 2 },
+      { id: 'l10', name: '10 kWh lithium battery', spec: '48 V, rack mounted', type: 'Lithium', volt: 48, kwh: 9, kg: 85, price: 3650000, life: 10, warr: 5, stock: { Ikeja: 3 }, sym: '#p-lithium', pop: 3 },
+      { id: 'agm', name: '200Ah AGM battery', spec: '12 V, sealed, no water top-up', type: 'AGM', volt: 12, kwh: 1.2, kg: 58, price: 360000, life: 3, warr: 1, stock: { Ikeja: 8, Lekki: 6 }, sym: '#p-batt', pop: 4 },
+      { id: 't220', name: '220Ah tubular battery', spec: '12 V. A 48 V inverter needs four.', type: 'Tubular', volt: 12, kwh: 1.32, kg: 66, price: 480000, life: 4, warr: 2, stock: { Lekki: 5 }, sym: '#p-batt', pop: 5 },
+      { id: 'l2', name: '2.5 kWh lithium battery', spec: '24 V, wall mounted', type: 'Lithium', volt: 24, kwh: 2.25, kg: 25, price: 1050000, life: 8, warr: 3, stock: { Ikeja: 7 }, sym: '#p-lithium', pop: 6 },
+      { id: 'gel', name: '100Ah gel battery', spec: '12 V, sealed, small homes', type: 'Gel', volt: 12, kwh: .6, kg: 30, price: 210000, life: 3, warr: 1, stock: { Ikeja: 19 }, sym: '#p-batt', pop: 7 },
+      { id: 'l15', name: '15 kWh lithium battery', spec: '48 V, floor standing', type: 'Lithium', volt: 48, kwh: 13.5, kg: 130, price: 5200000, life: 10, warr: 5, stock: {}, sym: '#p-lithium', pop: 8 }
+    ];
+    const total = (p) => Object.values(p.stock).reduce((a, b) => a + b, 0);
+    const inBranch = (p) => s.branch === 'any' ? total(p) : (p.stock[s.branch] || 0);
+    let list = P.filter((p) => (s.type === 'all' || p.type === s.type) && (s.volt === 'all' || p.volt === s.volt) && (!s.stockOnly || inBranch(p) > 0) && (s.branch === 'any' || !s.stockOnly || p.stock[s.branch]));
+    const sorters = { pop: (a, b) => a.pop - b.pop, low: (a, b) => a.price - b.price, high: (a, b) => b.price - a.price, long: (a, b) => b.kwh - a.kwh };
+    list = list.slice().sort(sorters[s.sort]);
+    const hours = (p) => p.kwh / s.load;
+    const maxH = Math.max(...P.map(hours));
+    const hText = (h) => h < 1 ? 'Under 1 hour' : (h >= 72 ? 'Over 3 days' : 'About ' + Math.round(h) + (Math.round(h) === 1 ? ' hour' : ' hours'));
+    const opt = (key, value, label) => {
+      const on = s[key] === value;
+      return { label, on, border: on ? '#10161E' : 'rgba(16,24,34,.16)', bg: on ? '#10161E' : '#FFFFFF', fg: on ? '#FFFFFF' : '#10161E', pick: () => self.setState({ [key]: on && value !== 'all' && value !== 'any' ? (key === 'branch' ? 'any' : 'all') : value }) };
+    };
+    const cmp = s.cmp.map((id) => P.find((p) => p.id === id)).filter(Boolean);
+    const costYear = (p) => p.price / p.kwh / p.life;
+    const best = cmp.length ? cmp.slice().sort((a, b) => costYear(a) - costYear(b))[0] : null;
+    const longest = cmp.length ? Math.max(...cmp.map((p) => p.kwh)) : 1;
+    const maxCost = cmp.length ? Math.max(...cmp.map(costYear)) : 1;
+    const maxLife = cmp.length ? Math.max(...cmp.map((p) => p.life)) : 1;
+    const maxKg = cmp.length ? Math.max(...cmp.map((p) => p.kg)) : 1;
+    return {
+      bag: s.bag, bindBag: this.bindBag, bindClose: this.bindClose,
+      countText: list.length + (list.length === 1 ? ' battery' : ' batteries') + '. Prices checked today, 9:02 AM.',
+      groups: [
+        { name: 'Type', options: [opt('type', 'all', 'All'), opt('type', 'Lithium', 'Lithium'), opt('type', 'Tubular', 'Tubular'), opt('type', 'AGM', 'AGM'), opt('type', 'Gel', 'Gel')] },
+        { name: 'Voltage', options: [opt('volt', 'all', 'All'), opt('volt', 12, '12 V'), opt('volt', 24, '24 V'), opt('volt', 48, '48 V')] },
+        { name: 'Branch', options: [opt('branch', 'any', 'Any'), opt('branch', 'Ikeja', 'Ikeja'), opt('branch', 'Lekki', 'Lekki')] }
+      ],
+      stockOnly: s.stockOnly, toggleStock: () => self.setState({ stockOnly: !s.stockOnly }), stockBg: s.stockOnly ? '#1B5CF0' : '#C6CED6', stockX: s.stockOnly ? 18 : 0,
+      hasFilters: s.type !== 'all' || s.volt !== 'all' || s.branch !== 'any' || s.stockOnly,
+      clear: () => self.setState({ type: 'all', volt: 'all', branch: 'any', stockOnly: false }),
+      load: s.load, loadText: s.load.toFixed(2), onLoad: (e) => self.setState({ load: Number(e.target.value) }),
+      sort: s.sort, onSort: (e) => self.setState({ sort: e.target.value }),
+      none: list.length === 0,
+      cards: list.map((p) => {
+        const a = s.adding[p.id], n = inBranch(p), out = total(p) === 0, on = s.cmp.includes(p.id);
+        const where = s.branch !== 'any' ? (n ? n + ' in ' + s.branch : 'None in ' + s.branch + ', ' + total(p) + ' elsewhere') : Object.keys(p.stock).map((k) => p.stock[k] + ' in ' + k).join(', ');
+        const setA = (v) => self.setState({ adding: Object.assign({}, self.state.adding, { [p.id]: v }) });
+        return {
+          name: p.name, spec: p.spec, sym: p.sym, price: money(p.price), hours: hText(hours(p)), bar: (hours(p) / maxH * 100).toFixed(1), hoursAria: hText(hours(p)) + ' of backup for your home',
+          stock: out ? 'Out of stock. Back in about 3 weeks.' : where, stockColor: out || (s.branch !== 'any' && !n) ? '#92400E' : '#0A6E4B', stockDot: out || (s.branch !== 'any' && !n) ? '#D97A0B' : '#0D9465',
+          busy: a === 'busy', done: a === 'done', off: !!a || out, addText: out ? 'Out of stock' : (a === 'busy' ? 'Adding' : (a === 'done' ? 'Added' : 'Add to bag')), addBg: out ? '#8E99A4' : (a === 'done' ? '#0E7A56' : '#10161E'),
+          add: () => {
+            setA('busy');
+            self.later(() => { setA('done'); self.setState({ bag: self.state.bag + 1 }); if (self.bagEl && self.bagEl.animate && !self.reduced) self.bagEl.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.35)' }, { transform: 'scale(1)' }], { duration: 320, easing: 'cubic-bezier(.3,1.4,.5,1)' }); }, 480);
+            self.later(() => setA(null), 1700);
+          },
+          cmp: on, cmpText: on ? 'Comparing' : 'Compare', cmpBorder: on ? '#BBCDF9' : 'rgba(16,24,34,.16)', cmpBg: on ? '#E7EEFE' : '#FFFFFF', cmpFg: on ? '#1747C7' : '#10161E',
+          compare: () => {
+            if (on) self.setState({ cmp: s.cmp.filter((x) => x !== p.id) });
+            else self.setState({ cmp: s.cmp.concat(p.id).slice(-3) });
+          }
+        };
+      }),
+      hasCompare: s.cmp.length > 0, cantCompare: s.cmp.length < 2, compareBg: s.cmp.length < 2 ? '#8E99A4' : '#1B5CF0',
+      compareText: s.cmp.length === 1 ? 'Pick one more to compare' : s.cmp.length + ' batteries to compare',
+      clearCompare: () => self.setState({ cmp: [] }),
+      openCompare: () => { if (s.cmp.length >= 2) self.setState({ sheet: true }); },
+      sheet: s.sheet, closeSheet: () => self.setState({ sheet: false }),
+      sheetKey: (e) => { if (e.key === 'Escape') self.setState({ sheet: false }); },
+      compared: cmp.map((p) => ({
+        name: p.name, price: money(p.price),
+        rows: [
+          { label: 'Backup for your home', value: hText(hours(p)), pct: (p.kwh / longest * 100).toFixed(1), color: '#1B5CF0' },
+          { label: 'Usually lasts', value: 'About ' + p.life + ' years', pct: (p.life / maxLife * 100).toFixed(1), color: '#1B5CF0' },
+          { label: 'Cost per kWh, per year of life', value: money(costYear(p)), pct: (costYear(p) / maxCost * 100).toFixed(1), color: '#D97A0B' },
+          { label: 'Weight', value: p.kg + ' kg', pct: (p.kg / maxKg * 100).toFixed(1), color: '#8E99A4' }
+        ],
+        note: p.warr + (p.warr === 1 ? ' year' : ' years') + ' warranty. ' + (p.type === 'Tubular' ? 'Needs a water top-up every few months.' : 'No water top-up needed.')
+      })),
+      verdictHead: best ? best.name + ' costs least over its life.' : '',
+      verdictRest: 'A cheaper price today can still cost more per year. An engineer can check this against your own use.'
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Books</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+body{margin:0;background:#EEF1F4}
+.card{box-sizing:border-box;padding:20px;background:#FFFFFF;border:1px solid rgba(16,24,34,.07);border-radius:22px;min-width:0}
+.title{margin:0;font-size:18px;font-weight:600;letter-spacing:-.015em}
+.sub{margin:3px 0 0;font-size:14px;line-height:1.45;color:#55606C}
+.glass{background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.85);box-shadow:0 1px 2px rgba(16,24,34,.06),0 14px 32px rgba(16,24,34,.11)}
+.press{transition:background .15s,transform .1s,border-color .15s,color .15s}
+.press:active{transform:scale(.97)}
+.ghost{min-height:44px;padding:0 13px;border:1px solid rgba(16,24,34,.16);border-radius:12px;background:#FFFFFF;color:#10161E;font:500 14px Geist,system-ui,sans-serif;cursor:pointer}
+.solid{min-height:44px;padding:0 15px;border:0;border-radius:12px;background:#10161E;color:#FFFFFF;font:500 14px Geist,system-ui,sans-serif;cursor:pointer}
+.tbl{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+.tbl th{padding:6px 8px;text-align:right;font-weight:500;color:#55606C;border-bottom:1px solid #E6EAEE}
+.tbl td{padding:6px 8px;text-align:right;border-bottom:1px solid #F1F3F5}
+.tbl th:first-child,.tbl td:first-child{text-align:left}
+button:focus-visible,input:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid #1B5CF0;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.rise{animation:rise .24s cubic-bezier(.2,.7,.2,1) both}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+.tickdraw{stroke-dasharray:1;animation:draw .3s cubic-bezier(.3,.7,.2,1) both}
+.wf{transition:height .45s cubic-bezier(.25,.8,.25,1),bottom .45s cubic-bezier(.25,.8,.25,1)}
+input::placeholder{color:#5D6874;opacity:1}
+@media (prefers-reduced-motion:reduce){.rise,.tickdraw{animation-duration:.01ms}.wf{transition:none}}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; padding: 12px clamp(10px, 3vw, 44px) 40px; font-family: Geist, system-ui, -apple-system, 'Segoe UI', sans-serif; color: #10161E; background: radial-gradient(70% 380px at 70% 0, #FFFFFF 0%, rgba(255,255,255,0) 100%), #EEF1F4">
+
+<nav aria-label="Books" class="glass" style="position: sticky; top: 12px; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 14px; padding: 6px 12px 6px 18px; border-radius: 18px">
+<span style="display: inline-flex; align-items: center; min-height: 42px; font-weight: 650; font-size: 17px; letter-spacing: -.02em">Books, October 2026</span>
+<div role="group" aria-label="Section" style="position: relative; display: grid; grid-template-columns: repeat(4, minmax(66px, 88px)); padding: 3px; background: rgba(16,24,34,.07); border-radius: 12px">
+<span aria-hidden="true" style="position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px) / 4); background: #FFFFFF; border-radius: 9px; box-shadow: 0 1px 2px rgba(16,24,34,.12), 0 4px 10px rgba(16,24,34,.08); transform: translateX({{tabX}}%); transition: transform .28s cubic-bezier(.3,1.2,.5,1)"></span>
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="4"><button type="button" onClick="{{t.pick}}" aria-pressed="{{t.on}}" style="position: relative; height: 40px; padding: 0 2px; border: 0; background: transparent; color: #10161E; font: 500 13.5px Geist, system-ui, sans-serif; cursor: pointer">{{t.label}}</button></sc-for>
+</div>
+</nav>
+
+<div style="max-width: 1040px; margin: 16px auto 0; display: flex; flex-direction: column; gap: 12px">
+
+<div aria-live="polite" class="glass" style="display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-radius: 15px; font-size: 14.5px; font-weight: 500; color: {{balInk}}">
+<svg aria-hidden="true" viewBox="0 0 24 24" width="19" height="19" style="flex: none; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round"><path d="M5 12.500 10 17.500 19.500 7"></path></svg>
+<span>{{balLine}}</span>
+</div>
+
+<sc-if value="{{isMonth}}" hint-placeholder-val="{{ true }}">
+<section class="card rise" aria-labelledby="m1">
+<h1 id="m1" class="title" style="font-size: 20px">How October went</h1>
+<div style="margin-top: 6px; font-size: clamp(36px, 4vw, 48px); line-height: 1.05; font-weight: 600; letter-spacing: -.035em">{{profit}}</div>
+<div style="font-size: 14px; color: #434E5A">{{profitLabel}}</div>
+<div role="img" aria-label="{{wfAria}}" style="position: relative; height: 200px; margin-top: 18px; border-bottom: 1px solid #DDE1E5">
+<div aria-hidden="true" style="position: absolute; inset: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr))">
+<sc-for list="{{wf}}" as="w" hint-placeholder-count="4">
+<div style="position: relative">
+<div class="wf" style="position: absolute; left: 50%; bottom: {{w.bottom}}%; width: min(44%, 56px); height: {{w.height}}%; margin-left: calc(min(44%, 56px) / -2); background: {{w.color}}; border-radius: 4px 4px 0 0"></div>
+<div class="wf" style="position: absolute; left: 0; right: 0; bottom: calc({{w.top}}% + 5px); text-align: center; font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums">{{w.value}}</div>
+</div>
+</sc-for>
+</div>
+</div>
+<div aria-hidden="true" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 5px; text-align: center; font-size: 13px; color: #55606C"><sc-for list="{{wf}}" as="w" hint-placeholder-count="4"><span>{{w.label}}</span></sc-for></div>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 12px">
+<section class="card rise" aria-labelledby="m2">
+<h2 id="m2" class="title">Money earned and spent</h2>
+<table class="tbl" style="margin-top: 8px"><tbody>
+<sc-for list="{{pl}}" as="r" hint-placeholder-count="8"><tr style="font-weight: {{r.weight}}"><td style="border-bottom-color: {{r.line}}">{{r.name}}</td><td style="border-bottom-color: {{r.line}}">{{r.value}}</td></tr></sc-for>
+</tbody></table>
+</section>
+<section class="card rise" aria-labelledby="m3">
+<h2 id="m3" class="title">What we own and owe</h2>
+<table class="tbl" style="margin-top: 8px"><tbody>
+<sc-for list="{{bs}}" as="r" hint-placeholder-count="9"><tr style="font-weight: {{r.weight}}"><td style="border-bottom-color: {{r.line}}">{{r.name}}</td><td style="border-bottom-color: {{r.line}}">{{r.value}}</td></tr></sc-for>
+</tbody></table>
+<p style="margin: 8px 2px 0; font-size: 13.5px; line-height: 1.4; color: #434E5A">A deposit is money we owe in goods, not profit. It becomes a sale on delivery.</p>
+</section>
+</div>
+</sc-if>
+
+<sc-if value="{{isEntries}}" hint-placeholder-val="{{ false }}">
+<section class="card rise" aria-labelledby="e1" style="padding-bottom: 8px">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 16px">
+<div style="flex: 1 1 260px; min-width: 0"><h1 id="e1" class="title" style="font-size: 20px">Every entry</h1><p class="sub">Written automatically by sales, stock and payments. Entries are never edited or deleted. A mistake gets reversed, with a reason.</p></div>
+<button type="button" role="switch" aria-checked="{{acct}}" onClick="{{toggleAcct}}" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0; border: 0; background: transparent; color: #10161E; font: 500 14px Geist, system-ui, sans-serif; cursor: pointer">Accountant view<span aria-hidden="true" style="position: relative; width: 46px; height: 28px; border-radius: 14px; background: {{acctBg}}; transition: background .22s"><span style="position: absolute; left: 3px; top: 3px; width: 22px; height: 22px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 1px 3px rgba(16,24,34,.25); transform: translateX({{acctX}}px); transition: transform .26s cubic-bezier(.3,1.35,.5,1)"></span></span></button>
+</div>
+<label for="f" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%)">Search entries</label>
+<input id="f" value="{{filter}}" onChange="{{onFilter}}" placeholder="Search, such as Okafor or rent" style="width: 100%; height: 46px; box-sizing: border-box; margin-top: 10px; padding: 0 14px; border: 1px solid rgba(16,24,34,.16); border-radius: 13px; background: #FFFFFF; color: #10161E; font: 400 15px Geist, system-ui, sans-serif">
+<div style="margin-top: 6px">
+<sc-for list="{{entries}}" as="t" hint-placeholder-count="6">
+<div style="padding: 10px 0; border-bottom: 1px solid #F1F3F5; opacity: {{t.o}}">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px">
+<div style="flex: 1 1 240px; min-width: 0"><div style="font-size: 15px; font-weight: 500; text-decoration: {{t.strike}}">{{t.what}}</div><div style="font-size: 13.5px; color: {{t.noteColor}}">{{t.note}}</div></div>
+<div style="flex: none; display: flex; align-items: center; gap: 10px"><b style="font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums">{{t.amount}}</b>
+<sc-if value="{{t.canReverse}}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{t.startReverse}}" class="ghost press" style="min-width: 74px">Reverse</button></sc-if></div>
+</div>
+<sc-if value="{{t.asking}}" hint-placeholder-val="{{ false }}">
+<div class="rise" style="margin-top: 8px; padding: 10px 12px; background: #F4F6F8; border-radius: 12px"><div style="font-size: 14px; font-weight: 550">Why are you reversing this?</div><div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px"><sc-for list="{{t.reasons}}" as="r" hint-placeholder-count="3"><button type="button" onClick="{{r.pick}}" class="ghost press">{{r.label}}</button></sc-for></div></div>
+</sc-if>
+<sc-if value="{{acct}}" hint-placeholder-val="{{ false }}">
+<div tabIndex="0" class="rise" style="overflow-x: auto; margin-top: 7px"><table class="tbl" style="min-width: 360px; font-size: 13.5px"><thead><tr><th scope="col">Account</th><th scope="col">Debit</th><th scope="col">Credit</th></tr></thead><tbody><sc-for list="{{t.lines}}" as="l" hint-placeholder-count="2"><tr><td>{{l.acct}}</td><td>{{l.dr}}</td><td>{{l.cr}}</td></tr></sc-for></tbody></table></div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{isBank}}" hint-placeholder-val="{{ false }}">
+<section class="card rise" aria-labelledby="b1">
+<h1 id="b1" class="title" style="font-size: 20px">Match the bank</h1>
+<p class="sub">Your bank statement against our records. This is where a fake alert gets caught.</p>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr)); gap: 10px; margin-top: 12px">
+<div style="padding: 12px 14px; background: #F4F6F8; border-radius: 14px"><div style="font-size: 13.5px; color: #55606C">Bank statement says</div><div style="font-size: 21px; font-weight: 600; letter-spacing: -.02em">{{stmt}}</div></div>
+<div style="padding: 12px 14px; background: #F4F6F8; border-radius: 14px"><div style="font-size: 13.5px; color: #55606C">Our books say</div><div style="font-size: 21px; font-weight: 600; letter-spacing: -.02em">{{booksBank}}</div></div>
+<div style="padding: 12px 14px; background: {{diffBg}}; border-radius: 14px; transition: background .3s"><div style="font-size: 13.5px; color: #434E5A">Difference</div><div aria-live="polite" style="font-size: 21px; font-weight: 600; letter-spacing: -.02em">{{bankDiff}}</div></div>
+</div>
+
+<sc-if value="{{hasIssues}}" hint-placeholder-val="{{ true }}"><h2 style="margin: 18px 0 2px; font-size: 16px; font-weight: 600">Needs you</h2></sc-if>
+<sc-for list="{{issues}}" as="i" hint-placeholder-count="3">
+<div class="rise" style="margin-top: 8px; padding: 12px 14px; border-radius: 14px; background: {{i.bg}}">
+<div style="font-size: 15px; font-weight: 600; letter-spacing: -.01em">{{i.title}}</div>
+<div style="margin-top: 1px; font-size: 14px; line-height: 1.4; color: #434E5A">{{i.body}}</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px"><sc-for list="{{i.actions}}" as="a" hint-placeholder-count="2"><button type="button" onClick="{{a.go}}" class="ghost press">{{a.label}}</button></sc-for></div>
+</div>
+</sc-for>
+<h2 style="margin: 18px 0 2px; font-size: 16px; font-weight: 600">Matched automatically</h2>
+<sc-for list="{{matched}}" as="m" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid #F1F3F5; font-size: 14.5px"><span style="display: flex; align-items: center; gap: 8px; min-width: 0"><svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" style="flex: none; fill: none; stroke: #0D9465; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round"><path d="M5 12.500 10 17.500 19.500 7"></path></svg><span>{{m.what}}</span></span><b style="flex: none; font-weight: 550; font-variant-numeric: tabular-nums">{{m.amount}}</b></div>
+</sc-for>
+</section>
+</sc-if>
+
+<sc-if value="{{isClose}}" hint-placeholder-val="{{ false }}">
+<section class="card rise" aria-labelledby="c1">
+<h1 id="c1" class="title" style="font-size: 20px">{{closeTitle}}</h1>
+<p class="sub">{{closeSub}}</p>
+<ul style="margin: 12px 0 0; padding: 0; list-style: none">
+<sc-for list="{{checks}}" as="c" hint-placeholder-count="4">
+<li style="display: flex; align-items: flex-start; gap: 11px; padding: 10px 0; border-bottom: 1px solid #F1F3F5"><span aria-hidden="true" style="flex: none; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: {{c.bg}}; transition: background .25s"><svg viewBox="0 0 24 24" width="14" height="14" style="fill: none; stroke: #FFFFFF; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round"><path d="{{c.icon}}"></path></svg></span><span style="min-width: 0"><span style="display: block; font-size: 15px; font-weight: 500">{{c.name}}</span><span style="display: block; font-size: 13.5px; color: {{c.color}}">{{c.note}}</span></span></li>
+</sc-for>
+</ul>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px">
+<button type="button" onClick="{{closeMonth}}" disabled="{{cantClose}}" class="press" style="flex: 1 1 220px; min-height: 52px; border: 0; border-radius: 14px; background: {{closeBg}}; color: #FFFFFF; font: 600 15.5px Geist, system-ui, sans-serif; cursor: pointer">{{closeText}}</button>
+<button type="button" onClick="{{exportBooks}}" class="ghost press" style="flex: 1 1 200px; min-height: 52px; border-radius: 14px">{{exportText}}</button>
+</div>
+</section>
+</sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1100}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const dr = (acct, amt) => ({ acct, dr: amt, cr: 0 }), cr = (acct, amt) => ({ acct, dr: 0, cr: amt });
+    this.state = {
+      tab: 0, acct: false, filter: '', asking: null, closed: false, exported: false,
+      resolved: {},
+      txns: [
+        { id: 't1', date: '2 Oct', what: 'Deposit from Okafor Ventures, invoice 1042', by: 'Bank confirmed', lines: [dr('Bank', 1500000), cr('Goods we owe customers', 1500000)] },
+        { id: 't2', date: '5 Oct', what: 'Delivered invoice 1042 to Okafor Ventures', by: 'Dispatch', lines: [dr('Goods we owe customers', 1500000), dr('Customers owe us', 2300000), cr('Sales', 3800000), dr('Cost of goods sold', 2900000), cr('Stock', 2900000)] },
+        { id: 't3', date: '7 Oct', what: 'Counter sales, cash', by: 'Tunde', lines: [dr('Cash', 420000), cr('Sales', 420000), dr('Cost of goods sold', 310000), cr('Stock', 310000)] },
+        { id: 't4', date: '9 Oct', what: 'Paid Sunshine Traders', by: 'Owner', lines: [dr('We owe suppliers', 6000000), cr('Bank', 6000000)] },
+        { id: 't5', date: '12 Oct', what: 'Goods received from Sunshine Traders', by: 'Musa', lines: [dr('Stock', 8400000), cr('We owe suppliers', 8400000)] },
+        { id: 't6', date: '15 Oct', what: 'POS sales', by: 'Tunde', lines: [dr('Bank', 790000), cr('Sales', 790000), dr('Cost of goods sold', 600000), cr('Stock', 600000)] },
+        { id: 't7', date: '20 Oct', what: 'Bello Stores paid old debt', by: 'Bank confirmed', lines: [dr('Bank', 1000000), cr('Customers owe us', 1000000)] },
+        { id: 't8', date: '25 Oct', what: 'Shop rent', by: 'Owner', lines: [dr('Rent', 850000), cr('Bank', 850000)] },
+        { id: 't9', date: '28 Oct', what: 'Staff salaries', by: 'Owner', lines: [dr('Salaries', 1600000), cr('Bank', 1600000)] },
+        { id: 't10', date: '29 Oct', what: 'Fuel for vans', by: 'Musa, receipt attached', lines: [dr('Fuel and delivery', 140000), cr('Cash', 140000)] },
+        { id: 't11', date: '30 Oct', what: 'Bearings written off after count', by: 'Owner approved', lines: [dr('Stock differences', 9600), cr('Stock', 9600)] },
+        { id: 't12', date: '31 Oct', what: 'Till 1 short at close', by: 'Tunde, owner told', lines: [dr('Till differences', 5000), cr('Cash', 5000)] },
+        { id: 't13', date: '31 Oct', what: 'October invoices, 412 sales', by: 'Summary of sales', lines: [dr('Bank', 30000000), cr('Sales', 30000000), dr('Cost of goods sold', 23400000), cr('Stock', 23400000)] },
+        { id: 't14', date: '30 Oct', what: 'Transfer from Kano Plastics, invoice 1077', by: 'Tunde, from a screenshot', lines: [dr('Bank', 750000), cr('Customers owe us', 750000)] }
+      ]
+    };
+  }
+  renderVals() {
+    const s = this.state, self = this;
+    const money = (n) => (n < 0 ? '−' : '') + '₦' + Math.abs(Math.round(n)).toLocaleString('en-NG');
+    const short = (n) => { const a = Math.abs(n), sign = n < 0 ? '−' : ''; return sign + '₦' + (a >= 1e6 ? (a / 1e6).toFixed(1).replace(/\.0$/, '') + 'M' : Math.round(a / 1e3) + 'K'); };
+    const OPEN = { Bank: 12000000, Cash: 400000, Stock: 46000000, 'Customers owe us': 8000000, 'We owe suppliers': -14000000, "Owner's money": -52400000 };
+    const bal = Object.assign({}, OPEN);
+    let totalDr = 0, totalCr = 0;
+    s.txns.forEach((t) => t.lines.forEach((l) => { bal[l.acct] = (bal[l.acct] || 0) + l.dr - l.cr; totalDr += l.dr; totalCr += l.cr; }));
+    const get = (k) => bal[k] || 0;
+    const sales = -get('Sales'), cogs = get('Cost of goods sold');
+    const EXP = ['Rent', 'Salaries', 'Fuel and delivery', 'Bank charges', 'Stock differences', 'Till differences'];
+    const exps = EXP.reduce((a, k) => a + get(k), 0);
+    const gross = sales - cogs, profit = gross - exps;
+    const assets = get('Bank') + get('Cash') + get('Stock') + get('Customers owe us');
+    const owe = -get('We owe suppliers') - get('Goods we owe customers');
+    const equity = -get("Owner's money") + profit;
+    const balanced = totalDr === totalCr && Math.round(assets) === Math.round(owe + equity);
+
+    const post = (id, date, what, by, lines, extra) => {
+      self.setState((prev) => Object.assign({ txns: prev.txns.concat({ id, date, what, by, lines }) }, extra ? extra(prev) : {}));
+    };
+    const reverse = (t, reason) => {
+      const lines = t.lines.map((l) => ({ acct: l.acct, dr: l.cr, cr: l.dr }));
+      self.setState({ txns: s.txns.concat({ id: 'r' + t.id, date: '1 Nov', what: 'Reversal of: ' + t.what, by: reason, lines, reversalOf: t.id }).map((x) => x.id === t.id ? Object.assign({}, x, { reversed: reason }) : x), asking: null });
+    };
+    const q = s.filter.toLowerCase().trim();
+    const amountOf = (t) => t.lines.reduce((a, l) => a + l.dr, 0) > 0 ? Math.max(...t.lines.map((l) => l.dr)) : 0;
+    const t14 = s.txns.find((t) => t.id === 't14');
+    const fakeOpen = !t14.reversed && !s.resolved.fake;
+    const adeOpen = !s.resolved.ade, chargeOpen = !s.resolved.charge;
+    // The statement is the bank's truth. Our books should end up matching it.
+    const STATEMENT = 12000000 + 1500000 - 6000000 + 790000 + 1000000 - 850000 - 1600000 + 30000000 + 500000 - 2500;
+    const diff = get('Bank') - STATEMENT;
+    const issues = [];
+    if (fakeOpen) issues.push({ bg: '#FDF1E3', title: 'In our books, not in the bank: ₦750,000', body: 'Tunde recorded a transfer from Kano Plastics from a screenshot. It never reached the bank. This may be a fake alert.', actions: [{ label: 'Reverse it, and hold their goods', go: () => reverse(t14, 'Money never arrived. Possible fake alert.') }, { label: 'It came in later', go: () => self.setState({ resolved: Object.assign({}, s.resolved, { fake: true }) }) }] });
+    if (adeOpen) issues.push({ bg: '#F4F6F8', title: 'In the bank, not in our books: ₦500,000 from ADE B', body: 'Probably a customer paying. Which account is it for?', actions: [
+      { label: 'Eze Motors, invoice 1033', go: () => post('t15', '30 Oct', 'Eze Motors paid invoice 1033', 'Matched from the bank', [{ acct: 'Bank', dr: 500000, cr: 0 }, { acct: 'Customers owe us', dr: 0, cr: 500000 }], (p) => ({ resolved: Object.assign({}, p.resolved, { ade: true }) })) },
+      { label: 'Keep as unmatched credit', go: () => post('t15', '30 Oct', 'Unmatched money from ADE B', 'Held until we know who paid', [{ acct: 'Bank', dr: 500000, cr: 0 }, { acct: 'Goods we owe customers', dr: 0, cr: 500000 }], (p) => ({ resolved: Object.assign({}, p.resolved, { ade: true }) })) }
+    ] });
+    if (chargeOpen) issues.push({ bg: '#F4F6F8', title: 'In the bank, not in our books: −₦2,500', body: 'Looks like bank charges.', actions: [{ label: 'Record as bank charges', go: () => post('t16', '31 Oct', 'Bank charges', 'Matched from the bank', [{ acct: 'Bank charges', dr: 2500, cr: 0 }, { acct: 'Bank', dr: 0, cr: 2500 }], (p) => ({ resolved: Object.assign({}, p.resolved, { charge: true }) })) }] });
+    const open = issues.length;
+    const tick = 'M5 12.500 10 17.500 19.500 7', dash = 'M7 12h10';
+    const CHECKS = [
+      { name: 'Every entry balances', ok: balanced, yes: 'Debits and credits are equal.', no: 'Something does not balance.' },
+      { name: 'Bank matches the statement', ok: open === 0 && diff === 0, yes: 'No difference.', no: open + (open === 1 ? ' item' : ' items') + ' still to resolve.' },
+      { name: 'All tills closed', ok: true, yes: '31 of 31 days, 1 shortage recorded.', no: '' },
+      { name: 'Stock counts approved', ok: true, yes: '12 shelves counted, 1 difference written off.', no: '' }
+    ];
+    const canClose = CHECKS.every((c) => c.ok);
+    const wfTop = Math.max(sales, 1);
+    const pct = (v) => (v / wfTop * 86);
+    return {
+      tabX: s.tab * 100,
+      tabs: ['Month', 'Entries', 'Bank', 'Close'].map((label, i) => ({ label, on: i === s.tab, pick: () => self.setState({ tab: i, asking: null }) })),
+      isMonth: s.tab === 0, isEntries: s.tab === 1, isBank: s.tab === 2, isClose: s.tab === 3,
+      balInk: balanced ? '#0A6E4B' : '#92400E',
+      balLine: balanced ? 'The books balance. Own ' + money(assets) + ' = owe ' + money(owe) + ' + owner ' + money(equity) + '.' : 'The books do not balance. Do not close this month.',
+      profit: money(profit), profitLabel: profit >= 0 ? 'Profit after all costs' : 'Loss after all costs',
+      wfAria: 'Sales ' + short(sales) + ', minus cost of goods ' + short(cogs) + ', minus running costs ' + short(exps) + ', leaves ' + short(profit),
+      wf: [
+        { label: 'Sales', value: short(sales), bottom: 0, height: pct(sales).toFixed(1), top: pct(sales).toFixed(1), color: '#1B5CF0' },
+        { label: 'Cost of goods', value: '−' + short(cogs), bottom: pct(sales - cogs).toFixed(1), height: pct(cogs).toFixed(1), top: pct(sales).toFixed(1), color: '#D97A0B' },
+        { label: 'Running costs', value: '−' + short(exps), bottom: pct(gross - exps).toFixed(1), height: pct(exps).toFixed(1), top: pct(gross).toFixed(1), color: '#D97A0B' },
+        { label: 'Profit', value: short(profit), bottom: 0, height: Math.max(0, pct(profit)).toFixed(1), top: Math.max(0, pct(profit)).toFixed(1), color: '#0F8F6B' }
+      ],
+      pl: [
+        { name: 'Sales', value: money(sales), weight: 500, line: '#F1F3F5' },
+        { name: 'Cost of what we sold', value: money(-cogs), weight: 400, line: '#F1F3F5' },
+        { name: 'Gross profit', value: money(gross), weight: 600, line: '#DDE1E5' }
+      ].concat(EXP.filter((k) => get(k)).map((k) => ({ name: k, value: money(-get(k)), weight: 400, line: '#F1F3F5' }))).concat({ name: 'Profit', value: money(profit), weight: 600, line: 'transparent' }),
+      bs: [
+        { name: 'In the bank', value: money(get('Bank')), weight: 400, line: '#F1F3F5' },
+        { name: 'Cash in tills', value: money(get('Cash')), weight: 400, line: '#F1F3F5' },
+        { name: 'Stock, at cost', value: money(get('Stock')), weight: 400, line: '#F1F3F5' },
+        { name: 'Customers owe us', value: money(get('Customers owe us')), weight: 400, line: '#F1F3F5' },
+        { name: 'Everything we own', value: money(assets), weight: 600, line: '#DDE1E5' },
+        { name: 'We owe suppliers', value: money(-get('We owe suppliers')), weight: 400, line: '#F1F3F5' },
+        { name: 'Goods we owe customers', value: money(-get('Goods we owe customers')), weight: 400, line: '#F1F3F5' },
+        { name: "Owner's money, with this month's profit", value: money(equity), weight: 600, line: 'transparent' }
+      ],
+      acct: s.acct, toggleAcct: () => self.setState({ acct: !s.acct }), acctBg: s.acct ? '#1B5CF0' : '#C6CED6', acctX: s.acct ? 18 : 0,
+      filter: s.filter, onFilter: (e) => self.setState({ filter: e.target.value }),
+      entries: s.txns.filter((t) => !q || t.what.toLowerCase().includes(q) || t.by.toLowerCase().includes(q)).slice().reverse().map((t) => ({
+        what: t.what, note: t.date + '. ' + (t.reversed ? 'Reversed: ' + t.reversed : t.by), noteColor: t.reversed ? '#92400E' : '#55606C', amount: money(amountOf(t)), o: t.reversed ? .62 : 1, strike: t.reversed ? 'line-through' : 'none',
+        canReverse: !s.closed && !t.reversed && !t.reversalOf,
+        asking: s.asking === t.id,
+        startReverse: () => self.setState({ asking: s.asking === t.id ? null : t.id }),
+        reasons: ['Entered by mistake', 'Wrong amount', 'Wrong customer'].map((label) => ({ label, pick: () => reverse(t, label) })),
+        lines: t.lines.map((l) => ({ acct: l.acct, dr: l.dr ? money(l.dr) : '', cr: l.cr ? money(l.cr) : '' }))
+      })),
+      stmt: money(STATEMENT), booksBank: money(get('Bank')), bankDiff: money(diff), diffBg: diff === 0 ? '#EEF9F4' : '#FDF1E3',
+      hasIssues: open > 0, issues,
+      matched: [
+        { what: 'Paid Sunshine Traders, 9 Oct', amount: money(-6000000) }, { what: 'Bello Stores paid old debt, 20 Oct', amount: money(1000000) }, { what: 'Shop rent, 25 Oct', amount: money(-850000) }, { what: 'Staff salaries, 28 Oct', amount: money(-1600000) }
+      ],
+      closeTitle: s.closed ? 'October is closed' : 'Close October',
+      closeSub: s.closed ? 'Nothing in October can change now. A late correction goes into November, marked as such.' : 'Once closed, October cannot be changed, so the accountant and the owner see the same numbers forever.',
+      checks: CHECKS.map((c) => ({ name: c.name, bg: c.ok ? '#0D9465' : '#D97A0B', icon: c.ok ? tick : dash, note: c.ok ? c.yes : c.no, color: c.ok ? '#55606C' : '#92400E' })),
+      cantClose: !canClose || s.closed, closeBg: s.closed ? '#0E7A56' : (canClose ? '#1B5CF0' : '#8E99A4'),
+      closeText: s.closed ? 'Closed' : (canClose ? 'Close October' : 'Finish the items above first'),
+      closeMonth: () => { if (canClose) self.setState({ closed: true }); },
+      exportText: s.exported ? 'Export ready for the accountant' : 'Export for the accountant', exportBooks: () => self.setState({ exported: true })
+    };
+  }
+}
+</script>
+</body>
+</html>

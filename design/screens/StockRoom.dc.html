@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stock room</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+body{margin:0;background:#EEF1F4}
+a{color:inherit}
+.card{box-sizing:border-box;padding:18px;background:#FFFFFF;border:1px solid rgba(16,24,34,.07);border-radius:22px;min-width:0}
+.title{margin:0;font-size:17px;font-weight:600;letter-spacing:-.014em}
+.sub{margin:3px 0 0;font-size:14px;line-height:1.4;color:#55606C}
+.glass{background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.85);box-shadow:0 1px 2px rgba(16,24,34,.06),0 14px 32px rgba(16,24,34,.11)}
+.press{transition:background .15s,transform .1s,border-color .15s,color .15s}
+.press:active{transform:scale(.97)}
+.ghost{min-height:44px;padding:0 13px;border:1px solid rgba(16,24,34,.16);border-radius:12px;background:#FFFFFF;color:#10161E;font:500 14px Geist,system-ui,sans-serif;cursor:pointer}
+.solid{min-height:48px;padding:0 16px;border:0;border-radius:13px;background:#1B5CF0;color:#FFFFFF;font:550 15px Geist,system-ui,sans-serif;cursor:pointer}
+.step{width:44px;height:44px;border:0;border-radius:12px;background:transparent;color:#10161E;font:400 21px Geist,system-ui,sans-serif;cursor:pointer}
+.scan{width:100%;height:52px;box-sizing:border-box;padding:0 15px;border:1.5px solid #10161E;border-radius:14px;background:#FFFFFF;color:#10161E;font:500 16px 'Geist Mono',monospace}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #1B5CF0;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.rise{animation:rise .22s cubic-bezier(.2,.7,.2,1) both}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+.tickdraw{stroke-dasharray:1;animation:draw .3s cubic-bezier(.3,.7,.2,1) both}
+.bar{transition:width .4s cubic-bezier(.25,.8,.25,1)}
+input::placeholder{color:#5D6874;opacity:1}
+@media (prefers-reduced-motion:reduce){.rise,.tickdraw{animation-duration:.01ms}.bar{transition:none}}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; padding: 12px clamp(10px, 2vw, 28px) 32px; font-family: Geist, system-ui, -apple-system, 'Segoe UI', sans-serif; color: #10161E; background: radial-gradient(70% 380px at 70% 0, #FFFFFF 0%, rgba(255,255,255,0) 100%), #EEF1F4">
+
+<nav aria-label="Staff" class="glass" style="position: sticky; top: 12px; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 14px; padding: 6px 12px 6px 18px; border-radius: 18px">
+<span style="display: inline-flex; align-items: center; min-height: 42px; font-weight: 650; font-size: 17px; letter-spacing: -.02em">Stock room</span>
+<div role="group" aria-label="Stock room" style="position: relative; display: grid; grid-template-columns: repeat(3, 92px); padding: 3px; background: rgba(16,24,34,.07); border-radius: 12px">
+<span aria-hidden="true" style="position: absolute; top: 3px; bottom: 3px; left: 3px; width: 92px; background: #FFFFFF; border-radius: 9px; box-shadow: 0 1px 2px rgba(16,24,34,.12), 0 4px 10px rgba(16,24,34,.08); transform: translateX({{tabX}}px); transition: transform .28s cubic-bezier(.3,1.2,.5,1)"></span>
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="3"><button type="button" onClick="{{t.pick}}" aria-pressed="{{t.on}}" style="position: relative; height: 40px; border: 0; background: transparent; color: #10161E; font: 500 14px Geist, system-ui, sans-serif; cursor: pointer">{{t.label}}</button></sc-for>
+</div>
+<span style="font-size: 13.5px; color: #434E5A">Bola, Ikeja store</span>
+</nav>
+
+<div style="max-width: 860px; margin: 16px auto 0">
+
+<sc-if value="{{isReceive}}" hint-placeholder-val="{{ true }}">
+<div class="rise" style="display: flex; flex-direction: column; gap: 12px">
+<div class="card" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 12px 18px; background: #FBF6E9"><div style="min-width: 0"><div style="font-size: 15px; font-weight: 600">Charge check due</div><div style="font-size: 14px; color: #434E5A">{{chargeNote}}</div></div><button type="button" onClick="{{charged}}" class="ghost press" style="flex: none">{{chargedText}}</button></div>
+<section class="card" aria-labelledby="r1">
+<h1 id="r1" class="title" style="font-size: 20px">Receiving delivery from Sunshine Traders</h1>
+<p class="sub">Scan each unit as it comes off the truck. Damaged goods are recorded, never hidden.</p>
+<div style="position: relative; height: 10px; margin-top: 12px; background: #E6EAEE; border-radius: 5px; overflow: hidden" role="img" aria-label="{{recvAria}}"><div class="bar" style="width: {{recvPct}}%; height: 100%; background: #1B5CF0; border-radius: 5px"></div></div>
+<div style="margin-top: 5px; font-size: 13.5px; color: #434E5A">{{recvText}}</div>
+<label for="rs" style="display: block; margin: 12px 0 6px; font-size: 14.5px; font-weight: 550">Scan a serial number</label>
+<input id="rs" class="scan" value="{{serial}}" onChange="{{onSerial}}" onKeyDown="{{serialKey}}" autocomplete="off" placeholder="TB-200-… then Enter">
+<p aria-live="polite" style="min-height: 20px; margin: 6px 0 0; font-size: 14px; font-weight: 500; color: {{msgColor}}">{{msg}}</p>
+<div style="margin-top: 8px">
+<sc-for list="{{recvLines}}" as="l" hint-placeholder-count="3">
+<div style="padding: 12px 0; border-top: 1px solid #F1F3F5">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px">
+<div style="flex: 1 1 200px; min-width: 0"><div style="font-size: 15px; font-weight: 500">{{l.name}}</div><div style="font-size: 13.5px; color: {{l.noteColor}}">{{l.note}}</div></div>
+<sc-if value="{{l.byCount}}" hint-placeholder-val="{{ false }}"><div role="group" aria-label="{{l.qtyA}}" style="display: flex; align-items: center; background: #F1F3F5; border-radius: 12px"><button type="button" onClick="{{l.less}}" aria-label="{{l.lessA}}" class="step press">−</button><input inputmode="numeric" value="{{l.got}}" onChange="{{l.set}}" aria-label="{{l.qtyA}}" style="width: 56px; height: 44px; box-sizing: border-box; border: 0; background: transparent; text-align: center; color: #10161E; font: 600 15.5px Geist, system-ui, sans-serif"><button type="button" onClick="{{l.more}}" aria-label="{{l.moreA}}" class="step press">+</button></div></sc-if>
+<button type="button" onClick="{{l.damage}}" class="ghost press" style="flex: none">Report damage</button>
+</div>
+<div style="height: 6px; margin-top: 8px; background: #E6EAEE; border-radius: 3px; overflow: hidden"><div class="bar" style="width: {{l.pct}}%; height: 100%; background: {{l.color}}; border-radius: 3px"></div></div>
+</div>
+</sc-for>
+</div>
+<button type="button" onClick="{{finishRecv}}" class="solid press" style="width: 100%; margin-top: 12px; background: {{finishBg}}">{{finishText}}</button>
+<sc-if value="{{recvDone}}" hint-placeholder-val="{{ false }}"><p class="rise" style="margin: 10px 0 0; font-size: 14.5px; line-height: 1.45"><b style="font-weight: 600">Recorded.</b> {{recvSummary}}</p></sc-if>
+</section>
+</div>
+</sc-if>
+
+<sc-if value="{{isPick}}" hint-placeholder-val="{{ false }}">
+<section class="card rise" aria-labelledby="p1">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 16px"><div><h1 id="p1" class="title" style="font-size: 20px">Packing order 2214</h1><p class="sub">Goes on Musa's van, trip 2. {{pickText}}</p></div>
+<sc-if value="{{pickAllDone}}" hint-placeholder-val="{{ false }}"><span class="rise" style="display: inline-flex; align-items: center; gap: 7px; padding: 8px 12px; background: #EEF9F4; border-radius: 11px; font-size: 14px; font-weight: 550; color: #0A6E4B"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" style="fill: none; stroke: #0D9465; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round"><path class="tickdraw" pathLength="1" d="M5 12.500 10 17.500 19.500 7"></path></svg><span>Ready for the van</span></span></sc-if>
+</div>
+<label for="ps" style="display: block; margin: 14px 0 6px; font-size: 14.5px; font-weight: 550">Scan what you pick up</label>
+<input id="ps" class="scan" value="{{pickScan}}" onChange="{{onPick}}" onKeyDown="{{pickKey}}" autocomplete="off" placeholder="Scan the unit, then Enter">
+<sc-if value="{{pickWarn}}" hint-placeholder-val="{{ false }}"><div class="rise" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-top: 8px; padding: 10px 12px; background: #FDF4E7; border-radius: 12px"><div style="flex: 1 1 240px; min-width: 0; font-size: 14px; line-height: 1.4; color: #7A3E0C">{{pickWarnText}}</div><button type="button" onClick="{{pickAnyway}}" class="ghost press" style="flex: none">Use it anyway</button></div></sc-if>
+<p aria-live="polite" style="min-height: 20px; margin: 6px 0 0; font-size: 14px; font-weight: 500; color: {{pickMsgColor}}">{{pickMsg}}</p>
+<ol style="margin: 8px 0 0; padding: 0; list-style: none">
+<sc-for list="{{pickLines}}" as="l" hint-placeholder-count="3">
+<li style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid #F1F3F5; opacity: {{l.o}}; transition: opacity .25s">
+<span aria-hidden="true" style="flex: none; display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: {{l.dot}}; transition: background .25s"><sc-if value="{{l.done}}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 24 24" width="15" height="15" style="fill: none; stroke: #FFFFFF; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round"><path class="tickdraw" pathLength="1" d="M5 12.500 10 17.500 19.500 7"></path></svg></sc-if></span>
+<div style="flex: 1; min-width: 0"><div style="font-size: 15px; font-weight: 500">{{l.name}}</div><div style="font-size: 13.5px; color: #434E5A">{{l.where}}</div><div style="font: 500 13.5px 'Geist Mono', monospace; color: {{l.codeColor}}">{{l.take}}</div></div>
+<sc-if value="{{l.tap}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{l.pick}}" class="ghost press" style="flex: none">Picked</button></sc-if>
+</li>
+</sc-for>
+</ol>
+</section>
+</sc-if>
+
+<sc-if value="{{isCount}}" hint-placeholder-val="{{ false }}">
+<section class="card rise" aria-labelledby="c1">
+<h1 id="c1" class="title" style="font-size: 20px">Count shelf B4</h1>
+<p class="sub">Count what you see. Expected numbers stay hidden until you finish, so nobody counts to match.</p>
+<div style="margin-top: 12px">
+<sc-for list="{{countLines}}" as="l" hint-placeholder-count="4">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; padding: 10px 0; border-top: 1px solid #F1F3F5">
+<div style="flex: 1 1 200px; min-width: 0"><div style="font-size: 15px; font-weight: 500">{{l.name}}</div>
+<sc-if value="{{l.shown}}" hint-placeholder-val="{{ false }}"><div class="rise" style="display: flex; align-items: center; gap: 5px; font-size: 13.5px; font-weight: 500; color: {{l.color}}"><span>{{l.result}}</span></div></sc-if></div>
+<label style="display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: #55606C"><span>Counted</span><input inputmode="numeric" value="{{l.val}}" onChange="{{l.set}}" disabled="{{countDone}}" aria-label="{{l.aria}}" style="width: 78px; height: 44px; box-sizing: border-box; padding: 0 10px; border: 1px solid rgba(16,24,34,.16); border-radius: 11px; background: #FFFFFF; color: #10161E; text-align: right; font: 600 15.5px Geist, system-ui, sans-serif"></label>
+</div>
+</sc-for>
+</div>
+<sc-if value="{{countOpen}}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{submitCount}}" disabled="{{countBlocked}}" class="solid press" style="width: 100%; margin-top: 12px; background: {{countBtn}}">{{countBtnText}}</button></sc-if>
+<sc-if value="{{countDone}}" hint-placeholder-val="{{ false }}"><div class="rise" aria-live="polite" style="margin-top: 12px; padding: 12px 14px; background: {{countBg}}; border-radius: 14px"><div style="font-size: 15.5px; font-weight: 600">{{countTitle}}</div><div style="margin-top: 2px; font-size: 14px; line-height: 1.4; color: #434E5A">{{countNote}}</div></div></sc-if>
+</section>
+</sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      tab: 0, charged: false, serial: '', scanned: [], msg: '', msgKind: 'ok', got: { bea: 0, cable: 0 }, damaged: {}, recvDone: false,
+      pickScan: '', picked: {}, pickWarn: null, pickMsg: '', count: { a: '', b: '', c: '', d: '' }, countDone: false
+    };
+  }
+  renderVals() {
+    const s = this.state, self = this;
+    const money = (n) => '₦' + Math.round(n).toLocaleString('en-NG');
+    const norm = (t) => String(t).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const SERIALS = ['TB-200-90411', 'TB-200-90412', 'TB-200-90413', 'TB-200-90414'];
+    const LINES = [
+      { id: 'tub', name: '200Ah tubular battery', want: SERIALS.length, serial: true },
+      { id: 'bea', name: '6205-2RS bearing', want: 100, unit: '' },
+      { id: 'cable', name: '6 mm solar cable', want: 200, unit: ' m' }
+    ];
+    const gotOf = (l) => l.serial ? s.scanned.length : s.got[l.id];
+    const wanted = LINES.reduce((a, l) => a + l.want, 0);
+    const have = LINES.reduce((a, l) => a + Math.min(l.want, gotOf(l)), 0);
+    const short = LINES.filter((l) => gotOf(l) < l.want);
+    const damagedNames = Object.keys(s.damaged).filter((k) => s.damaged[k]);
+    const addSerial = () => {
+      const code = norm(s.serial);
+      if (!code) return;
+      const match = SERIALS.find((x) => norm(x) === code);
+      if (!match) { self.setState({ serial: '', msg: 'That serial is not on this delivery. Set the unit aside and tell the owner.', msgKind: 'bad' }); return; }
+      if (s.scanned.includes(match)) { self.setState({ serial: '', msg: match + ' was already scanned.', msgKind: 'bad' }); return; }
+      self.setState({ serial: '', scanned: s.scanned.concat(match), msg: match + ' received. Warranty and history start here.', msgKind: 'ok' });
+    };
+
+    const PICK = [
+      { id: 'inv', name: '1 × 5 kVA hybrid inverter', where: 'Aisle A, shelf 2', code: 'INV-5K-20441', newer: 'INV-5K-20467' },
+      { id: 'bat', name: '1 × 200Ah tubular battery', where: 'Aisle C, floor. Keep upright.', code: 'TB-200-88121', newer: 'TB-200-90411', oldest: 'Made January. Oldest first, so shelf stock never goes flat.' },
+      { id: 'bea', name: '2 × 6205-2RS bearing', where: 'Aisle F, bin 14', code: null }
+    ];
+    const nextPick = PICK.find((l) => !s.picked[l.id]);
+    const mark = (id) => { self.setState({ picked: Object.assign({}, self.state.picked, { [id]: true }), pickWarn: null, pickScan: '', pickMsg: 'Picked. Next item.' }); };
+    const doPickScan = () => {
+      const code = norm(s.pickScan);
+      if (!code) return;
+      const exact = PICK.find((l) => l.code && norm(l.code) === code && !s.picked[l.id]);
+      if (exact) { mark(exact.id); return; }
+      const newer = PICK.find((l) => l.newer && norm(l.newer) === code && !s.picked[l.id]);
+      if (newer) { self.setState({ pickWarn: { id: newer.id, text: s.pickScan.toUpperCase() + ' is newer stock. Take ' + newer.code + ' first, so the oldest sells first.' }, pickScan: '', pickMsg: '' }); return; }
+      self.setState({ pickScan: '', pickWarn: null, pickMsg: 'That unit is not on this order.' });
+    };
+
+    const COUNT = [
+      { id: 'a', name: '6205-2RS bearing', expected: 48, price: 4800 },
+      { id: 'b', name: '6204-2RS bearing', expected: 8, price: 3900 },
+      { id: 'c', name: 'A42 V-belt', expected: 15, price: 3200 },
+      { id: 'd', name: 'A44 V-belt', expected: 9, price: 3400 }
+    ];
+    const allCounted = COUNT.every((c) => s.count[c.id] !== '');
+    const missing = COUNT.reduce((a, c) => a + (c.expected - Number(s.count[c.id] || 0)) * c.price, 0);
+    const diffs = COUNT.filter((c) => Number(s.count[c.id] || 0) !== c.expected).length;
+    const allDone = !nextPick;
+    return {
+      tabX: s.tab * 92,
+      tabs: ['Receive', 'Pack', 'Count'].map((label, i) => ({ label, on: i === s.tab, pick: () => self.setState({ tab: i }) })),
+      isReceive: s.tab === 0, isPick: s.tab === 1, isCount: s.tab === 2,
+      chargeNote: s.charged ? 'Done. Next check for these in 90 days.' : '6 AGM batteries have sat on shelf D for 90 days. They lose charge if left.',
+      chargedText: s.charged ? 'Checked' : 'Mark as checked', charged: () => self.setState({ charged: !s.charged }),
+      recvPct: (have / wanted * 100).toFixed(1), recvAria: have + ' of ' + wanted + ' items received', recvText: have + ' of ' + wanted + ' items received',
+      serial: s.serial, onSerial: (e) => self.setState({ serial: e.target.value }), serialKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); addSerial(); } },
+      msg: s.msg, msgColor: s.msgKind === 'ok' ? '#0A6E4B' : '#92400E',
+      recvLines: LINES.map((l) => {
+        const got = gotOf(l), full = got >= l.want, dam = !!s.damaged[l.id];
+        const setGot = (v) => self.setState({ got: Object.assign({}, s.got, { [l.id]: Math.max(0, v) }) });
+        return {
+          name: l.name, byCount: !l.serial, got, pct: Math.min(100, got / l.want * 100).toFixed(1), color: dam ? '#D97A0B' : (got > l.want ? '#D97A0B' : (full ? '#0D9465' : '#1B5CF0')),
+          note: dam ? 'Damage reported, with a photo. Value goes on the supplier claim.' : (got > l.want ? got + (l.unit || '') + ' received, ' + l.want + (l.unit || '') + ' ordered. Check with the owner.' : got + (l.unit || '') + ' of ' + l.want + (l.unit || '') + (l.serial ? ' scanned' : ' counted')),
+          noteColor: dam || got > l.want ? '#92400E' : '#55606C',
+          qtyA: 'Quantity received of ' + l.name, lessA: 'One fewer: ' + l.name, moreA: 'One more: ' + l.name,
+          less: () => setGot(got - 1), more: () => setGot(got + 1), set: (e) => setGot(Number(e.target.value.replace(/\D/g, '').slice(0, 5)) || 0),
+          damage: () => self.setState({ damaged: Object.assign({}, s.damaged, { [l.id]: !dam }) })
+        };
+      }),
+      finishBg: short.length ? '#10161E' : '#1B5CF0',
+      finishText: short.length ? 'Finish, with ' + short.length + (short.length === 1 ? ' line' : ' lines') + ' short' : 'Finish receiving',
+      finishRecv: () => self.setState({ recvDone: true }),
+      recvDone: s.recvDone,
+      recvSummary: have + ' items moved into Ikeja stock, each with who and when.' + (short.length ? ' Short lines stay open on the supplier order.' : '') + (damagedNames.length ? ' Damage goes on a supplier claim.' : ''),
+
+      pickText: allDone ? 'All picked.' : Object.keys(s.picked).filter((k) => s.picked[k]).length + ' of ' + PICK.length + ' picked.',
+      pickAllDone: allDone, pickScan: s.pickScan, onPick: (e) => self.setState({ pickScan: e.target.value }),
+      pickKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); doPickScan(); } },
+      pickWarn: !!s.pickWarn, pickWarnText: s.pickWarn ? s.pickWarn.text : '', pickAnyway: () => s.pickWarn && mark(s.pickWarn.id),
+      pickMsg: s.pickMsg, pickMsgColor: s.pickMsg.startsWith('That') ? '#92400E' : '#0A6E4B',
+      pickLines: PICK.map((l) => {
+        const done = !!s.picked[l.id], isNext = nextPick === l;
+        return { name: l.name, where: l.where, done, o: done ? .55 : 1, dot: done ? '#0D9465' : (isNext ? '#1B5CF0' : '#DDE2E7'), take: l.code ? 'Take ' + l.code : 'No serial. Count them.', codeColor: l.code ? '#10161E' : '#55606C', tap: !done && !l.code, pick: () => mark(l.id) };
+      }),
+
+      countLines: COUNT.map((c) => {
+        const v = s.count[c.id], d = Number(v || 0) - c.expected;
+        return { name: c.name, val: v, aria: 'Count of ' + c.name, shown: s.countDone, result: d === 0 ? 'Matches' : (d < 0 ? Math.abs(d) + ' missing, worth ' + money(Math.abs(d) * c.price) : d + ' extra'), color: d === 0 ? '#0A6E4B' : '#92400E',
+          set: (e) => self.setState({ count: Object.assign({}, s.count, { [c.id]: e.target.value.replace(/\D/g, '').slice(0, 5) }) }) };
+      }),
+      countDone: s.countDone, countOpen: !s.countDone, countBlocked: !allCounted, countBtn: allCounted ? '#1B5CF0' : '#8E99A4', countBtnText: allCounted ? 'Finish the count' : 'Count every line first',
+      submitCount: () => { if (allCounted) self.setState({ countDone: true }); },
+      countBg: diffs ? '#FDF4E7' : '#EEF9F4',
+      countTitle: diffs ? diffs + (diffs === 1 ? ' line differs' : ' lines differ') + (missing > 0 ? ', ' + money(missing) + ' missing' : '') : 'Everything matches',
+      countNote: diffs ? 'Sent to the owner to approve or recount. Stock does not change until then.' : 'Saved. This shelf is next due in 30 days.'
+    };
+  }
+}
+</script>
+</body>
+</html>

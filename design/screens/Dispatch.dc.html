@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dispatch board</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+body{margin:0;background:#EEF1F4}
+.card{box-sizing:border-box;padding:18px;background:#FFFFFF;border:1px solid rgba(16,24,34,.07);border-radius:22px;min-width:0}
+.title{margin:0;font-size:17px;font-weight:600;letter-spacing:-.014em}
+.glass{background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.85);box-shadow:0 1px 2px rgba(16,24,34,.06),0 14px 32px rgba(16,24,34,.11)}
+.press{transition:background .15s,transform .1s,border-color .15s,color .15s}
+.press:active{transform:scale(.97)}
+.ghost{min-height:44px;padding:0 13px;border:1px solid rgba(16,24,34,.16);border-radius:12px;background:#FFFFFF;color:#10161E;font:500 14px Geist,system-ui,sans-serif;cursor:pointer}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #1B5CF0;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.rise{animation:rise .24s cubic-bezier(.2,.7,.2,1) both}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+.tickdraw{stroke-dasharray:1;animation:draw .3s cubic-bezier(.3,.7,.2,1) both}
+.bar{transition:width .45s cubic-bezier(.25,.8,.25,1),background .25s}
+.side{position:sticky;top:76px}
+@media (max-width:860px){.side{position:static}}
+@media (prefers-reduced-motion:reduce){.rise,.tickdraw{animation-duration:.01ms}.bar{transition:none}}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; padding: 12px clamp(10px, 2vw, 28px) 32px; font-family: Geist, system-ui, -apple-system, 'Segoe UI', sans-serif; color: #10161E; background: radial-gradient(70% 380px at 70% 0, #FFFFFF 0%, rgba(255,255,255,0) 100%), #EEF1F4">
+<nav aria-label="Staff" class="glass" style="position: sticky; top: 12px; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 14px; padding: 6px 18px; border-radius: 18px">
+<span style="display: inline-flex; align-items: center; min-height: 42px; font-weight: 650; font-size: 17px; letter-spacing: -.02em">Dispatch</span>
+<span aria-live="polite" style="font-size: 13.5px; color: #434E5A">{{headline}}</span>
+</nav>
+
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; max-width: 1320px; margin: 14px auto 0">
+<div style="flex: 999 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+
+<section class="card" aria-labelledby="d1" style="padding-bottom: 8px">
+<h1 id="d1" class="title" style="font-size: 20px">Ready to go</h1>
+<p style="margin: 3px 0 8px; font-size: 14px; color: #55606C">Tick the orders for one trip. The vehicle advice updates as you tick.</p>
+<sc-if value="{{noneWaiting}}" hint-placeholder-val="{{ false }}"><div class="rise" style="padding: 18px 0; text-align: center; font-size: 15px; color: #55606C">Everything is on the road. Nothing waiting.</div></sc-if>
+<sc-for list="{{waiting}}" as="o" hint-placeholder-count="4">
+<button type="button" role="checkbox" aria-checked="{{o.on}}" onClick="{{o.pick}}" class="press" style="display: flex; width: 100%; align-items: flex-start; gap: 12px; padding: 12px; margin-bottom: 6px; border: 1.5px solid {{o.border}}; border-radius: 15px; background: {{o.bg}}; color: #10161E; text-align: left; font-family: Geist, system-ui, sans-serif; cursor: pointer">
+<span aria-hidden="true" style="flex: none; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; margin-top: 1px; box-sizing: border-box; border-radius: 7px; border: 1.5px solid {{o.boxBorder}}; background: {{o.boxBg}}; transition: background .15s, border-color .15s"><sc-if value="{{o.on}}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 24 24" width="16" height="16" style="fill: none; stroke: #FFFFFF; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round"><path class="tickdraw" pathLength="1" d="M5 12.500 10 17.500 19.500 7"></path></svg></sc-if></span>
+<span style="flex: 1; min-width: 0">
+<span style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 15px; font-weight: 550">{{o.title}}<sc-if value="{{o.urgent}}" hint-placeholder-val="{{ false }}"><span style="padding: 2px 7px; background: #FDF1E3; color: #92400E; border-radius: 6px; font-size: 12.5px; font-weight: 500">Machine stopped, send first</span></sc-if><sc-if value="{{o.failed}}" hint-placeholder-val="{{ false }}"><span style="padding: 2px 7px; background: #F1F3F5; color: #434E5A; border-radius: 6px; font-size: 12.5px; font-weight: 500">Second try</span></sc-if></span>
+<span style="display: block; margin-top: 2px; font-size: 13.5px; line-height: 1.35; color: #434E5A">{{o.detail}}</span>
+<span style="display: block; margin-top: 2px; font-size: 13.5px; font-weight: 500">{{o.advice}}</span>
+</span>
+</button>
+</sc-for>
+</section>
+
+<section class="card" aria-labelledby="d2">
+<h2 id="d2" class="title">On the road</h2>
+<sc-if value="{{noTrips}}" hint-placeholder-val="{{ false }}"><div style="padding: 10px 0 2px; font-size: 14.5px; color: #55606C">No trips out yet.</div></sc-if>
+<sc-for list="{{trips}}" as="t" hint-placeholder-count="1">
+<div class="rise" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #F1F3F5">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px"><div style="min-width: 0"><div style="font-size: 15px; font-weight: 550">{{t.title}}</div><div style="font-size: 13.5px; color: #434E5A">{{t.note}}</div></div><button type="button" onClick="{{t.next}}" class="ghost press" style="flex: none">{{t.nextText}}</button></div>
+<div style="height: 8px; margin-top: 8px; background: #E6EAEE; border-radius: 4px; overflow: hidden" role="img" aria-label="{{t.aria}}"><div class="bar" style="width: {{t.pct}}%; height: 100%; background: {{t.color}}; border-radius: 4px"></div></div>
+</div>
+</sc-for>
+</section>
+</div>
+
+<aside class="side" aria-label="Plan a trip" style="flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+<section class="glass" style="padding: 18px; border-radius: 24px">
+<h2 class="title">Plan this trip</h2>
+<sc-if value="{{nothingPicked}}" hint-placeholder-val="{{ true }}"><p style="margin: 6px 0 0; font-size: 14.5px; line-height: 1.45; color: #434E5A">Tick an order to start. We recommend the vehicle from the weight and the longest item.</p></sc-if>
+<sc-if value="{{hasPicked}}" hint-placeholder-val="{{ false }}">
+<p aria-live="polite" style="margin: 5px 0 0; font-size: 14.5px; line-height: 1.45"><b style="font-weight: 600">{{adviceHead}}</b> {{adviceWhy}}</p>
+<div role="radiogroup" aria-label="Vehicle" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; margin-top: 10px">
+<sc-for list="{{vehicles}}" as="v" hint-placeholder-count="4"><button type="button" role="radio" aria-checked="{{v.on}}" onClick="{{v.pick}}" class="press" style="min-height: 52px; padding: 2px; border: 1.5px solid {{v.border}}; border-radius: 12px; background: {{v.bg}}; color: {{v.fg}}; font: 500 14px/1.2 Geist, system-ui, sans-serif; cursor: pointer">{{v.name}}<br><span style="font-size: 12px; font-weight: 400">{{v.cap}}</span></button></sc-for>
+</div>
+<div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 13.5px; font-variant-numeric: tabular-nums"><span>Load</span><span>{{load}}</span></div>
+<div style="height: 10px; margin-top: 4px; background: #DDE2E7; border-radius: 5px; overflow: hidden" role="img" aria-label="{{loadA}}"><div class="bar" style="width: {{loadPct}}%; height: 100%; background: {{loadCol}}; border-radius: 5px"></div></div>
+<sc-if value="{{cantCarry}}" hint-placeholder-val="{{ false }}"><p class="rise" style="margin: 7px 0 0; font-size: 13.5px; line-height: 1.4; color: #92400E">{{cantText}}</p></sc-if>
+<sc-if value="{{overriding}}" hint-placeholder-val="{{ false }}">
+<div class="rise" style="margin-top: 9px"><div style="font-size: 13.5px; font-weight: 550">Not the advised vehicle. Why?</div><div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px"><sc-for list="{{reasons}}" as="r" hint-placeholder-count="3"><button type="button" onClick="{{r.pick}}" aria-pressed="{{r.on}}" class="press" style="min-height: 44px; padding: 0 11px; border: 1px solid {{r.border}}; border-radius: 10px; background: {{r.bg}}; color: {{r.fg}}; font: 500 13.5px Geist, system-ui, sans-serif; cursor: pointer">{{r.label}}</button></sc-for></div></div>
+</sc-if>
+
+<div style="margin-top: 12px; font-size: 13.5px; font-weight: 550">Driver</div>
+<div role="radiogroup" aria-label="Driver" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px"><sc-for list="{{drivers}}" as="d" hint-placeholder-count="3"><button type="button" role="radio" aria-checked="{{d.on}}" disabled="{{d.off}}" onClick="{{d.pick}}" class="press" style="flex: 1 1 86px; min-height: 48px; padding: 2px 6px; border: 1.5px solid {{d.border}}; border-radius: 12px; background: {{d.bg}}; color: {{d.fg}}; font: 500 14px/1.2 Geist, system-ui, sans-serif; cursor: pointer; opacity: {{d.o}}">{{d.name}}<br><span style="font-size: 12px; font-weight: 400">{{d.state}}</span></button></sc-for></div>
+
+<sc-if value="{{multi}}" hint-placeholder-val="{{ false }}">
+<div style="margin-top: 12px; font-size: 13.5px; font-weight: 550">Stops, in order</div>
+<ol style="margin: 5px 0 0; padding: 0; list-style: none"><sc-for list="{{stops}}" as="x" hint-placeholder-count="2"><li style="display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 14px"><span style="flex: 1; min-width: 0">{{x.label}}</span><button type="button" onClick="{{x.up}}" disabled="{{x.first}}" aria-label="{{x.upA}}" class="ghost press" style="flex: none; width: 44px; padding: 0; opacity: {{x.firstO}}">↑</button></li></sc-for></ol>
+</sc-if>
+<p aria-live="polite" style="min-height: 18px; margin: 9px 0 0; font-size: 13.5px; color: #92400E">{{startBlock}}</p>
+<button type="button" onClick="{{start}}" disabled="{{cantStart}}" class="press" style="width: 100%; min-height: 54px; margin-top: 3px; border: 0; border-radius: 15px; background: {{startBg}}; color: #FFFFFF; font: 600 16px Geist, system-ui, sans-serif; cursor: pointer">{{startText}}</button>
+</sc-if>
+</section>
+
+<section class="card" aria-labelledby="c1">
+<h2 id="c1" class="title">Cash with drivers</h2>
+<sc-for list="{{cash}}" as="c" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid #F1F3F5; margin-top: 4px">
+<div style="min-width: 0"><div style="font-size: 15px; font-weight: 500">{{c.name}}</div><div style="font-size: 13.5px; color: {{c.noteColor}}">{{c.note}}</div></div>
+<sc-if value="{{c.has}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{c.take}}" class="ghost press rise" style="flex: none">Received</button></sc-if>
+</div>
+</sc-for>
+</section>
+</aside>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1040}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      picked: [], vehicle: null, reason: null, driver: null, order: [], trips: [], done: [],
+      cash: { Musa: 180000, Ade: 0, Kola: 42000 }
+    };
+  }
+  renderVals() {
+    const s = this.state, self = this;
+    const money = (n) => '₦' + Math.round(n).toLocaleString('en-NG');
+    const ORDERS = [
+      { id: 2221, area: 'Agbara plant', what: '2 bearings', kg: 1, m: .1, urgent: true, note: 'Bike leaves in 8 minutes' },
+      { id: 2214, area: 'Lekki Phase 1', what: 'Solar set: 8 panels, 4 batteries, inverter, rails', kg: 534, m: 2.4, note: 'Batteries must stay upright' },
+      { id: 2216, area: 'Surulere', what: '1 tubular battery', kg: 62, m: .5, note: 'Upright. Two people to carry' },
+      { id: 2219, area: 'Yaba', what: '1 car battery, 4 belts', kg: 19, m: .4 },
+      { id: 2210, area: 'Ikeja GRA', what: '4 items', kg: 88, m: .6, failed: true, note: 'Customer was not home on the first try' }
+    ];
+    const VEH = [
+      { id: 'bike', name: 'Bike', cap: 30, m: .8, label: '30 kg' },
+      { id: 'car', name: 'Car', cap: 180, m: 1.5, label: '180 kg' },
+      { id: 'van', name: 'Van', cap: 1000, m: 3, label: '1 t' },
+      { id: 'truck', name: 'Truck', cap: 3000, m: 7, label: '3 t' }
+    ];
+    const DRIVERS = [{ name: 'Ade', vehicles: ['bike'] }, { name: 'Kola', vehicles: ['car', 'bike'] }, { name: 'Musa', vehicles: ['van', 'car'] }];
+    const out = s.trips.flatMap((t) => t.orders);
+    const waiting = ORDERS.filter((o) => !out.includes(o.id));
+    const picked = s.order.map((id) => ORDERS.find((o) => o.id === id)).filter(Boolean);
+    const kg = picked.reduce((a, o) => a + o.kg, 0), longest = picked.reduce((a, o) => Math.max(a, o.m), 0);
+    const advised = VEH.find((v) => v.cap >= kg && v.m >= longest) || VEH[3];
+    const chosen = VEH.find((v) => v.id === s.vehicle) || advised;
+    const tooHeavy = kg > chosen.cap, tooLong = longest > chosen.m;
+    const overriding = chosen.id !== advised.id && !tooHeavy && !tooLong;
+    const busy = s.trips.filter((t) => !t.finished).map((t) => t.driver);
+    const driver = DRIVERS.find((d) => d.name === s.driver) || null;
+    const driverOk = driver && driver.vehicles.includes(chosen.id) && !busy.includes(driver.name);
+    let startBlock = '';
+    if (tooHeavy || tooLong) startBlock = 'Choose a vehicle that can carry this.';
+    else if (overriding && !s.reason) startBlock = 'Say why, so the advice gets better.';
+    else if (!driver) startBlock = 'Choose a driver.';
+    else if (!driverOk) startBlock = driver.name + ' does not drive the ' + chosen.name.toLowerCase() + '.';
+    const toggle = (id) => {
+      const on = s.order.includes(id);
+      self.setState({ order: on ? s.order.filter((x) => x !== id) : s.order.concat(id), vehicle: null, reason: null });
+    };
+    const opt = (on) => on ? { bg: '#10161E', fg: '#FFFFFF', border: '#10161E' } : { bg: '#FFFFFF', fg: '#10161E', border: 'rgba(16,24,34,.16)' };
+    return {
+      headline: waiting.length + (waiting.length === 1 ? ' order' : ' orders') + ' ready, ' + s.trips.filter((t) => !t.finished).length + ' out',
+      noneWaiting: waiting.length === 0,
+      waiting: waiting.map((o) => {
+        const on = s.order.includes(o.id);
+        const v = VEH.find((x) => x.cap >= o.kg && x.m >= o.m) || VEH[3];
+        return { title: 'Order ' + o.id + ', ' + o.area, urgent: !!o.urgent, failed: !!o.failed, on, detail: o.what + (o.note ? '. ' + o.note + '.' : '.'), advice: o.kg + ' kg. Advised: ' + v.name.toLowerCase() + (v.id === 'van' ? ', with 2 people' : ''),
+          border: on ? '#1B5CF0' : 'rgba(16,24,34,.09)', bg: on ? '#F6F9FF' : '#FFFFFF', boxBg: on ? '#1B5CF0' : '#FFFFFF', boxBorder: on ? '#1B5CF0' : '#9AA4AF', pick: () => toggle(o.id) };
+      }),
+      nothingPicked: !picked.length, hasPicked: !!picked.length,
+      adviceHead: 'Use the ' + advised.name.toLowerCase() + (advised.id === 'van' ? ', with 2 people.' : '.'),
+      adviceWhy: kg + ' kg in total, longest item ' + longest + ' m.',
+      vehicles: VEH.map((v) => Object.assign({ name: v.name, cap: v.label, on: v.id === chosen.id, pick: () => self.setState({ vehicle: v.id, driver: null }) }, opt(v.id === chosen.id))),
+      load: kg + ' kg of ' + chosen.cap.toLocaleString('en-NG') + ' kg', loadA: kg + ' kilograms on a ' + chosen.cap + ' kilogram vehicle', loadPct: Math.min(100, kg / chosen.cap * 100).toFixed(1), loadCol: tooHeavy ? '#D97A0B' : '#1B5CF0',
+      cantCarry: tooHeavy || tooLong, cantText: tooHeavy ? 'Too heavy for the ' + chosen.name.toLowerCase() + '.' : 'The longest item is ' + longest + ' m. It will not fit on the ' + chosen.name.toLowerCase() + '.',
+      overriding,
+      reasons: ['Advised one is out', 'Customer asked', 'Combining trips'].map((label) => Object.assign({ label, on: s.reason === label, pick: () => self.setState({ reason: label }) }, opt(s.reason === label))),
+      drivers: DRIVERS.map((d) => {
+        const isBusy = busy.includes(d.name), can = d.vehicles.includes(chosen.id), on = s.driver === d.name;
+        return Object.assign({ name: d.name, state: isBusy ? 'On a trip' : (can ? 'Free' : 'Other vehicle'), on, off: isBusy, o: isBusy || !can ? .5 : 1, pick: () => self.setState({ driver: d.name }) }, opt(on));
+      }),
+      multi: picked.length > 1,
+      stops: picked.map((o, i) => ({ label: (i + 1) + '. ' + o.area, first: i === 0, firstO: i === 0 ? .4 : 1, upA: 'Move ' + o.area + ' earlier', up: () => { if (i === 0) return; const n = s.order.slice(); [n[i - 1], n[i]] = [n[i], n[i - 1]]; self.setState({ order: n }); } })),
+      startBlock, cantStart: !!startBlock, startBg: startBlock ? '#8E99A4' : '#1B5CF0',
+      startText: picked.length > 1 ? 'Start trip with ' + picked.length + ' stops' : 'Start trip',
+      start: () => {
+        if (startBlock) return;
+        self.setState({ trips: s.trips.concat({ id: Date.now(), driver: driver.name, vehicle: chosen.name, orders: s.order.slice(), stops: picked.map((o) => o.area), at: 0, finished: false }), order: [], vehicle: null, reason: null, driver: null });
+      },
+      noTrips: s.trips.length === 0,
+      trips: s.trips.map((t) => {
+        const total = t.stops.length, delivered = t.at;
+        return {
+          title: t.driver + ', ' + t.vehicle.toLowerCase() + (total > 1 ? ', ' + total + ' stops' : ''),
+          note: t.finished ? 'All delivered, with code and photo. Back at base.' : 'Next: ' + t.stops[t.at],
+          nextText: t.finished ? 'Done' : 'Preview next delivery', pct: (delivered / total * 100).toFixed(1), color: t.finished ? '#0D9465' : '#1B5CF0', aria: delivered + ' of ' + total + ' stops delivered',
+          next: () => { if (t.finished) return; const at = t.at + 1; self.setState({ trips: s.trips.map((x) => x === t ? Object.assign({}, x, { at, finished: at >= total }) : x) }); }
+        };
+      }),
+      cash: Object.keys(s.cash).map((name) => {
+        const amt = s.cash[name], taken = s.takenFrom === name;
+        return { name, has: amt > 0, note: amt > 0 ? 'Holding ' + money(amt) : (taken ? 'Handed in. Recorded in the books.' : 'Holding nothing'), noteColor: taken ? '#0A6E4B' : '#55606C', take: () => self.setState({ cash: Object.assign({}, s.cash, { [name]: 0 }), takenFrom: name }) };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

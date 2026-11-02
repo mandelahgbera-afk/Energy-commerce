@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Car battery finder</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+body{margin:0;background:#EEF1F4}
+a{color:inherit}
+.glass{background:rgba(255,255,255,.68);-webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.85);box-shadow:0 1px 2px rgba(16,24,34,.06),0 14px 32px rgba(16,24,34,.11)}
+.card{box-sizing:border-box;padding:20px;background:#FFFFFF;border:1px solid rgba(16,24,34,.07);border-radius:22px;min-width:0}
+.press{transition:background .18s,transform .12s,border-color .18s,color .18s}
+.press:active{transform:scale(.97)}
+.chip{min-height:44px;padding:0 14px;border-radius:12px;font:500 14.5px Geist,system-ui,sans-serif;cursor:pointer}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #1B5CF0;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.rise{animation:rise .32s cubic-bezier(.2,.7,.2,1) both}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+.tickdraw{stroke-dasharray:1;animation:draw .32s cubic-bezier(.3,.7,.2,1) both}
+input::placeholder{color:#5D6874;opacity:1}
+@media (prefers-reduced-motion:reduce){.rise,.tickdraw{animation-duration:.01ms}}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; padding: 12px clamp(12px, 3vw, 44px) 48px; font-family: Geist, system-ui, -apple-system, 'Segoe UI', sans-serif; color: #10161E; background: radial-gradient(70% 420px at 50% 0, #FFFFFF 0%, rgba(255,255,255,0) 100%), #EEF1F4">
+<nav aria-label="Main" class="glass" style="position: sticky; top: 12px; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 12px 9px 20px; border-radius: 18px">
+<a href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 42px; font-weight: 650; font-size: 18px; letter-spacing: -.02em; text-decoration: none">Power Store</a>
+<a href="BagCheckout.dc.html" class="press" style="display: flex; align-items: center; min-height: 42px; padding: 0 14px; background: #10161E; color: #FFFFFF; border-radius: 12px; font-size: 14.5px; font-weight: 500; text-decoration: none">Bag</a>
+</nav>
+
+<div style="max-width: 760px; margin: 0 auto; padding-top: 30px">
+<h1 style="margin: 0; font-size: clamp(30px, 3.6vw, 44px); line-height: 1.06; font-weight: 600; letter-spacing: -.032em">Find your car battery</h1>
+<p style="margin: 8px 0 18px; font-size: 16.5px; line-height: 1.5; color: #434E5A">Type your car in any order. We show what fits, and what is ready today.</p>
+
+<label for="car" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%)">Your car</label>
+<input id="car" value="{{query}}" onChange="{{onQuery}}" autocomplete="off" placeholder="2012 Camry, or Toyota Camry 2012" style="width: 100%; height: 56px; box-sizing: border-box; padding: 0 18px; border: 1px solid rgba(16,24,34,.16); border-radius: 16px; background: #FFFFFF; color: #10161E; font: 400 17px Geist, system-ui, sans-serif">
+
+<sc-if value="{{showMakes}}" hint-placeholder-val="{{ true }}">
+<div class="rise" style="margin-top: 14px"><div style="margin-bottom: 7px; font-size: 14.5px; font-weight: 550">Or tap your make</div><div style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{makes}}" as="m" hint-placeholder-count="6"><button type="button" onClick="{{m.pick}}" class="chip press" style="border: 1px solid rgba(16,24,34,.16); background: #FFFFFF; color: #10161E">{{m.name}}</button></sc-for></div></div>
+</sc-if>
+<sc-if value="{{showModels}}" hint-placeholder-val="{{ false }}">
+<div class="rise" style="margin-top: 14px"><div style="margin-bottom: 7px; font-size: 14.5px; font-weight: 550">Which {{makeName}}?</div><div style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{models}}" as="m" hint-placeholder-count="4"><button type="button" onClick="{{m.pick}}" class="chip press" style="border: 1px solid rgba(16,24,34,.16); background: #FFFFFF; color: #10161E">{{m.name}}</button></sc-for></div></div>
+</sc-if>
+<sc-if value="{{showYears}}" hint-placeholder-val="{{ false }}">
+<div class="rise" style="margin-top: 14px"><div style="margin-bottom: 7px; font-size: 14.5px; font-weight: 550">What year is your {{modelName}}?</div><div style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{years}}" as="y" hint-placeholder-count="8"><button type="button" onClick="{{y.pick}}" class="chip press" style="min-width: 64px; border: 1px solid rgba(16,24,34,.16); background: #FFFFFF; color: #10161E; font-variant-numeric: tabular-nums">{{y.label}}</button></sc-for></div></div>
+</sc-if>
+<sc-if value="{{noMatch}}" hint-placeholder-val="{{ false }}">
+<div class="card rise" style="margin-top: 14px"><div style="font-size: 16px; font-weight: 600">We could not place that car</div><div style="margin-top: 3px; font-size: 14.5px; line-height: 1.45; color: #434E5A">Send a photo of your old battery's label on WhatsApp and we will find the match.</div></div>
+</sc-if>
+
+<sc-if value="{{hasResult}}" hint-placeholder-val="{{ false }}">
+<section aria-label="Batteries that fit" class="rise" style="margin-top: 16px; display: flex; flex-direction: column; gap: 12px">
+<div class="card">
+<div style="display: flex; align-items: center; gap: 9px; font-size: 14.5px; font-weight: 550; color: #0A6E4B"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" style="fill: none; stroke: #0D9465; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round"><path class="tickdraw" pathLength="1" d="M5 12.500 10 17.500 19.500 7"></path></svg><span>{{fitsText}}</span></div>
+<div style="display: flex; flex-wrap: wrap; gap: 16px 22px; align-items: center; margin-top: 12px">
+<div role="img" aria-label="{{topAria}}" style="position: relative; flex: none; width: 190px; height: 100px">
+<span aria-hidden="true" style="position: absolute; left: 16px; top: 0; width: 32px; height: 16px; border-radius: 3px 3px 0 0; background: {{leftCol}}"></span>
+<span aria-hidden="true" style="position: absolute; right: 16px; top: 0; width: 32px; height: 16px; border-radius: 3px 3px 0 0; background: {{rightCol}}"></span>
+<div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 14px; bottom: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; border-radius: 10px; background: linear-gradient(135deg, #3D4651, #191F27); color: #FFFFFF">
+<span style="font-size: 26px; font-weight: 600; line-height: 1">{{leftSign}}</span>
+<span style="font: 500 14px 'Geist Mono', monospace; color: #D5DBE1">{{groupText}}</span>
+<span style="font-size: 26px; font-weight: 600; line-height: 1">{{rightSign}}</span>
+</div>
+</div>
+<dl style="flex: 1 1 220px; min-width: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0; font-size: 14.5px">
+<dt style="color: #55606C">Size</dt><dd style="margin: 0; font-weight: 550">{{group}}</dd>
+<dt style="color: #55606C">Plus terminal</dt><dd style="margin: 0; font-weight: 550">{{terminal}}</dd>
+<dt style="color: #55606C">Check</dt><dd style="margin: 0">Lift your bonnet. Your red terminal should match this side.</dd>
+</dl>
+</div>
+</div>
+
+<div role="radiogroup" aria-label="Choose a battery" style="display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{options}}" as="o" hint-placeholder-count="2">
+<button type="button" role="radio" aria-checked="{{o.on}}" onClick="{{o.pick}}" class="press" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 14px; padding: 14px 16px; border: 1.5px solid {{o.border}}; border-radius: 16px; background: {{o.bg}}; color: #10161E; text-align: left; font-family: Geist, system-ui, sans-serif; cursor: pointer">
+<span style="flex: 1 1 220px; min-width: 0"><span style="display: block; font-size: 15.5px; font-weight: 550">{{o.name}}</span><span style="display: block; margin-top: 1px; font-size: 13.5px; color: #434E5A">{{o.note}}</span><span style="display: flex; align-items: center; gap: 6px; margin-top: 3px; font-size: 13px; font-weight: 500; color: #0A6E4B"><span aria-hidden="true" style="width: 6px; height: 6px; border-radius: 50%; background: #0D9465"></span>{{o.stock}}</span></span>
+<span style="flex: none; font-size: 18px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums">{{o.price}}</span>
+</button>
+</sc-for>
+</div>
+
+<div class="card" style="display: flex; flex-direction: column; gap: 4px; padding: 10px 18px">
+<button type="button" role="switch" aria-checked="{{trade}}" onClick="{{toggleTrade}}" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 0; border: 0; background: transparent; color: #10161E; font: 500 14.5px Geist, system-ui, sans-serif; cursor: pointer; text-align: left"><span>Trade in my old battery<span style="display: block; font-size: 13.5px; font-weight: 400; color: #55606C">₦8,000 off, once we receive it</span></span>
+<span aria-hidden="true" style="flex: none; position: relative; width: 46px; height: 28px; border-radius: 14px; background: {{tradeBg}}; transition: background .22s"><span style="position: absolute; left: 3px; top: 3px; width: 22px; height: 22px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 1px 3px rgba(16,24,34,.25); transform: translateX({{tradeX}}px); transition: transform .26s cubic-bezier(.3,1.35,.5,1)"></span></span></button>
+<button type="button" role="switch" aria-checked="{{remind}}" onClick="{{toggleRemind}}" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 0; border: 0; border-top: 1px solid #F1F3F5; background: transparent; color: #10161E; font: 500 14.5px Geist, system-ui, sans-serif; cursor: pointer; text-align: left"><span>Remind me to check it in 18 months<span style="display: block; font-size: 13.5px; font-weight: 400; color: #55606C">Before it leaves you stranded</span></span>
+<span aria-hidden="true" style="flex: none; position: relative; width: 46px; height: 28px; border-radius: 14px; background: {{remindBg}}; transition: background .22s"><span style="position: absolute; left: 3px; top: 3px; width: 22px; height: 22px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 1px 3px rgba(16,24,34,.25); transform: translateX({{remindX}}px); transition: transform .26s cubic-bezier(.3,1.35,.5,1)"></span></span></button>
+</div>
+
+<div class="glass" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding: 14px 16px; border-radius: 18px">
+<div style="min-width: 0"><div style="font-size: 13.5px; color: #434E5A">Total, pickup today from Ikeja</div><div style="font-size: 24px; font-weight: 600; letter-spacing: -.025em">{{total}}</div></div>
+<button type="button" onClick="{{add}}" class="press" style="flex: 1 1 180px; display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 50px; border: 0; border-radius: 14px; background: {{addBg}}; color: #FFFFFF; font: 550 15.5px Geist, system-ui, sans-serif; cursor: pointer">
+<sc-if value="{{added}}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" style="fill: none; stroke: #FFFFFF; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round"><path class="tickdraw" pathLength="1" d="M5 12.500 10 17.500 19.500 7"></path></svg></sc-if>
+<span>{{addText}}</span></button>
+</div>
+<p style="margin: 2px; font-size: 13px; line-height: 1.45; color: #55606C">Fit data here is a sample. The shop keeps and corrects its own list. Bike delivery today is offered at checkout.</p>
+</section>
+</sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1060}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { query: '', make: null, model: null, year: null, opt: 1, trade: true, remind: true, added: false };
+  }
+  componentWillUnmount() { clearTimeout(this.t); }
+  renderVals() {
+    const s = this.state, self = this;
+    const money = (n) => '₦' + Math.round(n).toLocaleString('en-NG');
+    // Sample fit list. In the real product the shop edits this table.
+    const CARS = {
+      Toyota: { Camry: { group: '24F', plus: 'right' }, Corolla: { group: '35', plus: 'right' }, Sienna: { group: '24F', plus: 'right' }, Highlander: { group: '24F', plus: 'right' } },
+      Honda: { Accord: { group: '24F', plus: 'right' }, Civic: { group: '51R', plus: 'right' }, Pilot: { group: '24F', plus: 'right' } },
+      Lexus: { RX350: { group: '24F', plus: 'right' }, ES350: { group: '24F', plus: 'right' } },
+      Hyundai: { Elantra: { group: '47', plus: 'right' }, Sonata: { group: '47', plus: 'right' } },
+      Kia: { Rio: { group: '47', plus: 'right' }, Sportage: { group: '47', plus: 'right' } },
+      Mercedes: { C300: { group: 'H7', plus: 'right' }, ML350: { group: 'H8', plus: 'right' } }
+    };
+    const YEARS = Array.from({ length: 14 }, (_, i) => 2008 + i);
+    const words = s.query.toLowerCase().split(/\s+/).filter(Boolean);
+    let make = s.make, model = s.model, year = s.year;
+    if (words.length) {
+      make = model = year = null;
+      Object.keys(CARS).forEach((mk) => {
+        if (words.includes(mk.toLowerCase())) make = mk;
+        Object.keys(CARS[mk]).forEach((md) => { if (words.includes(md.toLowerCase())) { make = mk; model = md; } });
+      });
+      const y = words.find((w) => /^(19|20)\d{2}$/.test(w));
+      if (y) year = Number(y);
+    }
+    const car = make && model ? CARS[make][model] : null;
+    const done = !!(car && year);
+    const typedNothing = words.length > 0 && !make && !year;
+    const OPT = [
+      { name: 'Value battery', note: '12 month warranty', stock: '6 in Ikeja', price: 62000 },
+      { name: 'Standard battery', note: '18 month warranty. Most bought for this car.', stock: '14 in Ikeja, ready today', price: 78000 },
+      { name: 'Premium battery', note: '24 month warranty, strongest cold start', stock: '4 in Lekki', price: 104000 }
+    ];
+    const choice = OPT[s.opt];
+    const total = choice.price - (s.trade ? 8000 : 0);
+    const plusRight = car && car.plus === 'right';
+    return {
+      query: s.query, onQuery: (e) => self.setState({ query: e.target.value, make: null, model: null, year: null }),
+      showMakes: !make && !typedNothing && !words.length,
+      makes: Object.keys(CARS).map((name) => ({ name, pick: () => self.setState({ make: name, query: '' }) })),
+      showModels: !!make && !model && !typedNothing, makeName: make || '',
+      models: make ? Object.keys(CARS[make]).map((name) => ({ name, pick: () => self.setState({ make, model: name, query: '', year: year || null }) })) : [],
+      showYears: !!car && !year, modelName: model || '',
+      years: YEARS.map((y) => ({ label: String(y), pick: () => self.setState({ make, model, year: y, query: '' }) })),
+      noMatch: typedNothing,
+      hasResult: done,
+      fitsText: done ? 'Fits your ' + year + ' ' + make + ' ' + model : '',
+      group: car ? car.group : '', groupText: car ? 'Size ' + car.group : '', terminal: plusRight ? 'On the right' : 'On the left',
+      topAria: 'Battery seen from the front. The plus terminal is on the ' + (plusRight ? 'right' : 'left') + '.',
+      leftCol: plusRight ? '#20262D' : '#B0453B', rightCol: plusRight ? '#B0453B' : '#20262D', leftSign: plusRight ? '−' : '+', rightSign: plusRight ? '+' : '−',
+      options: OPT.map((o, i) => ({ name: o.name, note: o.note, stock: o.stock, price: money(o.price), on: i === s.opt, border: i === s.opt ? '#1B5CF0' : 'rgba(16,24,34,.1)', bg: i === s.opt ? '#F6F9FF' : '#FFFFFF', pick: () => self.setState({ opt: i }) })),
+      trade: s.trade, toggleTrade: () => self.setState({ trade: !s.trade }), tradeBg: s.trade ? '#1B5CF0' : '#C6CED6', tradeX: s.trade ? 18 : 0,
+      remind: s.remind, toggleRemind: () => self.setState({ remind: !s.remind }), remindBg: s.remind ? '#1B5CF0' : '#C6CED6', remindX: s.remind ? 18 : 0,
+      total: money(total), added: s.added, addText: s.added ? 'Added to bag' : 'Add to bag', addBg: s.added ? '#0E7A56' : '#1B5CF0',
+      add: () => { self.setState({ added: true }); clearTimeout(self.t); self.t = setTimeout(() => self.setState({ added: false }), 1700); }
+    };
+  }
+}
+</script>
+</body>
+</html>

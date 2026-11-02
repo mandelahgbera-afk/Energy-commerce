@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Driver app</title>
+<script src="./support.js"></script>
+<script src="/_blob/8894df7a6a20de073c579d8151803290"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+body{margin:0;background:#EEF1F4}
+.card{box-sizing:border-box;padding:16px;background:#FFFFFF;border:1px solid rgba(16,24,34,.07);border-radius:20px;min-width:0}
+.press{transition:background .15s,transform .1s,border-color .15s,color .15s}
+.press:active{transform:scale(.97)}
+.big{width:100%;min-height:58px;border:0;border-radius:16px;background:#1B5CF0;color:#FFFFFF;font:600 17px Geist,system-ui,sans-serif;cursor:pointer}
+.ghost{min-height:48px;padding:0 14px;border:1px solid rgba(16,24,34,.16);border-radius:13px;background:#FFFFFF;color:#10161E;font:500 15px Geist,system-ui,sans-serif;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.key{min-height:62px;border:0;border-radius:15px;background:#FFFFFF;color:#10161E;font:500 24px Geist,system-ui,sans-serif;font-variant-numeric:tabular-nums;cursor:pointer;box-shadow:0 1px 2px rgba(16,24,34,.08)}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #1B5CF0;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.rise{animation:rise .24s cubic-bezier(.2,.7,.2,1) both}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}60%{transform:translateX(8px)}}
+.shake{animation:shake .32s ease-in-out}
+.dot{transition:background .15s,transform .15s}
+.bar{transition:width .45s cubic-bezier(.25,.8,.25,1)}
+input::placeholder{color:#5D6874;opacity:1}
+@media (prefers-reduced-motion:reduce){.rise,.shake{animation-duration:.01ms}.bar{transition:none}}
+</style>
+</helmet>
+<div style="width: 100%; max-width: 430px; min-height: 100vh; box-sizing: border-box; margin: 0 auto; padding: 10px 12px 20px; font-family: Geist, system-ui, -apple-system, 'Segoe UI', sans-serif; color: #10161E; background: #EEF1F4">
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4px 4px 8px"><div style="font-size: 15px; font-weight: 600">Musa, trip 2</div><div aria-live="polite" style="font-size: 14px; color: #434E5A">{{progress}}</div></div>
+<div style="height: 8px; margin: 0 4px 10px; background: #DDE2E7; border-radius: 4px; overflow: hidden" role="img" aria-label="{{progress}}"><div class="bar" style="width: {{tripPct}}%; height: 100%; background: #1B5CF0; border-radius: 4px"></div></div>
+
+<sc-if value="{{onStop}}" hint-placeholder-val="{{ true }}">
+<section class="card rise" aria-label="Current stop">
+<div style="font-size: 13.5px; color: #55606C">{{stopLabel}}</div>
+<h1 style="margin: 1px 0 0; font-size: 24px; line-height: 1.12; font-weight: 600; letter-spacing: -.024em">{{place}}</h1>
+<div style="margin-top: 3px; font-size: 15px; line-height: 1.4">{{address}}</div>
+<div style="margin-top: 6px; font-size: 14px; line-height: 1.4; color: #434E5A">{{items}}</div>
+<sc-if value="{{hasNote}}" hint-placeholder-val="{{ true }}"><div style="margin-top: 8px; padding: 8px 11px; background: #FBF6E9; border-radius: 11px; font-size: 14px; line-height: 1.35">{{note}}</div></sc-if>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px"><a href="tel:+2340000000000" class="ghost press">Call customer</a><a href="#map" class="ghost press">Open map</a></div>
+</section>
+
+<sc-if value="{{stepArrive}}" hint-placeholder-val="{{ true }}">
+<div class="rise" style="margin-top: 10px"><button type="button" onClick="{{arrive}}" class="big press">I have arrived</button><button type="button" onClick="{{cantDeliver}}" class="ghost press" style="width: 100%; margin-top: 8px">I cannot deliver this</button></div>
+</sc-if>
+
+<sc-if value="{{stepCode}}" hint-placeholder-val="{{ false }}">
+<section class="rise" aria-label="Delivery code" style="margin-top: 10px">
+<div style="text-align: center; font-size: 15px; font-weight: 550">Ask the customer for their 6-digit code</div>
+<div style="margin-top: 2px; text-align: center; font-size: 13px; color: #55606C">For this preview, the code is 482 913</div>
+<div ref="{{bindDots}}" role="img" aria-label="{{codeAria}}" style="display: flex; justify-content: center; gap: 10px; margin: 12px 0 8px">
+<sc-for list="{{dots}}" as="d" hint-placeholder-count="6"><span class="dot" style="width: 14px; height: 14px; border-radius: 50%; background: {{d.bg}}; transform: scale({{d.s}})"></span></sc-for>
+</div>
+<p aria-live="polite" style="min-height: 20px; margin: 0 0 6px; text-align: center; font-size: 14px; font-weight: 500; color: #92400E">{{codeMsg}}</p>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px">
+<sc-for list="{{keys}}" as="k" hint-placeholder-count="12"><button type="button" onClick="{{k.press}}" aria-label="{{k.aria}}" class="key press" style="background: {{k.bg}}">{{k.label}}</button></sc-for>
+</div>
+<button type="button" onClick="{{cantDeliver}}" class="ghost press" style="width: 100%; margin-top: 8px">Customer has no code, or will not accept</button>
+</section>
+</sc-if>
+
+<sc-if value="{{stepProof}}" hint-placeholder-val="{{ false }}">
+<section class="rise" aria-label="Proof of delivery" style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px">
+<div class="card" style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: #EEF9F4; font-size: 15px; font-weight: 500; color: #0A6E4B"><svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" style="flex: none; fill: none; stroke: #0D9465; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round"><path d="M5 12.500 10 17.500 19.500 7"></path></svg><span>Code is correct</span></div>
+<button type="button" onClick="{{takePhoto}}" aria-pressed="{{hasPhoto}}" class="press" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: 100%; height: 124px; border: 1.5px dashed {{photoBorder}}; border-radius: 18px; background: {{photoBg}}; color: #10161E; font: 500 15px Geist, system-ui, sans-serif; cursor: pointer"><svg aria-hidden="true" viewBox="0 0 24 24" width="26" height="26" style="fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round"><path d="{{photoIcon}}"></path></svg><span>{{photoText}}</span></button>
+<sc-if value="{{hasCash}}" hint-placeholder-val="{{ false }}">
+<button type="button" role="checkbox" aria-checked="{{gotCash}}" onClick="{{toggleCash}}" class="press" style="display: flex; align-items: center; gap: 12px; width: 100%; min-height: 58px; padding: 8px 14px; box-sizing: border-box; border: 1.5px solid {{cashBorder}}; border-radius: 16px; background: #FFFFFF; color: #10161E; text-align: left; font: 500 15.5px Geist, system-ui, sans-serif; cursor: pointer"><span aria-hidden="true" style="flex: none; display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; box-sizing: border-box; border-radius: 8px; border: 1.5px solid {{cashBox}}; background: {{cashBg}}"><sc-if value="{{gotCash}}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 24 24" width="17" height="17" style="fill: none; stroke: #FFFFFF; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round"><path d="M5 12.500 10 17.500 19.500 7"></path></svg></sc-if></span><span>{{cashText}}</span></button>
+</sc-if>
+<p aria-live="polite" style="min-height: 18px; margin: 0; text-align: center; font-size: 14px; color: #92400E">{{proofBlock}}</p>
+<button type="button" onClick="{{finishStop}}" disabled="{{proofBlocked}}" class="big press" style="background: {{finishBg}}">Delivered</button>
+</section>
+</sc-if>
+
+<sc-if value="{{stepFail}}" hint-placeholder-val="{{ false }}">
+<section class="rise" aria-label="Why it could not be delivered" style="margin-top: 10px">
+<div style="margin-bottom: 8px; font-size: 16px; font-weight: 600">What happened?</div>
+<div style="display: flex; flex-direction: column; gap: 6px"><sc-for list="{{reasons}}" as="r" hint-placeholder-count="4"><button type="button" onClick="{{r.pick}}" aria-pressed="{{r.on}}" class="press" style="min-height: 52px; padding: 0 14px; border: 1.5px solid {{r.border}}; border-radius: 14px; background: {{r.bg}}; color: #10161E; text-align: left; font: 500 15px Geist, system-ui, sans-serif; cursor: pointer">{{r.label}}</button></sc-for></div>
+<button type="button" onClick="{{confirmFail}}" disabled="{{noReason}}" class="big press" style="margin-top: 10px; background: {{failBg}}">Keep it on the van, next stop</button>
+<button type="button" onClick="{{cancelFail}}" class="ghost press" style="width: 100%; margin-top: 8px">Go back</button>
+</section>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{justDone}}" hint-placeholder-val="{{ false }}">
+<section class="card rise" aria-live="polite" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 22px 16px; text-align: center">
+<div ref="{{bindDone}}" aria-hidden="true" style="width: 112px; height: 112px"></div>
+<div style="font-size: 20px; font-weight: 600; letter-spacing: -.02em">{{doneTitle}}</div>
+<div style="font-size: 14.5px; line-height: 1.4; color: #434E5A">{{doneNote}}</div>
+<button type="button" onClick="{{nextStop}}" class="big press" style="margin-top: 12px">{{nextText}}</button>
+</section>
+</sc-if>
+
+<sc-if value="{{tripOver}}" hint-placeholder-val="{{ false }}">
+<section class="rise" aria-label="End of trip" style="display: flex; flex-direction: column; gap: 10px">
+<h1 style="margin: 4px 4px 0; font-size: 24px; line-height: 1.12; font-weight: 600; letter-spacing: -.024em">Trip finished</h1>
+<div class="card"><dl style="display: grid; grid-template-columns: 1fr auto; gap: 7px 14px; margin: 0; font-size: 15px; font-variant-numeric: tabular-nums"><dt style="color: #434E5A">Delivered</dt><dd style="margin: 0; text-align: right; font-weight: 550">{{deliveredCount}}</dd><dt style="color: #434E5A">Coming back on the van</dt><dd style="margin: 0; text-align: right; font-weight: 550">{{failedCount}}</dd><dt style="font-weight: 600">Cash to hand in</dt><dd style="margin: 0; text-align: right; font-weight: 600">{{cashTotal}}</dd></dl></div>
+<div class="card"><label for="fuel" style="display: block; font-size: 15px; font-weight: 550">Fuel bought on this trip</label>
+<div style="display: flex; align-items: center; gap: 8px; margin-top: 7px"><span style="font-size: 17px">₦</span><input id="fuel" inputmode="numeric" value="{{fuel}}" onChange="{{onFuel}}" placeholder="0" style="flex: 1; min-width: 0; height: 50px; box-sizing: border-box; padding: 0 13px; border: 1px solid rgba(16,24,34,.16); border-radius: 13px; background: #FFFFFF; color: #10161E; font: 500 17px Geist, system-ui, sans-serif"><button type="button" onClick="{{takeReceipt}}" class="ghost press" style="flex: none; min-height: 50px">{{receiptText}}</button></div></div>
+<button type="button" onClick="{{closeTrip}}" class="big press" style="background: {{closeBg}}">{{closeText}}</button>
+</section>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":430,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { stop: 0, step: 'arrive', code: '', wrong: 0, msg: '', photo: false, gotCash: false, reason: null, results: [], fuel: '', receipt: false, closed: false };
+    this.reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.bindDots = (el) => { this.dots = el; };
+    this.bindDone = (el) => {
+      if (this.anim) { this.anim.destroy(); this.anim = null; }
+      if (!el) return;
+      const start = (tries) => {
+        if (!window.lottie) { if (tries < 50) setTimeout(() => start(tries + 1), 100); return; }
+        if (!el.isConnected || this.anim) return;
+        this.anim = window.lottie.loadAnimation({ container: el, renderer: 'svg', loop: false, autoplay: !this.reduced, path: '/_blob/d958c69b62fe952ba71f58e4d9f56e3e' });
+        if (this.reduced) this.anim.addEventListener('DOMLoaded', () => this.anim.goToAndStop(this.anim.totalFrames - 1, true));
+      };
+      start(0);
+    };
+  }
+  componentWillUnmount() { if (this.anim) this.anim.destroy(); }
+  renderVals() {
+    const s = this.state, self = this;
+    const money = (n) => '₦' + Math.round(n).toLocaleString('en-NG');
+    const STOPS = [
+      { place: 'Lekki Phase 1', address: '14 Admiralty Way, by the blue gate', items: 'Order 2214: 8 panels, 4 batteries, inverter, rails', note: 'Batteries stay upright. Carry them inside.', cash: 0, code: '482913' },
+      { place: 'Surulere', address: '6 Adeniran Ogunsanya Street', items: 'Order 2216: 1 tubular battery', note: 'Two people to carry. Customer pays cash.', cash: 75000, code: '482913' },
+      { place: 'Ikeja GRA', address: '3 Sobo Arobiodu Street', items: 'Order 2210: 4 items. Second try.', note: '', cash: 0, code: '482913' }
+    ];
+    const cur = STOPS[s.stop], total = STOPS.length;
+    const delivered = s.results.filter((r) => r.ok).length;
+    const cashTotal = s.results.reduce((a, r) => a + (r.ok ? r.cash : 0), 0) + 180000;
+    const isOver = s.step === 'over';
+    const REASONS = ['Customer not home', 'Wrong address', 'Customer refused it', 'Goods got damaged'];
+    const press = (d) => {
+      if (s.code.length >= 6) return;
+      const code = s.code + d;
+      if (code.length < 6) { self.setState({ code, msg: '' }); return; }
+      if (code === cur.code) { self.setState({ code, step: 'proof', msg: '' }); return; }
+      const wrong = s.wrong + 1;
+      if (self.dots && self.dots.animate && !self.reduced) self.dots.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-8px)' }, { transform: 'translateX(8px)' }, { transform: 'translateX(0)' }], { duration: 300 });
+      self.setState({ code: '', wrong, msg: wrong >= 3 ? 'Still wrong. Call the office before leaving the goods.' : 'That code is wrong. Ask them to check their message.' });
+    };
+    const needCash = cur && cur.cash > 0;
+    let proofBlock = '';
+    if (!s.photo) proofBlock = 'Take a photo of the goods first.';
+    else if (needCash && !s.gotCash) proofBlock = 'Tick the box once you have the cash.';
+    const next = () => {
+      const n = s.stop + 1;
+      self.setState(n >= total ? { step: 'over' } : { stop: n, step: 'arrive', code: '', wrong: 0, msg: '', photo: false, gotCash: false, reason: null });
+    };
+    const lastOk = s.results[s.results.length - 1];
+    return {
+      progress: isOver ? 'All stops done' : 'Stop ' + (s.stop + 1) + ' of ' + total, tripPct: ((s.results.length) / total * 100).toFixed(1),
+      onStop: ['arrive', 'code', 'proof', 'fail'].includes(s.step), justDone: s.step === 'done', tripOver: isOver,
+      stopLabel: cur ? 'Stop ' + (s.stop + 1) + ' of ' + total : '', place: cur ? cur.place : '', address: cur ? cur.address : '', items: cur ? cur.items : '', hasNote: !!(cur && cur.note), note: cur ? cur.note : '',
+      stepArrive: s.step === 'arrive', stepCode: s.step === 'code', stepProof: s.step === 'proof', stepFail: s.step === 'fail',
+      arrive: () => self.setState({ step: 'code', code: '', msg: '' }),
+      cantDeliver: () => self.setState({ step: 'fail', reason: null }),
+      bindDots: this.bindDots, codeAria: s.code.length + ' of 6 digits entered', codeMsg: s.msg,
+      dots: [0, 1, 2, 3, 4, 5].map((i) => ({ bg: i < s.code.length ? '#1B5CF0' : '#C6CED6', s: i < s.code.length ? 1.15 : 1 })),
+      keys: ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'Clear', '0', 'Back'].map((k) => ({
+        label: k === 'Back' ? '⌫' : k, aria: k === 'Back' ? 'Delete last digit' : (k === 'Clear' ? 'Clear the code' : 'Digit ' + k), bg: k === 'Clear' || k === 'Back' ? 'transparent' : '#FFFFFF',
+        press: () => { if (k === 'Clear') self.setState({ code: '', msg: '' }); else if (k === 'Back') self.setState({ code: s.code.slice(0, -1) }); else press(k); }
+      })),
+      hasPhoto: s.photo, takePhoto: () => self.setState({ photo: true }), photoBorder: s.photo ? '#0D9465' : '#9AA4AF', photoBg: s.photo ? '#EEF9F4' : '#FFFFFF',
+      photoIcon: s.photo ? 'M5 12.500 10 17.500 19.500 7' : 'M4 8h3l2-3h6l2 3h3v11H4zM12 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z', photoText: s.photo ? 'Photo saved, with time and place' : 'Take a photo of the goods',
+      hasCash: needCash, gotCash: s.gotCash, toggleCash: () => self.setState({ gotCash: !s.gotCash }), cashText: cur ? 'I collected ' + money(cur.cash) + ' cash' : '', cashBorder: s.gotCash ? '#1B5CF0' : 'rgba(16,24,34,.14)', cashBox: s.gotCash ? '#1B5CF0' : '#9AA4AF', cashBg: s.gotCash ? '#1B5CF0' : '#FFFFFF',
+      proofBlock, proofBlocked: !!proofBlock, finishBg: proofBlock ? '#8E99A4' : '#0E7A56',
+      finishStop: () => { if (proofBlock) return; self.setState({ results: s.results.concat({ ok: true, cash: cur.cash, place: cur.place }), step: 'done' }); },
+      reasons: REASONS.map((label) => ({ label, on: s.reason === label, border: s.reason === label ? '#1B5CF0' : 'rgba(16,24,34,.12)', bg: s.reason === label ? '#F6F9FF' : '#FFFFFF', pick: () => self.setState({ reason: label }) })),
+      noReason: !s.reason, failBg: s.reason ? '#1B5CF0' : '#8E99A4',
+      confirmFail: () => { if (!s.reason) return; self.setState({ results: s.results.concat({ ok: false, cash: 0, place: cur.place, reason: s.reason }) }, next); },
+      cancelFail: () => self.setState({ step: 'arrive' }),
+      bindDone: this.bindDone,
+      doneTitle: 'Delivered', doneNote: lastOk ? lastOk.place + ' is confirmed. The customer and the office can see it now.' : '',
+      nextText: s.stop + 1 >= total ? 'Finish the trip' : 'Next stop', nextStop: next,
+      deliveredCount: delivered + ' of ' + total, failedCount: String(total - delivered), cashTotal: money(cashTotal),
+      fuel: s.fuel, onFuel: (e) => self.setState({ fuel: e.target.value.replace(/\D/g, '').slice(0, 7) }),
+      receiptText: s.receipt ? 'Receipt saved' : 'Add receipt', takeReceipt: () => self.setState({ receipt: true }),
+      closeText: s.closed ? 'Trip closed. Hand in the cash.' : 'Close the trip', closeBg: s.closed ? '#0E7A56' : '#1B5CF0', closeTrip: () => self.setState({ closed: true })
+    };
+  }
+}
+</script>
+</body>
+</html>

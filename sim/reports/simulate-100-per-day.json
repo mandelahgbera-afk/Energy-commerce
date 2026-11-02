@@ -1,0 +1,121 @@
+{
+  "perDay": 100,
+  "days": 90,
+  "tally": {
+    "sales": 8376,
+    "cash": 3460,
+    "pos": 2191,
+    "transfer": 1265,
+    "deposit": 864,
+    "credit": 459,
+    "approval": 253,
+    "abandoned": 269,
+    "refused": 239,
+    "booksChecks": 90,
+    "tillsClosed": 180,
+    "monthsClosed": 2,
+    "counts": 13,
+    "lines": 16777
+  },
+  "orders": 8761,
+  "startedBytes": 13432499,
+  "finishedBytes": 62903987,
+  "grownBytes": 49471488,
+  "kbPerSale": 5.77,
+  "counterSaleMs": {
+    "p50": 17.6,
+    "p95": 47.8,
+    "p99": 134.7,
+    "n": 6916
+  },
+  "checkpoints": [
+    {
+      "day": 30,
+      "bytes": 30693043,
+      "sales": 2798
+    },
+    {
+      "day": 60,
+      "bytes": 46866959,
+      "sales": 5585
+    },
+    {
+      "day": 90,
+      "bytes": 62469811,
+      "sales": 8376
+    }
+  ],
+  "tables": [
+    {
+      "table": "ledger_entries",
+      "kb": 7848,
+      "rows": 61256
+    },
+    {
+      "table": "ledger_txns",
+      "kb": 7672,
+      "rows": 18132
+    },
+    {
+      "table": "audit_log",
+      "kb": 6464,
+      "rows": 24831
+    },
+    {
+      "table": "stock_movements",
+      "kb": 5144,
+      "rows": 24057
+    },
+    {
+      "table": "orders",
+      "kb": 4960,
+      "rows": 8761
+    },
+    {
+      "table": "order_lines",
+      "kb": 4672,
+      "rows": 16777
+    },
+    {
+      "table": "payments",
+      "kb": 4512,
+      "rows": 9252
+    },
+    {
+      "table": "deliveries",
+      "kb": 2536,
+      "rows": 8376
+    },
+    {
+      "table": "order_line_costs",
+      "kb": 1584,
+      "rows": 16777
+    },
+    {
+      "table": "serial_units",
+      "kb": 1136,
+      "rows": 3964
+    },
+    {
+      "table": "lots",
+      "kb": 840,
+      "rows": 4529
+    },
+    {
+      "table": "bank_lines",
+      "kb": 632,
+      "rows": 2600
+    },
+    {
+      "table": "products",
+      "kb": 536,
+      "rows": 1540
+    },
+    {
+      "table": "customers",
+      "kb": 528,
+      "rows": 2214
+    }
+  ],
+  "ledgerRows": 61256
+}

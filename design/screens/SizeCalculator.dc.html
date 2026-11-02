@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System calculator</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+body{margin:0;background:#EEF1F4}
+a{color:inherit}
+.glass{background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(20px) saturate(150%);backdrop-filter:blur(20px) saturate(150%);border:1px solid rgba(255,255,255,.82);box-shadow:0 1px 2px rgba(16,24,34,.05),0 14px 36px rgba(16,24,34,.09)}
+.press{transition:background .2s,transform .12s,border-color .2s,color .2s}
+.press:active{transform:scale(.97)}
+a:focus-visible,button:focus-visible{outline:2px solid #1B5CF0;outline-offset:2px}
+.mbar{display:none}
+@media (max-width:820px){.mbar{display:flex}.sumcard{position:static !important}.page{padding-bottom:96px !important}}
+</style>
+</helmet>
+<div class="page" style="min-height: 100vh; box-sizing: border-box; padding: 12px clamp(12px, 3vw, 44px) 44px; font-family: Geist, system-ui, -apple-system, 'Segoe UI', sans-serif; color: #10161E; background: radial-gradient(70% 460px at 72% 0, #FFFFFF 0%, rgba(255,255,255,0) 100%), #EEF1F4; font-variant-numeric: tabular-nums">
+
+<nav aria-label="Main" class="glass" style="position: sticky; top: 12px; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 12px 9px 20px; border-radius: 18px">
+<a href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 42px; font-weight: 650; font-size: 18px; letter-spacing: -.02em; text-decoration: none">Power Store</a>
+<a href="Main.dc.html" class="press" style="display: inline-flex; align-items: center; min-height: 42px; padding: 0 14px; border-radius: 12px; font-size: 14.5px; font-weight: 500; text-decoration: none">Back to store</a>
+</nav>
+
+<div style="max-width: 1180px; margin: 0 auto">
+<header style="padding: 36px 2px 22px">
+<h1 style="margin: 0; font-size: clamp(30px, 3.6vw, 44px); line-height: 1.08; font-weight: 600; letter-spacing: -.032em">Work out your system</h1>
+<p style="margin: 10px 0 0; max-width: 620px; font-size: 16.5px; line-height: 1.5; color: #434E5A; text-wrap: pretty">Count the appliances you want to run on it. We work out the inverter, battery and panels you need. This only calculates a size. It does not connect to your appliances.</p>
+</header>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+<div style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+
+<section aria-labelledby="s1" style="background: #FFFFFF; border: 1px solid rgba(16,24,34,.07); border-radius: 22px; padding: 8px 8px 8px">
+<h2 id="s1" style="margin: 14px 14px 8px; font-size: 18px; font-weight: 600; letter-spacing: -.015em">1. How many of each do you have?</h2>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="9">
+<div style="display: flex; align-items: center; gap: 12px; padding: 7px 14px; border-top: 1px solid rgba(16,24,34,.06)">
+<span aria-hidden="true" style="flex: none; display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 11px; background: {{r.tile}}; color: {{r.tileInk}}; transition: background .2s, color .2s">
+<svg viewBox="0 0 24 24" width="20" height="20" style="fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round"><path d="{{r.icon}}"></path></svg>
+</span>
+<div style="flex: 1; min-width: 0">
+<div style="font-size: 15px; font-weight: 500">{{r.name}}</div>
+<div style="font-size: 13px; color: #55606C">{{r.note}}</div>
+</div>
+<div style="flex: none; display: flex; align-items: center; gap: 2px">
+<button type="button" onClick="{{r.less}}" aria-label="{{r.lessLabel}}" class="press" style="width: 44px; height: 44px; border: 0; border-radius: 12px; background: transparent; color: #10161E; font: 400 22px/1 Geist, system-ui, sans-serif; cursor: pointer">−</button>
+<span aria-live="polite" style="width: 26px; text-align: center; font-size: 16px; font-weight: 550">{{r.qty}}</span>
+<button type="button" onClick="{{r.more}}" aria-label="{{r.moreLabel}}" class="press" style="width: 44px; height: 44px; border: 0; border-radius: 12px; background: transparent; color: #10161E; font: 400 22px/1 Geist, system-ui, sans-serif; cursor: pointer">+</button>
+</div>
+</div>
+</sc-for>
+</section>
+
+<section aria-labelledby="s2" style="background: #FFFFFF; border: 1px solid rgba(16,24,34,.07); border-radius: 22px; padding: 20px 22px">
+<h2 id="s2" style="margin: 0 0 12px; font-size: 18px; font-weight: 600; letter-spacing: -.015em">2. How many hours of backup do you need at a time?</h2>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{hours}}" as="h" hint-placeholder-count="4">
+<button type="button" onClick="{{h.pick}}" aria-pressed="{{h.on}}" class="press" style="min-height: 44px; padding: 0 18px; border: 1px solid {{h.border}}; border-radius: 12px; background: {{h.bg}}; color: {{h.fg}}; font: 500 15px Geist, system-ui, sans-serif; cursor: pointer">{{h.label}}</button>
+</sc-for>
+</div>
+<h2 style="margin: 22px 0 12px; font-size: 18px; font-weight: 600; letter-spacing: -.015em">3. Do you want solar panels?</h2>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{solar}}" as="s" hint-placeholder-count="2">
+<button type="button" onClick="{{s.pick}}" aria-pressed="{{s.on}}" class="press" style="min-height: 44px; padding: 0 18px; border: 1px solid {{s.border}}; border-radius: 12px; background: {{s.bg}}; color: {{s.fg}}; font: 500 15px Geist, system-ui, sans-serif; cursor: pointer">{{s.label}}</button>
+</sc-for>
+</div>
+</section>
+
+<sc-if value="{{showGraphs}}" hint-placeholder-val="{{ true }}">
+<section aria-labelledby="g1" style="background: #FFFFFF; border: 1px solid rgba(16,24,34,.07); border-radius: 22px; padding: 20px 22px">
+<h2 id="g1" style="margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -.015em">A day on this system</h2>
+<p aria-live="polite" style="margin: 3px 0 0; font-size: 14.5px; line-height: 1.45; color: #434E5A">{{dayLine}}</p>
+
+<div style="display: flex; margin-top: 14px">
+<div aria-hidden="true" style="position: relative; flex: none; width: 44px; height: 140px; font-size: 12.5px; color: #55606C; font-variant-numeric: tabular-nums"><span style="position: absolute; top: 0; transform: translateY(-50%)">100%</span><span style="position: absolute; top: 50%; transform: translateY(-50%)">50%</span><span style="position: absolute; top: 100%; transform: translateY(-50%)">0</span></div>
+<div ref="{{bindDay}}" tabIndex="0" role="img" aria-label="{{dayAria}}" onPointerMove="{{dayMove}}" onPointerLeave="{{dayLeave}}" onKeyDown="{{dayKey}}" onFocus="{{dayFocus}}" onBlur="{{dayLeave}}" style="position: relative; flex: 1; min-width: 0; height: 140px; touch-action: pan-y; border-radius: 4px">
+<div aria-hidden="true" style="position: absolute; top: 0; bottom: 0; left: {{off1L}}%; width: {{off1W}}%; background: #F1F3F6; transition: left .3s, width .3s"></div>
+<div aria-hidden="true" style="position: absolute; top: 0; bottom: 0; left: 0; width: {{off2W}}%; background: #F1F3F6; transition: width .3s"></div>
+<div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 0; height: 1px; background: #E9ECEF"></div><div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: #E9ECEF"></div><div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 100%; height: 1px; background: #DDE1E5"></div>
+<svg aria-hidden="true" viewBox="0 0 1000 140" preserveAspectRatio="none" style="position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible"><path d="{{battArea}}" style="fill: rgba(27,92,240,.09)"></path><path d="{{battLine}}" style="fill: none; stroke: #1B5CF0; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke"></path></svg>
+<div aria-hidden="true" style="position: absolute; left: {{lowL}}%; top: {{lowT}}%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #1B5CF0; box-shadow: 0 0 0 2px #FFFFFF; transition: left .3s, top .3s"></div>
+<sc-if value="{{dayHover}}" hint-placeholder-val="{{ false }}"><div aria-hidden="true" style="position: absolute; top: 0; bottom: 0; left: {{dayX}}%; width: 1px; background: #9AA4AF; pointer-events: none"></div>
+<div style="position: absolute; top: 6px; left: {{dayTipL}}; right: {{dayTipR}}; min-width: 158px; padding: 9px 11px; border-radius: 12px; background: rgba(255,255,255,.93); box-shadow: 0 1px 2px rgba(16,24,34,.08), 0 10px 24px rgba(16,24,34,.12); font-size: 13.5px; font-variant-numeric: tabular-nums; pointer-events: none; z-index: 3">
+<div style="color: #55606C">{{dayTime}}</div>
+<div style="display: flex; justify-content: space-between; gap: 16px; margin-top: 3px"><span style="display: flex; align-items: center; gap: 6px; color: #434E5A"><span style="width: 10px; height: 2px; background: #1B5CF0"></span>Battery</span><b style="font-weight: 600">{{dayBatt}}</b></div>
+<div style="display: flex; justify-content: space-between; gap: 16px"><span style="display: flex; align-items: center; gap: 6px; color: #434E5A"><span style="width: 10px; height: 2px; background: #D97A0B"></span>Using</span><b style="font-weight: 600">{{dayUse}}</b></div>
+<div style="display: flex; justify-content: space-between; gap: 16px"><span style="display: flex; align-items: center; gap: 6px; color: #434E5A"><span style="width: 10px; height: 2px; background: #0F8F6B"></span>Solar</span><b style="font-weight: 600">{{daySun}}</b></div>
+</div></sc-if>
+</div>
+</div>
+
+<div style="display: flex; margin-top: 22px">
+<div aria-hidden="true" style="position: relative; flex: none; width: 44px; height: 92px; font-size: 12.5px; color: #55606C; font-variant-numeric: tabular-nums"><span style="position: absolute; top: 0; transform: translateY(-50%)">{{kwTop}}</span><span style="position: absolute; top: 100%; transform: translateY(-50%)">0</span></div>
+<div aria-hidden="true" style="position: relative; flex: 1; min-width: 0; height: 92px">
+<div style="position: absolute; top: 0; bottom: 0; left: {{off1L}}%; width: {{off1W}}%; background: #F1F3F6; transition: left .3s, width .3s"></div>
+<div style="position: absolute; top: 0; bottom: 0; left: 0; width: {{off2W}}%; background: #F1F3F6; transition: width .3s"></div>
+<div style="position: absolute; left: 0; right: 0; top: 100%; height: 1px; background: #DDE1E5"></div>
+<svg viewBox="0 0 1000 92" preserveAspectRatio="none" style="position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible"><path d="{{sunLine}}" style="fill: none; stroke: #0F8F6B; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke"></path><path d="{{useLine}}" style="fill: none; stroke: #D97A0B; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke"></path></svg>
+<sc-if value="{{dayHover}}" hint-placeholder-val="{{ false }}"><div style="position: absolute; top: 0; bottom: 0; left: {{dayX}}%; width: 1px; background: #9AA4AF; pointer-events: none"></div></sc-if>
+</div>
+</div>
+<div aria-hidden="true" style="display: flex; justify-content: space-between; margin: 5px 0 0 44px; font-size: 12.5px; color: #55606C"><span>6 AM</span><span>Noon</span><span>6 PM</span><span>Midnight</span><span>6 AM</span></div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 13.5px">
+<span style="display: flex; align-items: center; gap: 7px"><span aria-hidden="true" style="width: 16px; height: 3px; border-radius: 2px; background: #1B5CF0"></span>Battery level</span>
+<span style="display: flex; align-items: center; gap: 7px"><span aria-hidden="true" style="width: 16px; height: 3px; border-radius: 2px; background: #D97A0B"></span>What you use</span>
+<span style="display: flex; align-items: center; gap: 7px"><span aria-hidden="true" style="width: 16px; height: 3px; border-radius: 2px; background: #0F8F6B"></span>From solar</span>
+<span style="display: flex; align-items: center; gap: 7px"><span aria-hidden="true" style="width: 12px; height: 10px; border-radius: 2px; background: #E6EAEE"></span>Grid off</span>
+</div>
+</section>
+
+<section aria-labelledby="g2" style="background: #FFFFFF; border: 1px solid rgba(16,24,34,.07); border-radius: 22px; padding: 20px 22px">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 14px">
+<div style="flex: 1 1 280px; min-width: 0"><h2 id="g2" style="margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -.015em">Against running a generator</h2>
+<p aria-live="polite" style="margin: 3px 0 0; font-size: 14.5px; line-height: 1.45; color: #434E5A"><b style="font-weight: 600; color: #10161E">{{payHead}}</b> {{payRest}}</p></div>
+<button type="button" onClick="{{togglePayTable}}" aria-pressed="{{payTable}}" class="press" style="flex: none; min-height: 40px; padding: 0 14px; border: 1px solid rgba(16,24,34,.16); border-radius: 12px; background: #FFFFFF; color: #10161E; font: 500 14px Geist, system-ui, sans-serif; cursor: pointer">{{payTableText}}</button>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 10px">
+<label for="fuel" style="font-size: 14.5px; font-weight: 550">{{fuelText}} on fuel a month</label>
+<input id="fuel" type="range" min="30000" max="600000" step="10000" value="{{fuel}}" onChange="{{onFuel}}" style="flex: 1 1 180px; min-width: 0; height: 44px; margin: 0; accent-color: #1B5CF0">
+</div>
+<sc-if value="{{payChart}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; margin-top: 10px">
+<div aria-hidden="true" style="position: relative; flex: none; width: 50px; height: 190px; font-size: 12.5px; color: #55606C; font-variant-numeric: tabular-nums">
+<sc-for list="{{payY}}" as="y" hint-placeholder-count="4"><span style="position: absolute; top: {{y.top}}%; transform: translateY(-50%)">{{y.label}}</span></sc-for>
+</div>
+<div ref="{{bindPay}}" tabIndex="0" role="img" aria-label="{{payAria}}" onPointerMove="{{payMove}}" onPointerLeave="{{payLeave}}" onKeyDown="{{payKey}}" onFocus="{{payFocus}}" onBlur="{{payLeave}}" style="position: relative; flex: 1; min-width: 0; height: 190px; touch-action: pan-y; border-radius: 4px">
+<sc-for list="{{payY}}" as="y" hint-placeholder-count="4"><div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: {{y.top}}%; height: 1px; background: #E9ECEF"></div></sc-for>
+<svg aria-hidden="true" viewBox="0 0 1000 190" preserveAspectRatio="none" style="position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible"><path d="{{genLine}}" style="fill: none; stroke: #D97A0B; stroke-width: 2; stroke-linecap: round; vector-effect: non-scaling-stroke"></path><path d="{{sysLine}}" style="fill: none; stroke: #1B5CF0; stroke-width: 2; stroke-linecap: round; vector-effect: non-scaling-stroke"></path></svg>
+<sc-if value="{{payCross}}" hint-placeholder-val="{{ true }}"><div aria-hidden="true" style="position: absolute; left: {{crossL}}%; top: {{crossT}}%; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #10161E; box-shadow: 0 0 0 2px #FFFFFF"></div></sc-if>
+<sc-if value="{{payHover}}" hint-placeholder-val="{{ false }}"><div aria-hidden="true" style="position: absolute; top: 0; bottom: 0; left: {{payX}}%; width: 1px; background: #9AA4AF; pointer-events: none"></div>
+<div style="position: absolute; top: 6px; left: {{payTipL}}; right: {{payTipR}}; min-width: 170px; padding: 9px 11px; border-radius: 12px; background: rgba(255,255,255,.93); box-shadow: 0 1px 2px rgba(16,24,34,.08), 0 10px 24px rgba(16,24,34,.12); font-size: 13.5px; font-variant-numeric: tabular-nums; pointer-events: none; z-index: 3">
+<div style="color: #55606C">{{payT}}</div>
+<div style="display: flex; justify-content: space-between; gap: 16px; margin-top: 3px"><span style="display: flex; align-items: center; gap: 6px; color: #434E5A"><span style="width: 10px; height: 2px; background: #D97A0B"></span>Generator fuel</span><b style="font-weight: 600">{{payG}}</b></div>
+<div style="display: flex; justify-content: space-between; gap: 16px"><span style="display: flex; align-items: center; gap: 6px; color: #434E5A"><span style="width: 10px; height: 2px; background: #1B5CF0"></span>This system</span><b style="font-weight: 600">{{payS}}</b></div>
+</div></sc-if>
+</div>
+</div>
+<div aria-hidden="true" style="display: flex; justify-content: space-between; margin: 5px 0 0 50px; font-size: 12.5px; color: #55606C"><span>Today</span><span>1 yr</span><span>2 yrs</span><span>3 yrs</span><span>4 yrs</span><span>5 yrs</span></div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 13.5px">
+<span style="display: flex; align-items: center; gap: 7px"><span aria-hidden="true" style="width: 16px; height: 3px; border-radius: 2px; background: #D97A0B"></span>Generator fuel, adding up</span>
+<span style="display: flex; align-items: center; gap: 7px"><span aria-hidden="true" style="width: 16px; height: 3px; border-radius: 2px; background: #1B5CF0"></span>This system, paid once</span>
+</div>
+</sc-if>
+<sc-if value="{{payTable}}" hint-placeholder-val="{{ false }}">
+<table style="width: 100%; margin-top: 10px; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums"><thead><tr><th scope="col" style="padding: 8px 10px; text-align: left; font-weight: 500; color: #55606C; border-bottom: 1px solid #E6EAEE">After</th><th scope="col" style="padding: 8px 10px; text-align: right; font-weight: 500; color: #55606C; border-bottom: 1px solid #E6EAEE">Generator fuel</th><th scope="col" style="padding: 8px 10px; text-align: right; font-weight: 500; color: #55606C; border-bottom: 1px solid #E6EAEE">This system</th></tr></thead>
+<tbody><sc-for list="{{payRows}}" as="r" hint-placeholder-count="5"><tr><td style="padding: 8px 10px; border-bottom: 1px solid #F1F3F5">{{r.t}}</td><td style="padding: 8px 10px; text-align: right; border-bottom: 1px solid #F1F3F5">{{r.g}}</td><td style="padding: 8px 10px; text-align: right; border-bottom: 1px solid #F1F3F5">{{r.s}}</td></tr></sc-for></tbody></table>
+</sc-if>
+<p style="margin: 10px 0 0; font-size: 13px; line-height: 1.45; color: #55606C">Fuel only. It leaves out generator repairs and any battery you replace later, and assumes solar covers most of what the generator does today.</p>
+</section>
+</sc-if>
+</div>
+
+<aside id="result" class="glass sumcard" aria-label="Recommended system" style="flex: 1 1 330px; min-width: 0; position: sticky; top: 84px; box-sizing: border-box; padding: 24px; border-radius: 24px">
+<div style="font-size: 14px; font-weight: 500; color: #434E5A">Recommended system</div>
+<sc-if value="{{tooBig}}" hint-placeholder-val="{{ false }}">
+<div style="margin-top: 8px; font-size: 22px; line-height: 1.2; font-weight: 600; letter-spacing: -.02em">This needs a larger set-up</div>
+<p style="margin: 8px 0 0; font-size: 15px; line-height: 1.5; color: #434E5A">Your start-up load is {{peakKw}} kW. An engineer will size this one with you.</p>
+</sc-if>
+<sc-if value="{{fits}}" hint-placeholder-val="{{ true }}">
+<div style="margin-top: 4px; font-size: 34px; line-height: 1.1; font-weight: 600; letter-spacing: -.03em">{{price}}</div>
+<div style="margin-top: 4px; font-size: 13px; color: #434E5A">Estimate at today's prices, checked 9:02 AM</div>
+<dl style="margin: 18px 0 0; display: grid; grid-template-columns: 1fr auto; gap: 11px 16px; font-size: 15px">
+<dt style="color: #434E5A">Inverter</dt><dd style="margin: 0; font-weight: 550; text-align: right">{{inv}}</dd>
+<dt style="color: #434E5A">Battery</dt><dd style="margin: 0; font-weight: 550; text-align: right">{{batt}}</dd>
+<dt style="color: #434E5A">Solar panels</dt><dd style="margin: 0; font-weight: 550; text-align: right">{{panels}}</dd>
+<dt style="color: #434E5A">Mounts, cable, breakers</dt><dd style="margin: 0; font-weight: 550; text-align: right">Included</dd>
+</dl>
+<div style="height: 1px; margin: 16px 0; background: rgba(16,24,34,.09)"></div>
+<dl style="margin: 0; display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; font-size: 14px">
+<dt style="color: #434E5A">Usual load</dt><dd style="margin: 0; text-align: right">{{avgKw}} kW</dd>
+<dt style="color: #434E5A">Start-up load</dt><dd style="margin: 0; text-align: right">{{peakKw}} kW</dd>
+<dt style="color: #434E5A">Backup, about</dt><dd style="margin: 0; text-align: right">{{lasts}} hours</dd>
+</dl>
+</sc-if>
+<a href="#result" class="press" style="display: flex; align-items: center; justify-content: center; min-height: 50px; margin-top: 18px; background: #1B5CF0; color: #FFFFFF; border-radius: 14px; font-size: 15.5px; font-weight: 550; text-decoration: none; box-shadow: 0 8px 22px rgba(27,92,240,.26)">{{cta}}</a>
+<a href="#result" class="press" style="display: flex; align-items: center; justify-content: center; min-height: 46px; margin-top: 8px; border: 1px solid rgba(16,24,34,.14); border-radius: 14px; font-size: 15px; font-weight: 500; text-decoration: none">Ask an engineer on WhatsApp</a>
+<p style="margin: 12px 2px 0; font-size: 13px; line-height: 1.45; color: #434E5A">Our staff confirm the size before you pay. Installation is not included. Your own installer fits it.</p>
+</aside>
+</div>
+</div>
+
+<div class="mbar glass" style="position: fixed; left: 10px; right: 10px; bottom: 10px; z-index: 20; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 10px 10px 16px; border-radius: 18px; background: rgba(255,255,255,.82)">
+<div style="min-width: 0"><div style="font-size: 12.5px; color: #434E5A">{{barLabel}}</div><div style="font-size: 18px; font-weight: 600; letter-spacing: -.02em">{{barValue}}</div></div>
+<a href="#result" class="press" style="display: inline-flex; align-items: center; flex: none; min-height: 46px; padding: 0 18px; background: #1B5CF0; color: #FFFFFF; border-radius: 13px; font-size: 15px; font-weight: 550; text-decoration: none">See system</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":2060}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      hours: 8, solar: true,
+      qty: { bulb: 6, fan: 3, tv: 1, laptop: 1, fridge: 1, freezer: 0, ac1: 0, micro: 0, pump: 0 },
+      fuel: 150000, dayH: null, payH: null, payTable: false
+    };
+    this.bindDay = (el) => { this.dayEl = el; };
+    this.bindPay = (el) => { this.payEl = el; };
+  }
+  renderVals() {
+    const APPS = [
+      { id: 'bulb', name: 'Light bulbs', w: 10, duty: 1, surge: 0, note: 'About 10 W each', icon: 'M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.5 1 2.5h6c0-1 .2-1.7 1-2.5A6 6 0 0 0 12 3Z' },
+      { id: 'fan', name: 'Fans', w: 70, duty: 1, surge: 40, note: 'About 70 W each', icon: 'M12 13.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM12 10.500c0-3 1-6.500 3.200-6.500 2 0 2.300 3.500-.2 5.300M13.300 12.800c2.600 1.500 5 4 3.900 5.900-1 1.700-3.900.2-4.600-2.900M10.700 12.800c-2.600 1.500-6 1.900-7-.1-1-1.700 2-3.700 4.900-2.700' },
+      { id: 'tv', name: 'TV', w: 100, duty: 1, surge: 0, note: 'About 100 W each', icon: 'M3 5h18v12H3zM8 21h8M12 17v4' },
+      { id: 'laptop', name: 'Laptop or desktop', w: 100, duty: 1, surge: 0, note: 'About 100 W each', icon: 'M5 5h14v10H5zM2 19h20' },
+      { id: 'fridge', name: 'Fridge', w: 150, duty: .5, surge: 300, note: 'About 150 W each, cycles on and off', icon: 'M6 3h12v18H6zM6 10h12M9 6v2M9 13v3' },
+      { id: 'freezer', name: 'Freezer', w: 200, duty: .5, surge: 400, note: 'About 200 W each, cycles on and off', icon: 'M3 8h18v12H3zM3 12h18M7 15h3' },
+      { id: 'ac1', name: 'Air conditioner, 1 HP', w: 900, duty: .7, surge: 1800, note: 'About 900 W each, high start-up', icon: 'M3 6h18v7H3zM6 10h12M7 17c0 1.500-1 2-1 3M12 17v3M17 17c0 1.500 1 2 1 3' },
+      { id: 'micro', name: 'Microwave', w: 1000, duty: .05, surge: 0, note: 'About 1,000 W, short use', icon: 'M3 6h18v12H3zM6 9h9v6H6zM18 9v.01M18 12v.01M18 15v.01' },
+      { id: 'pump', name: 'Water pump', w: 750, duty: .05, surge: 1500, note: 'About 750 W, short use, high start-up', icon: 'M12 3s6 6.500 6 11a6 6 0 0 1-12 0c0-4.500 6-11 6-11Z' }
+    ];
+    const INV = [{ k: 3.5, p: 980000 }, { k: 5, p: 1450000 }, { k: 7.5, p: 2300000 }, { k: 10, p: 3100000 }];
+    const q = this.state.qty, hours = this.state.hours, solar = this.state.solar;
+    let running = 0, avg = 0, surge = 0;
+    APPS.forEach((a) => { const n = q[a.id] || 0; running += n * a.w; avg += n * a.w * a.duty; if (n > 0) surge = Math.max(surge, a.surge); });
+    const peak = running + surge;
+    const inv = INV.find((i) => i.k * 800 >= peak);
+    // Usage through a day, 6 AM to 6 AM. Evenings run higher, so sizing and the day graph use the same shape.
+    const SHAPE = [.7, .7, .6, .55, .5, .5, .55, .6, .6, .7, .85, 1.1, 1.5, 1.7, 1.7, 1.5, 1.2, 1, .85, .75, .7, .65, .65, .7, .7];
+    let energy = 0;
+    for (let i = 0; i < hours; i++) energy += avg / 1000 * SHAPE[(12 + i) % 24];
+    const modules = Math.max(1, Math.ceil(energy * 1.15 / 4.5)); // keeps about 15% in reserve
+    const usable = modules * 4.5;
+    let lastsHours = 0, charge = usable;
+    while (avg > 0 && charge > 0 && lastsHours < 72) {
+      const use = avg / 1000 * SHAPE[(12 + lastsHours) % 24];
+      if (charge < use) { lastsHours += charge / use; break; }
+      charge -= use; lastsHours += 1;
+    }
+    const rawPanels = Math.ceil(energy / 1.98);
+    const panelCount = Math.max(2, rawPanels + (rawPanels % 2));
+    const money = (n) => '₦' + Math.round(n).toLocaleString('en-NG');
+    const total = inv ? inv.p + modules * 1950000 + (solar ? panelCount * 165000 : 0) + (solar ? 350000 : 120000) : 0;
+    const self = this;
+    const setQty = (id, v) => self.setState({ qty: Object.assign({}, q, { [id]: Math.max(0, Math.min(40, v)) }) });
+    const opt = (on) => on ? { bg: '#10161E', fg: '#FFFFFF', border: '#10161E' } : { bg: '#FFFFFF', fg: '#10161E', border: 'rgba(16,24,34,.16)' };
+    const none = avg === 0;
+
+    // A day on this system: a simple hourly simulation, 6 AM to 6 AM, with the grid off from 6 PM for the chosen hours.
+    const cap = modules * 4.5;
+    const clockOf = (t) => (6 + t) % 24;
+    const isOff = (t) => { const end = 12 + hours; return (t >= 12 && t < end) || (end > 24 && t < end - 24); };
+    const useAt = (t) => avg / 1000 * SHAPE[t];
+    const sunAt = (t) => { const c = clockOf(t); return solar && c > 6 && c < 18 ? Math.pow(Math.sin(Math.PI * (c - 6) / 12), 1.3) * panelCount * .55 * .8 : 0; };
+    let level = cap;
+    const battery = [];
+    for (let pass = 0; pass < 2; pass++) {
+      for (let t = 0; t <= 24; t++) {
+        if (pass === 1) battery.push(cap ? level / cap : 0);
+        if (t === 24) break;
+        const sun = sunAt(t), use = useAt(t);
+        level = isOff(t) ? level + sun - use : level + Math.max(0, sun - use) + 1;
+        level = Math.max(0, Math.min(cap, level));
+      }
+    }
+    const low = battery.reduce((b, v, i) => (v < battery[b] ? i : b), 0);
+    const clockText = (t) => { const c = clockOf(t), h12 = c % 12 === 0 ? 12 : c % 12; return h12 + (c >= 12 ? ' PM' : ' AM'); };
+    const runsOut = battery[low] <= .001;
+    const kwMax = Math.max(.5, ...SHAPE.map((_, t) => Math.max(useAt(t), sunAt(t)))) * 1.15;
+    const pathOf = (fn, w, h) => SHAPE.map((_, t) => (t ? 'L' : 'M') + (t / 24 * w).toFixed(1) + ' ' + (h - fn(t) * h).toFixed(1)).join(' ');
+    const dayI = this.state.dayH;
+    const offEnd = 12 + hours;
+
+    // Against a generator: cumulative fuel against a one-off price.
+    const fuel = this.state.fuel;
+    const payTop = Math.max(total, fuel * 60) * 1.08 || 1;
+    const niceStep = (m) => { const r = m / 3, e = Math.pow(10, Math.floor(Math.log10(r))), f = r / e; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * e; };
+    const yStep = niceStep(payTop), yMax = Math.ceil(payTop / yStep) * yStep;
+    const payYTicks = [];
+    for (let v = 0; v <= yMax + 1; v += yStep) payYTicks.push({ top: (100 - v / yMax * 100).toFixed(2), label: v >= 1e6 ? '₦' + (v / 1e6).toFixed(v % 1e6 ? 1 : 0) + 'M' : (v ? '₦' + Math.round(v / 1e3) + 'K' : '₦0') });
+    const back = fuel > 0 ? total / fuel : Infinity;
+    const backMonths = Math.round(back), backY = Math.floor(backMonths / 12), backM = backMonths % 12;
+    const yrs = backY ? backY + (backY === 1 ? ' year' : ' years') + (backM ? ', ' + backM + (backM === 1 ? ' month' : ' months') : '') : backMonths + ' months';
+    const payI = this.state.payH;
+    const payMoney = (n) => money(n);
+    const clampRow = (r, el, n) => Math.round(Math.max(0, Math.min(1, r)) * n);
+    return {
+      showGraphs: !!inv && !none,
+      bindDay: this.bindDay, bindPay: this.bindPay,
+      dayLine: runsOut ? 'With the grid off from 6 PM for ' + hours + ' hours, your battery runs out at about ' + clockText(low) + '. Try a bigger battery, or fewer appliances.' : 'With the grid off from 6 PM for ' + hours + ' hours, your battery is lowest at ' + Math.round(battery[low] * 100) + '%, at about ' + clockText(low) + '.',
+      dayAria: 'Battery level over a day. Lowest ' + Math.round(battery[low] * 100) + ' percent at about ' + clockText(low) + '. Use left and right arrows to read each hour.',
+      battLine: pathOf((t) => battery[t], 1000, 140), battArea: pathOf((t) => battery[t], 1000, 140) + ' L1000 140 L0 140 Z',
+      useLine: pathOf((t) => useAt(t) / kwMax, 1000, 92), sunLine: pathOf((t) => sunAt(t) / kwMax, 1000, 92), kwTop: kwMax.toFixed(1) + ' kW',
+      off1L: (12 / 24 * 100).toFixed(2), off1W: (Math.min(offEnd, 24) - 12) / 24 * 100, off2W: offEnd > 24 ? (offEnd - 24) / 24 * 100 : 0,
+      lowL: (low / 24 * 100).toFixed(2), lowT: ((1 - battery[low]) * 100).toFixed(2),
+      dayMove: (e) => { if (!self.dayEl) return; const r = self.dayEl.getBoundingClientRect(); const i = clampRow((e.clientX - r.left) / r.width, self.dayEl, 24); if (i !== self.state.dayH) self.setState({ dayH: i }); },
+      dayLeave: () => self.setState({ dayH: null }), dayFocus: () => { if (self.state.dayH == null) self.setState({ dayH: low }); },
+      dayKey: (e) => { if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return; e.preventDefault(); const c = self.state.dayH == null ? low : self.state.dayH; self.setState({ dayH: Math.max(0, Math.min(24, c + (e.key === 'ArrowLeft' ? -1 : 1))) }); },
+      dayHover: dayI != null, dayX: dayI != null ? (dayI / 24 * 100).toFixed(2) : 0,
+      dayTime: dayI != null ? clockText(dayI) + (isOff(dayI === 24 ? 0 : dayI) ? ', grid off' : ', grid on') : '',
+      dayBatt: dayI != null ? Math.round(battery[dayI] * 100) + '%' : '', dayUse: dayI != null ? useAt(dayI).toFixed(2) + ' kW' : '', daySun: dayI != null ? sunAt(dayI).toFixed(2) + ' kW' : '',
+      dayTipL: dayI != null && dayI > 13 ? 'auto' : 'calc(' + (dayI != null ? dayI / 24 * 100 : 0).toFixed(2) + '% + 12px)',
+      dayTipR: dayI != null && dayI > 13 ? 'calc(' + (100 - dayI / 24 * 100).toFixed(2) + '% + 12px)' : 'auto',
+
+      fuel, fuelText: money(fuel), onFuel: (e) => self.setState({ fuel: Number(e.target.value) }),
+      payHead: back <= 60 ? 'Pays for itself in about ' + yrs + '.' : 'Does not pay back within 5 years at this fuel cost.',
+      payRest: back <= 60 ? 'After that, the money you were spending on fuel stays with you.' : 'It may still be worth it for quiet, clean power.',
+      payY: payYTicks,
+      genLine: 'M0 190 L1000 ' + (190 - fuel * 60 / yMax * 190).toFixed(1),
+      sysLine: 'M0 ' + (190 - total / yMax * 190).toFixed(1) + ' L1000 ' + (190 - total / yMax * 190).toFixed(1),
+      payCross: back <= 60, crossL: (back / 60 * 100).toFixed(2), crossT: (100 - total / yMax * 100).toFixed(2),
+      payAria: 'Generator fuel adds up by ' + money(fuel) + ' a month. This system costs ' + money(total) + ' once. ' + (back <= 60 ? 'They cross after about ' + yrs + '.' : 'They do not cross within 5 years.'),
+      payMove: (e) => { if (!self.payEl) return; const r = self.payEl.getBoundingClientRect(); const i = clampRow((e.clientX - r.left) / r.width, self.payEl, 60); if (i !== self.state.payH) self.setState({ payH: i }); },
+      payLeave: () => self.setState({ payH: null }), payFocus: () => { if (self.state.payH == null) self.setState({ payH: 24 }); },
+      payKey: (e) => { if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return; e.preventDefault(); const c = self.state.payH == null ? 24 : self.state.payH; self.setState({ payH: Math.max(0, Math.min(60, c + (e.key === 'ArrowLeft' ? -1 : 1))) }); },
+      payHover: payI != null, payX: payI != null ? (payI / 60 * 100).toFixed(2) : 0,
+      payT: payI != null ? 'After ' + (payI >= 12 ? (payI / 12).toFixed(payI % 12 ? 1 : 0) + ' years' : payI + ' months') : '',
+      payG: payI != null ? payMoney(fuel * payI) : '', payS: payMoney(total),
+      payTipL: payI != null && payI > 34 ? 'auto' : 'calc(' + (payI != null ? payI / 60 * 100 : 0).toFixed(2) + '% + 12px)',
+      payTipR: payI != null && payI > 34 ? 'calc(' + (100 - payI / 60 * 100).toFixed(2) + '% + 12px)' : 'auto',
+      payChart: !this.state.payTable, payTable: this.state.payTable, payTableText: this.state.payTable ? 'View as graph' : 'View as table',
+      togglePayTable: () => self.setState({ payTable: !self.state.payTable, payH: null }),
+      payRows: [1, 2, 3, 4, 5].map((y) => ({ t: y + (y === 1 ? ' year' : ' years'), g: money(fuel * y * 12), s: money(total) })),
+
+      rows: APPS.map((a) => ({
+        name: a.name, note: a.note, icon: a.icon, qty: q[a.id] || 0,
+        tile: (q[a.id] || 0) > 0 ? '#E7EEFE' : '#F1F3F5', tileInk: (q[a.id] || 0) > 0 ? '#1747C7' : '#55606C',
+        less: () => setQty(a.id, (q[a.id] || 0) - 1), more: () => setQty(a.id, (q[a.id] || 0) + 1),
+        lessLabel: 'One fewer: ' + a.name, moreLabel: 'One more: ' + a.name
+      })),
+      hours: [4, 8, 12, 24].map((h) => Object.assign({ label: h + ' hours', on: h === hours, pick: () => self.setState({ hours: h }) }, opt(h === hours))),
+      solar: [{ v: true, label: 'Yes, with panels' }, { v: false, label: 'No, charge from the grid' }].map((s) => Object.assign({ label: s.label, on: s.v === solar, pick: () => self.setState({ solar: s.v }) }, opt(s.v === solar))),
+      tooBig: !inv, fits: !!inv,
+      price: money(total),
+      inv: inv ? inv.k + ' kVA hybrid' : '',
+      batt: modules + ' × 5 kWh lithium',
+      panels: solar ? panelCount + ' × 550 W' : 'None',
+      avgKw: (avg / 1000).toFixed(2), peakKw: (peak / 1000).toFixed(2),
+      lasts: Math.round(lastsHours),
+      cta: inv ? (none ? 'Add appliances first' : 'See this system') : 'Talk to an engineer',
+      barLabel: inv ? (inv.k + ' kVA, ' + modules + ' × 5 kWh' + (solar ? ', ' + panelCount + ' panels' : '')) : 'Larger set-up needed',
+      barValue: inv ? money(total) : 'Talk to an engineer'
+    };
+  }
+}
+</script>
+</body>
+</html>
