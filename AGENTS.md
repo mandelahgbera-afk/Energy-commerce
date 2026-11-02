@@ -74,3 +74,13 @@ DeepSeek charges far less for input it has already seen, but only for an exact m
 2. Tick the item in `docs/progress.md`, with the real numbers and anything left open.
 3. Commit on the `build` branch, one commit per item, with a message saying why. Create it from `main` if it doesn't exist. `main` stays as the last version someone reviewed, so never commit to it after the baseline. Never push.
 4. Tell the owner in plain words: what now works, what you ran and its result, what you did not check, and what is next. Then stop.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
