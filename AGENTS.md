@@ -70,7 +70,7 @@ DeepSeek charges far less for input it has already seen, but only for an exact m
 
 ## Finishing an item
 
-1. `node check.mjs` passes, plus `--full` if money, stock or permissions changed.
+1. `node check.mjs` passes, plus `--full` if money, stock or permissions changed, plus `npm run e2e` if a screen or a function a screen calls changed. A screen is not done until a test has driven it in Chrome and checked the books.
 2. Tick the item in `docs/progress.md`, with the real numbers and anything left open.
 3. Commit on the `build` branch, one commit per item, with a message saying why. Create it from `main` if it doesn't exist. `main` stays as the last version someone reviewed, so never commit to it after the baseline. Never push.
 4. Tell the owner in plain words: what now works, what you ran and its result, what you did not check, and what is next. Then stop.
