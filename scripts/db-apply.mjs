@@ -16,8 +16,11 @@ const dir = path.join(root, 'supabase', 'migrations');
 const files = fs.readdirSync(dir).filter((n) => n.endsWith('.sql')).sort();
 const text = (f) => fs.readFileSync(path.join(dir, f), 'utf8');
 const hash = (f) => crypto.createHash('sha256').update(text(f).replace(/\r\n/g, '\n')).digest('hex');
-// The first thing a file creates tells us whether it already ran on a database set up before this record existed.
-const probe = (f) => text(f).match(/create\s+(?:or\s+replace\s+)?(function|table|policy|type)\s+(?:public\.)?(\w+)/i);
+// The first new thing a file creates (not a replacement) shows whether it is in a database that
+// was set up before this record existed. A file that only replaces functions has no such sign.
+const probe = (f) => text(f).match(/create\s+(function|table|policy|type)\s+(?:public\.)?(\w+)/i);
+const throughAt = process.argv.indexOf('--already-applied-through');
+const through = throughAt >= 0 ? process.argv[throughAt + 1] : null;
 const exists = async (kind, name) => {
   const n = name.toLowerCase();
   if (kind === 'table') return (await sql`select to_regclass(${'public.' + n}) is not null as yes`)[0].yes;
@@ -32,17 +35,26 @@ try {
   const done = new Map();
   if (tracked) for (const r of await sql`select name, sha256 from ops.applied_migrations`) done.set(r.name, r.sha256);
 
-  // First run on a database that already has the schema: find which files are in it already.
+  // First run on a database that already has the schema: the owner says which file it is up to,
+  // and every file's own sign is checked against that, so a wrong answer is refused.
   const found = [];
   if (!tracked && (await sql`select to_regclass('public.staff') is not null as yes`)[0].yes) {
-    let gap = false;
+    const signs = [];
     for (const f of files) {
       const p = probe(f);
-      if (!p) throw new Error(`${f} creates nothing this script can look for. Sort this out by hand.`);
-      const there = await exists(p[1].toLowerCase(), p[2]);
-      if (there && gap) throw new Error(`${f} is already in the database but an earlier file is not. Sort this out by hand.`);
-      if (there) found.push(f);
-      else gap = true;
+      signs.push({ f, there: p ? await exists(p[1].toLowerCase(), p[2]) : null });
+    }
+    if (!through || !files.includes(through)) {
+      console.log('This database was set up before migrations were recorded. Say which file it is up to:');
+      console.log('  node scripts/db-apply.mjs --already-applied-through <file>');
+      for (const s of signs) console.log(`  ${s.f}: ${s.there === null ? 'no sign to check' : s.there ? 'its tables or functions are there' : 'not there'}`);
+      process.exit(1);
+    }
+    for (const s of signs) {
+      const claimed = s.f <= through;
+      if (s.there === true && !claimed) throw new Error(`${s.f} looks applied, but comes after ${through}.`);
+      if (s.there === false && claimed) throw new Error(`${s.f} does not look applied, but comes before ${through}.`);
+      if (claimed) found.push(s.f);
     }
   }
 
