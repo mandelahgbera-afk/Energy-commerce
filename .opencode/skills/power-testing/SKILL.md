@@ -11,6 +11,7 @@ All commands run from `sim/`.
 |---|---|---|---|
 | `node check.mjs` | Locked files unchanged, then every rule scene on PGlite. Prints only failures and totals | After every change | About a minute |
 | `node check.mjs --full` | The above, plus the same scenes on real Postgres and the race tests, then cleans up temp folders | Before committing a money, stock or permission change | A few minutes |
+| `node backup-proof.mjs` | Seeds a whole shop day on a throwaway server, seals an encrypted dump, restores it into a blank one, and compares every table, the ledger and `i_books_check()`; a tampered dump refuses to open | Before go-live, and whenever the schema grew | A minute or two |
 | `node edge.mjs` | Every rule scene, one per line | When you need to see scene names | About a minute |
 | `node race.mjs` | Real connections fighting over the same stock and money | Included in `--full` | Under a minute |
 | `node simulate.mjs 30 90` | 90 pretend days through the real functions. Reports KB per sale and checks the books daily | Only when the schema grew and new size numbers are wanted | A few minutes |
