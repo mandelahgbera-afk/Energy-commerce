@@ -1013,8 +1013,8 @@ await test('a write with no key is refused, because it could never be retried sa
   await fails(rpc(ACCOUNT, 'pay_supplier', { p_key: null, p_supplier: sup, p_amount: 5 }), 'key_required');
   await fails(rpc(COUNTER, 'create_order', { p_key: null, p_location: shop, p_lines: [line(p)] }), 'key_required');
   await fails(rpc(STORE, 'submit_stock_count', { p_key: null, p_location: shop, p_lines: [] }), 'key_required');
-  await fails(rpc(ACCOUNT, 'owner_money_in', { p_key: null, p_account: 'cash', p_amount: 5, p_what: 'x' }), 'key_required');
-  await fails(rpc(ACCOUNT, 'owner_money_out', { p_key: ' ', p_account: 'cash', p_amount: 5, p_what: 'x' }), 'key_required');
+  await fails(rpc(OWNER, 'owner_money_in', { p_key: null, p_account: 'cash', p_amount: 5, p_what: 'x' }), 'key_required');
+  await fails(rpc(OWNER, 'owner_money_out', { p_key: ' ', p_account: 'cash', p_amount: 5, p_what: 'x' }), 'key_required');
   await fails(rpc(COUNTER, 'submit_safe_count', { p_key: null, p_counted: 0, p_counted_at: '2026-01-01T00:00:00Z' }), 'key_required');
   await fails(rpc(COUNTER, 'create_quote', { p_key: null, p_location: shop, p_lines: [] }), 'key_required');
   await fails(rpc(COUNTER, 'revise_quote', { p_key: ' ', p_quote: randomUUID(), p_lines: [] }), 'key_required');
@@ -1131,7 +1131,7 @@ await test('only the functions on this list can be run from outside', async () =
   eq((await runnable('authenticated')).join(), [
     'accept_quote', 'add_bank_line', 'approve_safe_count', 'approve_stock_count', 'availability', 'books_check', 'cancel_order', 'cancel_quote', 'cash_position', 'check_serial', 'close_month', 'close_till', 'confirm_payment',
     'counter_sale', 'create_order', 'create_quote', 'customer_balance', 'debtors', 'decide_approval', 'deliver_order', 'has_staff_role', 'is_staff', 'month_report', 'move_money',
-    'my_till', 'oldest_serials', 'open_till', 'owner_exceptions', 'owner_money_in', 'owner_money_out', 'pay_supplier', 'post_opening_balance', 'post_opening_debt', 'preview_sale', 'receipt_by_token', 'receive_goods',
+    'my_till', 'oldest_serials', 'open_till', 'owner_exceptions', 'owner_money_in', 'owner_money_out', 'owner_today', 'pay_supplier', 'post_opening_balance', 'post_opening_debt', 'preview_sale', 'receipt_by_token', 'receive_goods',
     'record_expense', 'refund_order', 'reject_payment', 'reject_safe_count', 'reject_stock_count', 'reserve_order', 'return_goods', 'reverse_payment', 'reverse_txn', 'revise_quote', 'save_customer', 'save_location', 'save_part_details', 'save_product',
     'save_staff', 'save_supplier', 'search_parts', 'set_customer_terms', 'set_last_cost', 'shop_today', 'submit_safe_count', 'submit_stock_count', 'take_payment', 'till_paid_out', 'transfer_stock', 'void_opening_debt',
   ].join());
@@ -1183,15 +1183,16 @@ await test('each role is refused what is not its job', async () => {
     ['month_report', { p_month: '2026-01-01' }, everyoneBut(ACCOUNT)],
     ['books_check', {}, everyoneBut(ACCOUNT)],
     ['owner_exceptions', {}, everyoneBut(ACCOUNT)],
+    ['owner_today', {}, everyoneBut(ACCOUNT)],
     ['debtors', {}, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
     ['customer_balance', { p_customer: dummy }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
     ['preview_sale', { p_lines: [] }, everyoneBut(COUNTER, COUNTER2)],
     ['open_till', { p_float: 0 }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
     ['close_till', { p_counted: 0 }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
     ['my_till', {}, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
-    ['owner_money_in', { p_key: 'x', p_account: 'cash', p_amount: 1, p_what: 'x' }, everyoneBut(ACCOUNT)],
-    ['owner_money_out', { p_key: 'x', p_account: 'cash', p_amount: 1, p_what: 'x' }, everyoneBut(ACCOUNT)],
-    ['submit_safe_count', { p_key: 'x', p_counted: 0, p_counted_at: '2026-01-01T00:00:00Z' }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
+    ['owner_money_in', { p_key: 'x', p_account: 'cash', p_amount: 1, p_what: 'x' }, everyoneBut()],
+    ['owner_money_out', { p_key: 'x', p_account: 'cash', p_amount: 1, p_what: 'x' }, everyoneBut()],
+    ['submit_safe_count', { p_key: 'x', p_counted: 0, p_counted_at: '2026-01-01T00:00:00Z' }, everyoneBut(COUNTER, COUNTER2)],
     ['approve_safe_count', { p_count: dummy }, everyoneBut()],
     ['reject_safe_count', { p_count: dummy, p_reason: 'x' }, everyoneBut()],
     ['cash_position', {}, everyoneBut(ACCOUNT)],
@@ -1380,23 +1381,23 @@ await test('the owner\'s money in and out moves equity, never profit', async () 
   const month = await val(`select date_trunc('month', shop_today())::date::text`);
   const report = () => rpc(ACCOUNT, 'month_report', { p_month: month });
   const before = await report();
-  same(await moved(() => rpc(ACCOUNT, 'owner_money_in', { p_key: k('in'), p_account: 'cash', p_amount: 5000000, p_what: 'Owner top-up' })), { cash: 5000000, owner_money: -5000000 });
-  same(await moved(() => rpc(ACCOUNT, 'owner_money_out', { p_key: k('out'), p_account: 'cash', p_amount: 2000000, p_what: 'Owner pocket' })), { cash: -2000000, owner_money: 2000000 });
+  same(await moved(() => rpc(OWNER, 'owner_money_in', { p_key: k('in'), p_account: 'cash', p_amount: 5000000, p_what: 'Owner top-up' })), { cash: 5000000, owner_money: -5000000 });
+  same(await moved(() => rpc(OWNER, 'owner_money_out', { p_key: k('out'), p_account: 'cash', p_amount: 2000000, p_what: 'Owner pocket' })), { cash: -2000000, owner_money: 2000000 });
   const after = await report();
   eq(N(after.income), N(before.income), 'a top-up became income:');
   eq(N(after.costs), N(before.costs), 'a drawing became a cost:');
   eq(N(after.profit), N(before.profit), 'profit moved:');
-  await fails(rpc(ACCOUNT, 'owner_money_in', { p_key: k('in'), p_account: 'sales', p_amount: 1, p_what: 'x' }), 'bad_account');
-  await fails(rpc(ACCOUNT, 'owner_money_out', { p_key: k('out'), p_account: 'rent', p_amount: 1, p_what: 'x' }), 'bad_account');
-  await fails(rpc(ACCOUNT, 'owner_money_in', { p_key: k('in'), p_account: 'cash', p_amount: 0, p_what: 'x' }), 'bad_amount');
-  await fails(rpc(ACCOUNT, 'owner_money_out', { p_key: k('out'), p_account: 'cash', p_amount: -5, p_what: 'x' }), 'bad_amount');
-  await fails(rpc(ACCOUNT, 'owner_money_out', { p_key: k('out'), p_account: 'cash', p_amount: 5, p_what: '  ' }), 'reason_required');
+  await fails(rpc(OWNER, 'owner_money_in', { p_key: k('in'), p_account: 'sales', p_amount: 1, p_what: 'x' }), 'bad_account');
+  await fails(rpc(OWNER, 'owner_money_out', { p_key: k('out'), p_account: 'rent', p_amount: 1, p_what: 'x' }), 'bad_account');
+  await fails(rpc(OWNER, 'owner_money_in', { p_key: k('in'), p_account: 'cash', p_amount: 0, p_what: 'x' }), 'bad_amount');
+  await fails(rpc(OWNER, 'owner_money_out', { p_key: k('out'), p_account: 'cash', p_amount: -5, p_what: 'x' }), 'bad_amount');
+  await fails(rpc(OWNER, 'owner_money_out', { p_key: k('out'), p_account: 'cash', p_amount: 5, p_what: '  ' }), 'reason_required');
   const key = k('in');
-  const t1 = await rpc(ACCOUNT, 'owner_money_in', { p_key: key, p_account: 'bank', p_amount: 1000, p_what: 'Twice' });
-  eq(await rpc(ACCOUNT, 'owner_money_in', { p_key: key, p_account: 'bank', p_amount: 1000, p_what: 'Twice' }), t1, 'the retry returns the first posting:');
-  await fails(rpc(ACCOUNT, 'owner_money_in', { p_key: key, p_account: 'bank', p_amount: 2000, p_what: 'Twice' }), 'key_reused');
+  const t1 = await rpc(OWNER, 'owner_money_in', { p_key: key, p_account: 'bank', p_amount: 1000, p_what: 'Twice' });
+  eq(await rpc(OWNER, 'owner_money_in', { p_key: key, p_account: 'bank', p_amount: 1000, p_what: 'Twice' }), t1, 'the retry returns the first posting:');
+  await fails(rpc(OWNER, 'owner_money_in', { p_key: key, p_account: 'bank', p_amount: 2000, p_what: 'Twice' }), 'key_reused');
   // A wrong drawing is fixed by a reversal, like any journal entry.
-  const bad = await rpc(ACCOUNT, 'owner_money_out', { p_key: k('out'), p_account: 'cash', p_amount: 70000, p_what: 'Typo' });
+  const bad = await rpc(OWNER, 'owner_money_out', { p_key: k('out'), p_account: 'cash', p_amount: 70000, p_what: 'Typo' });
   same(await moved(() => rpc(ACCOUNT, 'reverse_txn', { p_txn: bad, p_reason: 'Wrong figure' })), { cash: 70000, owner_money: -70000 });
 });
 
@@ -1428,7 +1429,7 @@ await test('the safe is counted blind, and only the owner decides', async () => 
 await test('a short safe posts the loss, and an over posts the gain', async () => {
   const impliedSafe = async () => N(await val(`select coalesce(sum(amount_kobo), 0) from ledger_entries where account_code = 'cash'`)) - N(await val('select i_tills_expected()'));
   const w0 = await impliedSafe();
-  const c = await rpc(ACCOUNT, 'submit_safe_count', { p_key: k('safe'), p_counted: w0 - 50000, p_counted_at: new Date().toISOString() });
+  const c = await rpc(COUNTER, 'submit_safe_count', { p_key: k('safe'), p_counted: w0 - 50000, p_counted_at: new Date().toISOString() });
   same(await moved(() => rpc(OWNER, 'approve_safe_count', { p_count: c })), { cash: -50000, safe_differences: 50000 });
   const w1 = await impliedSafe();
   eq(w1, w0 - 50000, 'the books moved to the counted figure:');
@@ -1501,7 +1502,7 @@ await test('a safe count is judged from when it was taken, not when it was tappe
   const w = await impliedSafe();
   const countedAt = new Date(Date.now() - 2 * 3600 * 1000).toISOString(); // the cash was counted two hours ago
   const c = await rpc(COUNTER, 'submit_safe_count', { p_key: k('safe'), p_counted: w, p_counted_at: countedAt });
-  await rpc(ACCOUNT, 'owner_money_out', { p_key: k('out'), p_account: 'cash', p_amount: 10000, p_what: 'Pocket' });
+  await rpc(OWNER, 'owner_money_out', { p_key: k('out'), p_account: 'cash', p_amount: 10000, p_what: 'Pocket' });
   await fails(rpc(OWNER, 'approve_safe_count', { p_count: c }), 'count_out_of_date');
   await rpc(OWNER, 'reject_safe_count', { p_count: c, p_reason: 'Recount' });
   await fails(rpc(COUNTER, 'submit_safe_count', { p_key: k('safe'), p_counted: w, p_counted_at: new Date(Date.now() + 3600 * 1000).toISOString() }), 'bad_time');
@@ -1509,7 +1510,7 @@ await test('a safe count is judged from when it was taken, not when it was tappe
 
 await test('a wrongly typed safe count is put right by recounting, like a stock count', async () => {
   const impliedSafe = async () => N(await val(`select coalesce(sum(amount_kobo), 0) from ledger_entries where account_code = 'cash'`)) - N(await val('select i_tills_expected()'));
-  await rpc(ACCOUNT, 'owner_money_in', { p_key: k('in'), p_account: 'cash', p_amount: 100000, p_what: 'Scene cash' });
+  await rpc(OWNER, 'owner_money_in', { p_key: k('in'), p_account: 'cash', p_amount: 100000, p_what: 'Scene cash' });
   const w = await impliedSafe();
   const typo = await rpc(COUNTER, 'submit_safe_count', { p_key: k('safe'), p_counted: w + 900000, p_counted_at: new Date().toISOString() });
   same(await moved(() => rpc(OWNER, 'approve_safe_count', { p_count: typo })), { cash: 900000, safe_differences: -900000 });
@@ -1817,6 +1818,101 @@ await test('the counter preview prices a sale exactly as the sale records it', a
   expect(!/cost/i.test(JSON.stringify(trade)) && !JSON.stringify(trade).includes('6000000'), 'cost in the preview');
   await fails(rpc(COUNTER, 'preview_sale', { p_lines: [line(items[0])], p_discount_pct: 101 }), 'bad_discount');
   await fails(rpc(COUNTER, 'preview_sale', { p_lines: [line(items[0], 1.5)] }), 'bad_qty');
+});
+
+// ---- Fixes from the outside review of the 2 Nov work (Claude, 2 Nov 2026) ----
+
+await test('a serial battery cannot be returned without naming the unit that came back', async () => {
+  const p = await product({ price: 100000000, cost: 70000000, qty: 2, tracking: 'serial' });
+  const s = await sale(p, { serials: [p.serials[0]] });
+  await fails(rpc(COUNTER, 'return_goods', { p_key: k('ret'), p_order: s.order_id, p_lines: [line(p, 1)], p_reason: 'Faulty' }), 'serial_required');
+  await fails(rpc(COUNTER, 'return_goods', { p_key: k('ret'), p_order: s.order_id, p_lines: [line(p, 1, { serials: 'x' })], p_reason: 'Faulty' }), 'serial_required');
+  same(await shelf(p), { qty: 1, reserved: 0 }, 'nothing came back:');
+  await rpc(COUNTER, 'return_goods', { p_key: k('ret'), p_order: s.order_id, p_lines: [line(p, 1, { serials: [p.serials[0]] })], p_reason: 'Faulty' });
+  same(await shelf(p), { qty: 2, reserved: 0 });
+  const li = await val('select id from order_lines where order_id = $1', [s.order_id]);
+  await q('update order_lines set delivered_qty = delivered_qty + 1 where id = $1', [li]);
+  const chk = await val('select i_books_check()');
+  expect(!chk.ok && chk.problems.some((x) => x.includes('serial numbers disagree with what was delivered')), 'the books check missed a unit with no serial');
+  await q('update order_lines set delivered_qty = delivered_qty - 1 where id = $1', [li]);
+});
+
+await test('owner money and safe counts stay out of the accountant\'s hands', async () => {
+  await fails(rpc(ACCOUNT, 'owner_money_out', { p_key: k('out'), p_account: 'cash', p_amount: 100, p_what: 'Drawing' }), 'not_allowed');
+  await fails(rpc(ACCOUNT, 'owner_money_in', { p_key: k('in'), p_account: 'cash', p_amount: 100, p_what: 'Top-up' }), 'not_allowed');
+  await fails(rpc(ACCOUNT, 'submit_safe_count', { p_key: k('safe'), p_counted: 0, p_counted_at: new Date().toISOString() }), 'not_allowed');
+});
+
+await test('keys the system makes for itself cannot be taken first by a screen', async () => {
+  const p = await product({ qty: 5 });
+  const quote = await rpc(COUNTER, 'create_quote', { p_key: k('q'), p_location: shop, p_lines: [line(p)] });
+  await fails(rpc(COUNTER2, 'create_order', { p_key: `quote_accept:${quote}`, p_location: shop, p_lines: [line(p, 2)] }), 'key_reserved');
+  await fails(sale(p, { key: 'opening_debt:x' }), 'key_reserved');
+  expect(await rpc(COUNTER, 'accept_quote', { p_quote: quote }), 'the quote can still be accepted');
+});
+
+// ---- The owner's today screen (Claude, 2 Nov 2026) ----
+
+await test('the owner\'s today screen adds up from the records', async () => {
+  const today = (days = 30) => rpc(OWNER, 'owner_today', { p_days: days });
+  const bearing = await product({ price: 500000, cost: 300000, qty: 4, low: 3 });
+  const panel = await product({ price: 10000000, cost: 7000000, qty: 3 });
+  const battery = await product({ price: 8000000, cost: 5000000, qty: 1, tracking: 'serial' });
+  await q(`update products set name = 'Car battery 24F' where id = $1`, [battery.id]);
+
+  // A cash sale moves money in today, the tiles and the graph by exactly its amount.
+  const before = await today();
+  await sale(bearing, { qty: 2 });
+  const after = await today();
+  eq(N(after.money_in_today.cash ?? 0) - N(before.money_in_today.cash ?? 0), 1000000, 'cash in today:');
+  eq(N(after.tiles.sales) - N(before.tiles.sales), 1000000, 'sales tile:');
+  eq(N(after.tiles.profit) - N(before.tiles.profit), 1000000 - 600000, 'profit tile:');
+  eq(N(after.tiles.money_in) - N(before.tiles.money_in), 1000000, 'money in tile:');
+  eq(after.series.length, 30, 'days on the graph:');
+  eq(after.series[29].date, await val('select shop_today()::text'), 'the graph ends today:');
+  eq(N(after.series[29].in) - N(before.series[29].in), 1000000, 'today on the graph:');
+  // Most urgent first, at most 12, and only parts that really are running out.
+  const urgency = (r) => (r.days_left === null ? (N(r.free) <= 0 ? 0 : 999) : Number(r.days_left));
+  expect(after.running_out.length <= 12, 'the list is capped');
+  after.running_out.forEach((r, i) => {
+    if (i > 0) expect(urgency(after.running_out[i - 1]) <= urgency(r), `out of order at ${r.sku}`);
+    expect((N(r.low_stock_at) > 0 && N(r.free) <= N(r.low_stock_at)) || (r.days_left !== null && Number(r.days_left) <= N(r.lead_days) + 7), `${r.sku} is not running out`);
+  });
+
+  // What waits on the owner, with the profit a yes would leave.
+  const cut = await order(panel, { price: 7500000 });
+  const waiting = await order(panel);
+  const transfer = await pay(waiting, 4000000, 'transfer');
+  const t = await today();
+  const ap = t.queue.find((x) => x.type === 'approval' && x.order_id === cut);
+  expect(ap, 'the discount should be waiting');
+  eq(N(ap.profit), 7500000 - 7000000, 'profit a yes would leave:');
+  expect(t.queue.some((x) => x.type === 'payment' && x.id === transfer), 'the transfer should be waiting');
+
+  // Who owes us, by age, adds up to every unpaid delivery.
+  const phone = '08030000401';
+  const c = await rpc(COUNTER, 'save_customer', { p_phone: phone, p_name: 'Musa Owes', p_reminders_ok: true });
+  await rpc(OWNER, 'set_customer_terms', { p_customer: c, p_kind: 'retail', p_credit_limit: 50000000 });
+  const credit = await order(panel, { phone, credit: true });
+  await deliver(credit);
+  await q('update deliveries set delivered_on = shop_today() - 45 where order_id = $1', [credit]);
+  const d = await today();
+  eq(d.debts.length, 4, 'debt bands:');
+  const owed = N(await val('select coalesce(sum(billed_kobo - paid_kobo), 0) from orders where billed_kobo > paid_kobo'));
+  eq(d.debts.reduce((s, b) => s + N(b.total), 0), owed, 'debts add up:');
+  expect(d.debts[1].customers.some((x) => x.name === 'Musa Owes' && N(x.owes) === 10000000), 'Musa should be in the 31 to 60 days band');
+
+  // A battery sold 23 months ago is due next month, at the usual 24 months.
+  await sale(battery, { serials: [battery.serials[0]], phone, method: 'pos' });
+  await q(`update serial_units set sold_on = (shop_today() - interval '23 months')::date where serial = $1`, [battery.serials[0]]);
+  const b = await today();
+  eq(b.batteries_due.length, 6, 'months ahead:');
+  expect(b.batteries_due[1].customers.some((x) => x.name === 'Musa Owes'), 'the battery customer should be due next month');
+
+  eq((await rpc(ACCOUNT, 'owner_today', { p_days: 7 })).series.length, 7, 'a week:');
+  eq((await today(90)).series.length, 90, 'a quarter:');
+  await fails(today(14), 'bad_period');
+  for (const who of [COUNTER, STORE, DISPATCH, DRIVER]) await fails(rpc(who, 'owner_today', {}), 'not_allowed');
 });
 
 // ---- Last, because it closes the month that every other scene posts into ----

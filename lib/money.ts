@@ -22,6 +22,23 @@ export const nairaToKobo = (text: string): bigint => {
   return neg ? -value : value;
 };
 
+/** kobo -> "₦1.5M", "₦240K", "₦800" for graph labels and tiles, where a full figure would crowd. */
+export const shortNaira = (kobo: bigint | number | string): string => {
+  const k = BigInt(String(kobo).replace(/[^\d-]/g, '') || '0');
+  const neg = k < 0n;
+  const n = (neg ? -k : k) / 100n; // whole naira
+  const sign = neg ? '−' : '';
+  const one = (whole: bigint, unit: bigint, suffix: string) => {
+    const tenths = (whole * 10n + unit / 2n) / unit;
+    // Ten million and up loses the decimal, as on the prototype: ₦29M, not ₦28.8M.
+    const text = tenths >= 100n ? String((whole + unit / 2n) / unit) : `${tenths / 10n}.${tenths % 10n}`.replace(/\.0$/, '');
+    return `${sign}₦${text}${suffix}`;
+  };
+  if (n >= 1000000n) return one(n, 1000000n, 'M');
+  if (n >= 1000n) return `${sign}₦${(n + 500n) / 1000n}K`;
+  return `${sign}₦${n}`;
+};
+
 /** kobo (integer) -> "₦1,500.50", the one place naira is ever shown. */
 export const formatNaira = (kobo: bigint | number | string): string => {
   const text = koboToNaira(kobo);

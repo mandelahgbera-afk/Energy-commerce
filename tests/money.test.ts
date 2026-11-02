@@ -33,3 +33,17 @@ test('naira is shown grouped and signed', () => {
   assert.equal(formatNaira(-50), '-₦0.50');
   assert.equal(formatNaira(7), '₦0.07');
 });
+
+test('short labels for graphs round to the nearest thousand or tenth of a million', async () => {
+  const { shortNaira } = await import('../lib/money.ts');
+  assert.equal(shortNaira(0), '₦0');
+  assert.equal(shortNaira(80000), '₦800');
+  assert.equal(shortNaira(24049900), '₦240K');
+  assert.equal(shortNaira(150000000), '₦1.5M');
+  assert.equal(shortNaira(2880000000), '₦29M');
+  assert.equal(shortNaira(1234500000), '₦12M');
+  assert.equal(shortNaira(980000000), '₦9.8M');
+  assert.equal(shortNaira(15000000000), '₦150M');
+  assert.equal(shortNaira(-150000000), '−₦1.5M');
+  assert.equal(shortNaira('150000000'), '₦1.5M');
+});
