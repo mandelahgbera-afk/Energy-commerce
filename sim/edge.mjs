@@ -1132,8 +1132,8 @@ await test('only the functions on this list can be run from outside', async () =
     'accept_quote', 'add_bank_line', 'approve_safe_count', 'approve_stock_count', 'availability', 'books_check', 'cancel_order', 'cancel_quote', 'cash_position', 'check_serial', 'close_month', 'close_till', 'confirm_payment',
     'counter_sale', 'create_order', 'create_quote', 'customer_balance', 'debtors', 'decide_approval', 'deliver_order', 'has_staff_role', 'is_staff', 'month_report', 'move_money',
     'my_till', 'oldest_serials', 'open_till', 'owner_exceptions', 'owner_money_in', 'owner_money_out', 'pay_supplier', 'post_opening_balance', 'post_opening_debt', 'receipt_by_token', 'receive_goods',
-    'record_expense', 'refund_order', 'reject_payment', 'reject_safe_count', 'reject_stock_count', 'reserve_order', 'return_goods', 'reverse_payment', 'reverse_txn', 'revise_quote', 'save_customer', 'save_location', 'save_product',
-    'save_staff', 'save_supplier', 'set_customer_terms', 'set_last_cost', 'shop_today', 'submit_safe_count', 'submit_stock_count', 'take_payment', 'till_paid_out', 'transfer_stock', 'void_opening_debt',
+    'record_expense', 'refund_order', 'reject_payment', 'reject_safe_count', 'reject_stock_count', 'reserve_order', 'return_goods', 'reverse_payment', 'reverse_txn', 'revise_quote', 'save_customer', 'save_location', 'save_part_details', 'save_product',
+    'save_staff', 'save_supplier', 'search_parts', 'set_customer_terms', 'set_last_cost', 'shop_today', 'submit_safe_count', 'submit_stock_count', 'take_payment', 'till_paid_out', 'transfer_stock', 'void_opening_debt',
   ].join());
 });
 
@@ -1198,6 +1198,8 @@ await test('each role is refused what is not its job', async () => {
     ['revise_quote', { p_key: 'x', p_quote: dummy, p_lines: [] }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
     ['accept_quote', { p_quote: dummy }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
     ['cancel_quote', { p_quote: dummy, p_reason: 'x' }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
+    ['save_part_details', { p_product: dummy, p_part_number: 'x' }, everyoneBut()],
+    ['search_parts', { p_query: 'x' }, everyoneBut(COUNTER, COUNTER2, STORE, DISPATCH, ACCOUNT)],
   ];
   for (const [fn, args, forbidden] of rules) {
     for (const who of forbidden) await fails(rpc(who, fn, args).catch((e) => { throw new Error(`${fn} as ${who}: ${e.message}`); }), 'not_allowed');
@@ -1680,6 +1682,88 @@ await test('quote totals match the order, VAT and trade price included', async (
   eq(N((await q('select total_kobo from quotes where id = $1', [tq]))[0].total_kobo), 8500000);
   const to = await rpc(COUNTER, 'accept_quote', { p_quote: tq });
   eq(N((await orderRow(to)).total_kobo), 8500000);
+});
+
+// ---- Catalogue search: the part, however it is asked ----
+
+await test('a part number finds the part however it is written, with substitutes told apart', async () => {
+  const bear = async (part, bore, od, width) => {
+    const sku = `B-${++seq}`;
+    const id = await rpc(OWNER, 'save_product', { p_sku: sku, p_name: `Bearing ${part}`, p_price: 1500000 });
+    await rpc(OWNER, 'set_last_cost', { p_product: id, p_cost: 1000000 });
+    await rpc(OWNER, 'save_part_details', { p_product: id, p_part_number: part, p_bore: bore, p_outside: od, p_width: width });
+    await rpc(STORE, 'receive_goods', { p_key: k('rcv'), p_supplier: sup, p_location: shop, p_lines: [{ product_id: id, qty: 4 }] });
+    return id;
+  };
+  const sealed = await bear('6205 2RS', 25, 52, 15);
+  const shielded = await bear('6205-ZZ', 25, 52, 15);
+  const bigger = await bear('6304 2RS', 20, 52, 15);
+  const r = await rpc(COUNTER, 'search_parts', { p_query: '6205 2rs' });
+  eq(r[0].product, sealed, 'the exact part comes first:');
+  eq(r[0].match, 'part');
+  eq(N(r[0].sizes.bore), 25);
+  eq(N(r[0].sizes.outside), 52);
+  expect(r.some((x) => x.product === shielded && x.match === 'size'), 'the substitute is not told apart:');
+  expect(!r.some((x) => x.product === bigger), 'an unrelated bearing crept in:');
+  eq((await rpc(COUNTER, 'search_parts', { p_query: '6205-2rs' }))[0].product, sealed, 'dash writing:');
+  eq((await rpc(COUNTER, 'search_parts', { p_query: '62052RS' }))[0].product, sealed, 'no separator:');
+});
+
+await test('a size finds every part that fits, and a prefix or typo still finds the part', async () => {
+  const ids = (rows) => rows.map((x) => x.product).sort().join();
+  const sealed = await val(`select id from products where part_number_norm = '62052RS'`);
+  const shielded = await val(`select id from products where part_number_norm = '6205ZZ'`);
+  const bigger = await val(`select id from products where part_number_norm = '63042RS'`);
+  const bySize = await rpc(COUNTER, 'search_parts', { p_query: '25x52x15' });
+  expect(bySize.some((x) => x.product === sealed && x.match === 'size'), 'the sealed one is missing:');
+  expect(bySize.some((x) => x.product === shielded && x.match === 'size'), 'the shielded one is missing:');
+  expect(!bySize.some((x) => x.product === bigger), 'a different size crept in:');
+  eq(ids(await rpc(COUNTER, 'search_parts', { p_query: '25 52 15' })), ids(bySize), 'words and x both find the same:');
+  const pre = await rpc(COUNTER, 'search_parts', { p_query: '620' });
+  expect(pre.some((x) => x.product === sealed && x.match === 'part'), 'the prefix missed:');
+  const typo = await rpc(COUNTER, 'search_parts', { p_query: '6205 2rx' });
+  eq(typo[0].product, sealed, 'a one-letter typo still finds it:');
+  eq(typo[0].match, 'similar');
+});
+
+await test('search shows no count and no cost, and only staff who serve can use it', async () => {
+  const res = await rpc(STORE, 'search_parts', { p_query: '6205' });
+  expect(res.length > 0, 'a storekeeper found nothing:');
+  const text = JSON.stringify(res);
+  expect(!text.includes('qty') && !/cost|margin|profit/i.test(text), 'a count or cost leaked:');
+  for (const row of res) expect(['in', 'low', 'out'].includes(row.state), `bad state: ${row.state}`);
+  await fails(rpc(DRIVER, 'search_parts', { p_query: '6205' }), 'not_allowed');
+  await fails(rpc('anon', 'search_parts', { p_query: '6205' }), 'permission denied');
+  await fails(rpc(COUNTER, 'search_parts', { p_query: '   ' }), 'query_required');
+  await fails(rpc(COUNTER, 'search_parts', { p_query: 'x', p_limit: 0 }), 'bad_limit');
+  await fails(rpc(COUNTER, 'save_part_details', { p_product: randomUUID(), p_part_number: 'x' }), 'not_allowed');
+  await fails(rpc(ACCOUNT, 'save_part_details', { p_product: randomUUID(), p_part_number: 'x' }), 'not_allowed');
+  await fails(rpc(OWNER, 'save_part_details', { p_product: randomUUID(), p_part_number: 'x' }), 'no_such_product');
+  // Even when substitutes overflow the limit, the exact part comes first, not last by id.
+  const crown = await rpc(OWNER, 'save_product', { p_sku: `B-${++seq}`, p_name: 'Crowded 6205 2RS', p_price: 1500000 });
+  await rpc(OWNER, 'set_last_cost', { p_product: crown, p_cost: 1000000 });
+  await rpc(OWNER, 'save_part_details', { p_product: crown, p_part_number: '6205 2RS', p_bore: 25, p_outside: 52, p_width: 15 });
+  await rpc(STORE, 'receive_goods', { p_key: k('rcv'), p_supplier: sup, p_location: shop, p_lines: [{ product_id: crown, qty: 4 }] });
+  for (let i = 0; i < 25; i++) {
+    const sid = await rpc(OWNER, 'save_product', { p_sku: `B-${++seq}`, p_name: `Sub ${i}`, p_price: 1500000 });
+    await rpc(OWNER, 'set_last_cost', { p_product: sid, p_cost: 1000000 });
+    await rpc(OWNER, 'save_part_details', { p_product: sid, p_part_number: `6205-SUB-${i}`, p_bore: 25, p_outside: 52, p_width: 15 });
+    await rpc(STORE, 'receive_goods', { p_key: k('rcv'), p_supplier: sup, p_location: shop, p_lines: [{ product_id: sid, qty: 4 }] });
+  }
+  const crowded = await rpc(COUNTER, 'search_parts', { p_query: '6205 2rs' });
+  eq(crowded.length, 20, 'the limit held:');
+  eq(crowded[0].match, 'part', 'the exact part must never be crowded out:');
+  eq(N(crowded[0].sizes.bore), 25);
+  // Correcting one dimension keeps the others.
+  await rpc(OWNER, 'save_part_details', { p_product: crown, p_width: 16 });
+  const row3 = (await q('select * from product_sizes where product_id = $1', [crown]))[0];
+  eq(N(row3.bore_mm), 25);
+  eq(N(row3.outside_mm), 52);
+  eq(N(row3.width_mm), 16);
+  // An archived product vanishes from search, and a bare "205" pulls nothing.
+  await q(`update products set status = 'archived' where id = $1`, [crown]);
+  expect(!(await rpc(COUNTER, 'search_parts', { p_query: '6205 2rs' })).some((x) => x.product === crown), 'an archived part still shows:');
+  eq((await rpc(COUNTER, 'search_parts', { p_query: '205' })).length, 0, 'a loose number pulled something in:');
 });
 
 // ---- Last, because it closes the month that every other scene posts into ----
