@@ -60,12 +60,41 @@ export default function Home() {
         ) : null}
       </section>
 
-      <Link
-        href="/login"
-        className="press mt-5 flex h-12 items-center justify-center rounded-field bg-ink text-sm font-medium text-white"
-      >
-        {signedIn ? 'Switch staff' : 'Sign in'}
-      </Link>
+      {signedIn ? (
+        <div className="mt-5 flex flex-col gap-2">
+          <Link
+            href="/counter"
+            className="press flex h-12 items-center justify-center rounded-field bg-action text-sm font-medium text-white shadow-[0_8px_20px_rgba(27,92,240,.22)]"
+          >
+            Work the counter
+          </Link>
+          <div className="flex gap-2">
+            <Link
+              href="/kit"
+              className="press flex h-12 flex-1 items-center justify-center rounded-field border border-ink/15 bg-white text-sm font-medium"
+            >
+              Component kit
+            </Link>
+            <button
+              type="button"
+              onClick={async () => {
+                await browserDb().auth.signOut();
+                window.location.reload();
+              }}
+              className="press flex h-12 flex-1 items-center justify-center rounded-field border border-ink/15 bg-white text-sm font-medium"
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      ) : (
+        <Link
+          href="/login"
+          className="press mt-5 flex h-12 items-center justify-center rounded-field bg-ink text-sm font-medium text-white"
+        >
+          Sign in
+        </Link>
+      )}
     </main>
   );
 }
