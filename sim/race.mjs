@@ -316,6 +316,29 @@ await scene('two people approve one safe count at once: the loss posts once', as
   return '1 approved, 1 refused';
 });
 
+await scene('ten card payments race one bank line: only what the line covers is confirmed', async () => {
+  const p = await product({ qty: 20, price: 1000000 });
+  const ids = [];
+  for (let i = 0; i < 10; i++) {
+    const s = await sale(p, { method: 'pos' });
+    ids.push(await val(`select id from payments where order_id = $1`, [s.order_id]));
+  }
+  const bl = await rpc(ACCOUNT, 'add_bank_line', { p_key: k('bl'), p_on: today, p_amount: 4000000 });
+  const { wins, errors } = await settle(ids.map((id) => rpc(ACCOUNT, 'confirm_payment', { p_payment: id, p_bank_line: bl })));
+  eq(wins.length, 4);
+  onlyErrors(errors, ['bank_line_used_up']);
+  eq(N(await val('select matched_kobo from bank_lines where id = $1', [bl])), 4000000);
+  eq(N(await val(`select count(*) from payments where id = any($1::text::uuid[]) and status = 'confirmed'`, [`{${ids.join(',')}}`])), 4);
+  eq(N(await val(`select count(*) from payments where id = any($1::text::uuid[]) and status = 'pending'`, [`{${ids.join(',')}}`])), 6);
+  // Receipt numbers now only come from money that is really in, so the shop's own cash day
+  // keeps the receipt book flowing: a till, ninety cash sales, a blind close at the exact count.
+  await rpc(COUNTER2, 'open_till', { p_float: 0 });
+  const cash = await product({ qty: 90, price: 1000000 });
+  for (let i = 0; i < 90; i++) await sale(cash, { who: COUNTER2, method: 'cash' });
+  await rpc(COUNTER2, 'close_till', { p_counted: 90000000 });
+  return '4 confirmed, 6 refused, 90 cash sales receipted';
+});
+
 await scene('postings racing a month close: nothing lands in the month after it closes', async () => {
   const month = await val(`select (date_trunc('month', shop_today()) - interval '1 month')::date::text`);
   const inMonth = await val(`select ($1::date + 14)::text`, [month]);

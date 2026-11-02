@@ -114,7 +114,9 @@ const order = (p, { qty = 1, price, phone = null, credit = false, backorder = fa
   rpc(who, 'create_order', { p_key: k('ord'), p_location: shop, p_lines: [line(p, qty, price === undefined ? {} : { unit_price: price })], p_phone: phone, p_on_credit: credit, p_backorder: backorder });
 const sale = (p, { qty = 1, method = 'cash', phone = null, key = k('sale'), who = COUNTER, serials, price, reference = null } = {}) =>
   rpc(who, 'counter_sale', { p_key: key, p_location: shop, p_lines: [line(p, qty, { ...(serials ? { serials } : {}), ...(price === undefined ? {} : { unit_price: price }) })], p_method: method, p_phone: phone, p_reference: reference });
-const pay = (o, amount, method = 'pos', { who = COUNTER, reference = null } = {}) =>
+// Default cash: a scene's "money is in" means real money in the drawer. Card taps stay pending until
+// matched against a bank line, which is what the POS scenes below exercise.
+const pay = (o, amount, method = 'cash', { who = COUNTER, reference = null } = {}) =>
   rpc(who, 'take_payment', { p_key: k('pay'), p_order: o, p_method: method, p_amount: amount, p_reference: reference });
 const deliver = (o, lines = null, who = COUNTER) => rpc(who, 'deliver_order', { p_key: k('go'), p_order: o, p_lines: lines });
 const ret = (o, lines, { key = k('ret'), who = COUNTER, at = null, reason = 'Changed mind' } = {}) =>
@@ -413,7 +415,7 @@ await test('a deposit is money we owe, and only becomes a sale when goods leave'
   eq((await orderRow(o)).money_status, 'part_paid');
   await fails(deliver(o, [line(p, 1, { serials: [p.serials[0]] })]), 'payment_required');
   same(await shelf(p), { qty: 2, reserved: 1 }, 'after refused delivery:');
-  same(await moved(() => pay(o, 60000000)), { bank: 60000000, goods_owed: -60000000 });
+  same(await moved(() => pay(o, 60000000)), { cash: 60000000, goods_owed: -60000000 });
   same(await moved(() => deliver(o, [line(p, 1, { serials: [p.serials[0]] })])), { goods_owed: 100000000, sales: -100000000, cogs: 70000000, stock: -70000000 });
   const row = await orderRow(o);
   eq(row.goods_status, 'delivered');
@@ -692,6 +694,8 @@ await test('a bounced payment after delivery puts the debt on the customer', asy
   const p = await product({ price: 20000000, cost: 10000000 });
   const s = await sale(p, { method: 'pos', phone });
   const id = await val('select id from payments where order_id = $1', [s.order_id]);
+  // The card was matched against the bank line first; only then can it bounce.
+  await rpc(ACCOUNT, 'confirm_payment', { p_payment: id, p_bank_line: await bankLine(20000000) });
   await fails(rpc(ACCOUNT, 'reverse_payment', { p_payment: id, p_reason: 'Bounced' }), 'not_allowed');
   same(await moved(() => rpc(OWNER, 'reverse_payment', { p_payment: id, p_reason: 'POS chargeback' })), { bank: -20000000, customers_owe: 20000000 });
   await fails(rpc(OWNER, 'reverse_payment', { p_payment: id, p_reason: 'again' }), 'cannot_reverse_this_payment');
@@ -751,6 +755,8 @@ await test('the month report matches the entries', async () => {
 await test('the receipt link shows one order to anyone holding it, and never cost', async () => {
   const p = await product({ price: 8000000, cost: 7777777, tracking: 'serial', qty: 1, warranty: 12 });
   const s = await sale(p, { phone: '08030000009', serials: [p.serials[0]], method: 'pos' });
+  // The card is matched against the bank line before the receipt can show the order as paid.
+  await rpc(ACCOUNT, 'confirm_payment', { p_payment: await val('select id from payments where order_id = $1', [s.order_id]), p_bank_line: await bankLine(8000000) });
   const token = await val('select receipt_token from orders where id = $1', [s.order_id]);
   const r = await rpc('anon', 'receipt_by_token', { p_token: token });
   eq(r.invoice_no, s.invoice_no);
@@ -984,7 +990,9 @@ await test('a yes given after the hold ran out sticks', async () => {
 await test('a nameless walk-in whose payment bounced still shows as owed', async () => {
   const p = await product({ price: 12345600 });
   const s = await sale(p, { method: 'pos' });
-  await rpc(OWNER, 'reverse_payment', { p_payment: await val('select id from payments where order_id = $1', [s.order_id]), p_reason: 'Chargeback' });
+  const pid = await val('select id from payments where order_id = $1', [s.order_id]);
+  await rpc(ACCOUNT, 'confirm_payment', { p_payment: pid, p_bank_line: await bankLine(12345600) });
+  await rpc(OWNER, 'reverse_payment', { p_payment: pid, p_reason: 'Chargeback' });
   const list = await as(COUNTER, () => q('select * from debtors()'));
   const nameless = list.find((d) => d.customer_id === null);
   expect(nameless && N(nameless.owed_kobo) >= 12345600, 'debt is invisible');
@@ -1022,6 +1030,7 @@ await test('money cannot be reversed or refunded to a date before it existed', a
   const p = await product({ price: 1000000 });
   const s = await sale(p, { method: 'pos' });
   const id = await val('select id from payments where order_id = $1', [s.order_id]);
+  await rpc(ACCOUNT, 'confirm_payment', { p_payment: id, p_bank_line: await bankLine(1000000) });
   await fails(rpc(OWNER, 'reverse_payment', { p_payment: id, p_reason: 'x', p_on: ago(3, 5) }), 'bad_date');
   const o = await order(p);
   await pay(o, 1000000);
@@ -1500,6 +1509,83 @@ await test('a wrongly typed safe count is put right by recounting, like a stock 
   eq(await impliedSafe(), w, 'the books are back where they belong:');
 });
 
+// ---- POS: a card tap is a promise, not money ----
+
+await test('a card tap hands over the goods, and the money waits for the bank line', async () => {
+  const p = await product({ price: 10000000, cost: 6000000, qty: 2 });
+  let s;
+  same(await moved(async () => { s = await sale(p, { method: 'pos' }); }), { sales: -10000000, cogs: 6000000, stock: -6000000, customers_owe: 10000000 });
+  eq(s.state, 'done', 'the counter is not slowed:');
+  const pay1 = (await q(`select id, status, method from payments where order_id = $1`, [s.order_id]))[0];
+  eq(pay1.status, 'pending');
+  eq(pay1.method, 'pos');
+  eq((await orderRow(s.order_id)).money_status, 'unpaid', 'the tap is not money yet:');
+  const bl = await bankLine(10000000);
+  same(await moved(() => rpc(ACCOUNT, 'confirm_payment', { p_payment: pay1.id, p_bank_line: bl })),
+    { bank: 10000000, customers_owe: -10000000 });
+  eq((await orderRow(s.order_id)).money_status, 'paid');
+});
+
+await test('a fake card tap never becomes money, and the goods are a debt', async () => {
+  const p = await product({ qty: 2 });
+  const s = await sale(p, { method: 'pos' });
+  const pid = await val('select id from payments where order_id = $1', [s.order_id]);
+  await fails(rpc(COUNTER, 'confirm_payment', { p_payment: pid, p_bank_line: await bankLine(10000000) }), 'not_allowed');
+  await fails(rpc(ACCOUNT, 'confirm_payment', { p_payment: pid }), 'bank_line_required');
+  same(await moved(() => rpc(ACCOUNT, 'reject_payment', { p_payment: pid, p_reason: 'No card money came in' })), {});
+  eq((await orderRow(s.order_id)).money_status, 'unpaid', 'a rejected tap must not become money:');
+  eq((await shelf(p)).qty, 1, 'the goods really left:');
+  // The accountant who tapped it in cannot match it themselves, like a transfer.
+  const o = await order(p);
+  const mine = await rpc(ACCOUNT, 'take_payment', { p_key: k('pay'), p_order: o, p_method: 'pos', p_amount: 10000000 });
+  await fails(rpc(ACCOUNT, 'confirm_payment', { p_payment: mine, p_bank_line: await bankLine(10000000) }), 'cannot_confirm_own_payment');
+  await rpc(ACCOUNT, 'reject_payment', { p_payment: mine, p_reason: 'Clean up' });
+  await rpc(COUNTER, 'cancel_order', { p_order: o, p_reason: 'Scene end' });
+});
+
+await test('an unmatched card shows on the owner list and blocks the month close', async () => {
+  const p = await product({ qty: 2 });
+  const s = await sale(p, { method: 'pos' });
+  const pid = await val('select id from payments where order_id = $1', [s.order_id]);
+  await q(`update payments set created_at = now() - interval '5 hours' where id = $1`, [pid]);
+  const seen = await rpc(ACCOUNT, 'owner_exceptions');
+  expect(seen.old_transfers.some((t) => t.payment === pid && t.method === 'pos'), 'the unmatched card is not on the owner list');
+  const month = await val(`select date_trunc('month', shop_today())::date::text`);
+  const bankBefore = async (end) => N(await val(`select coalesce(sum(e.amount_kobo), 0) from ledger_entries e join ledger_txns t on t.id = e.txn_id where e.account_code = 'bank' and t.occurred_on < $1::date`, [end]));
+  const after = async (m) => val(`select ($1::date + interval '1 month')::date::text`, [m]);
+  const earlier = (await q(`select distinct date_trunc('month', occurred_on)::date::text m from ledger_txns
+    where occurred_on < $1::date and date_trunc('month', occurred_on)::date not in (select month from closed_periods) order by 1`, [month])).map((r) => r.m);
+  expect(earlier.length >= 2, 'expected open earlier months');
+  await q('update payments set recorded_on = $1 where id = $2', [earlier[0], pid]);
+  await fails(rpc(OWNER, 'close_month', { p_month: earlier[0], p_statement_balance: await bankBefore(await after(earlier[0])) }), 'a payment is waiting');
+  await rpc(ACCOUNT, 'reject_payment', { p_payment: pid, p_reason: 'No card money came in' });
+});
+
+await test('a double card tap is refused, and a retry returns the one pending payment', async () => {
+  const p = await product({ price: 1000000, cost: 600000, qty: 2 });
+  const o = await order(p);
+  const key = k('pay');
+  const id = await rpc(COUNTER, 'take_payment', { p_key: key, p_order: o, p_method: 'pos', p_amount: 600000 });
+  eq(await rpc(COUNTER, 'take_payment', { p_key: key, p_order: o, p_method: 'pos', p_amount: 600000 }), id, 'the retry returns the one pending tap:');
+  await fails(rpc(COUNTER, 'take_payment', { p_key: k('pay'), p_order: o, p_method: 'pos', p_amount: 600000 }), 'more_than_owed');
+  await fails(rpc(COUNTER, 'take_payment', { p_key: key, p_order: o, p_method: 'pos', p_amount: 700000 }), 'key_reused');
+  await fails(deliver(o), 'payment_required'); // 600k of card does not cover 1M of goods
+  const rest = await rpc(COUNTER, 'take_payment', { p_key: k('pay'), p_order: o, p_method: 'pos', p_amount: 400000 });
+  same(await moved(() => deliver(o)), { sales: -1000000, cogs: 600000, stock: -600000, customers_owe: 1000000 }, 'goods leave once the taps cover them:');
+  const bl = await bankLine(1000000);
+  same(await moved(async () => {
+    await rpc(ACCOUNT, 'confirm_payment', { p_payment: id, p_bank_line: bl });
+    await rpc(ACCOUNT, 'confirm_payment', { p_payment: rest, p_bank_line: bl });
+  }), { bank: 1000000, customers_owe: -1000000 });
+  eq((await orderRow(o)).money_status, 'paid');
+  // Cash on top of a waiting card tap is refused, so a customer is never charged twice;
+  // the part the card did not cover can still be paid in cash.
+  const o2 = await order(p);
+  await rpc(COUNTER, 'take_payment', { p_key: k('pay'), p_order: o2, p_method: 'pos', p_amount: 600000 });
+  await fails(rpc(COUNTER, 'take_payment', { p_key: k('pay'), p_order: o2, p_method: 'cash', p_amount: 600000 }), 'more_than_owed');
+  same(await moved(() => rpc(COUNTER, 'take_payment', { p_key: k('pay'), p_order: o2, p_method: 'cash', p_amount: 400000 })), { cash: 400000, goods_owed: -400000 });
+});
+
 // ---- Last, because it closes the month that every other scene posts into ----
 
 await test('a month closes only when tills, counts, transfers and the bank all agree, and then it stays shut', async () => {
@@ -1527,7 +1613,7 @@ await test('a month closes only when tills, counts, transfers and the bank all a
     await rpc(OWNER, 'close_month', { p_month: month, p_statement_balance: 1 });
     throw new Error('it closed');
   } catch (e) {
-    for (const why of ['a till is still open', 'a stock count is waiting', 'a transfer is waiting', 'bank differs']) expect(e.message.includes(why), `missing "${why}" in ${e.message}`);
+    for (const why of ['a till is still open', 'a stock count is waiting', 'a payment is waiting', 'bank differs']) expect(e.message.includes(why), `missing "${why}" in ${e.message}`);
   }
   await rpc(COUNTER, 'close_till', { p_counted: 1 });
   await rpc(OWNER, 'approve_stock_count', { p_count: count });

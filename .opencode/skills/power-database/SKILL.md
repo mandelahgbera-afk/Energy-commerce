@@ -123,7 +123,7 @@ Quotes and versions, delivery trips and waybills, supplier orders and landed cos
 Not bugs to fix quietly. Each needs a plan or a decision.
 
 - **Blind counts are blind on screen, not absolute.** A counter can add up their own cash payments for the day, as they could on paper. Storekeepers have no shelf numbers, and a pick list stops at 20 units.
-- **POS is trusted on entry.** A counter can record `pos` and goods leave with no second person. Only the bank match at month end catches a fake one. Fix with POS settlement matching in step 5.3.
+- **A card tap hands over goods before the bank line proves the money.** By the owner's own decision the counter is not slowed: goods leave against `customers_owe`, the tap stays pending until matched, and a fake tap stays a debt on the owner's list. A rejected tap's unpaid delivery shows in `debtors()`, like a bounced transfer.
 - **The safe is counted, not continuously tracked.** Ledger `cash` is tills plus safe; safe counts (blind, owner-decided, `count_out_of_date` if money moved since counted) keep it honest, and `cash_position()` shows the split. Whether a monthly safe count should be mandatory is an open shop question.
 - **A whole bounce after a part refund is refused** (`already_refunded`). Rare, and needs a decision.
 - **A bank line isn't tied to a payment by reference.** One line can pay several orders, so the second person decides. The screen must show both side by side.

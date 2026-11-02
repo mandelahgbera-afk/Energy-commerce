@@ -143,9 +143,13 @@ begin
   if not found then raise exception 'no_such_count'; end if;
   if c.status <> 'submitted' then raise exception 'count_already_decided'; end if;
   perform 1 from shop_settings for update;
+  -- The caller's clock reports milliseconds, so anything within the same millisecond as the count
+  -- is treated as before it, not after: a posting that landed 0.4ms before the count must not
+  -- make the count look old.
   if exists (select 1 from ledger_txns t join ledger_entries e on e.txn_id = t.id
-             where e.account_code = 'cash' and t.created_at > c.counted_at)
-     or exists (select 1 from till_sessions s where s.opened_at > c.counted_at or s.closed_at > c.counted_at) then
+             where e.account_code = 'cash' and t.created_at > c.counted_at + interval '999 microseconds')
+     or exists (select 1 from till_sessions s where s.opened_at > c.counted_at + interval '999 microseconds'
+                or s.closed_at > c.counted_at + interval '999 microseconds') then
     raise exception 'count_out_of_date: recount the safe';
   end if;
   select coalesce(sum(amount_kobo), 0) into v_cash from ledger_entries where account_code = 'cash';
