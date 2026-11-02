@@ -23,7 +23,7 @@ Read at the start of every session. Update at the end. Keep it short. Long histo
 
 Database first, because these need no accounts and the core can't handle a return without them.
 
-- [ ] **Returns and credit notes.** A customer brings goods back: stock and money reverse exactly, including the original cost, and a part return works. A returned serial goes back on the shelf, or to repair or scrap. Today a delivered sale can't be undone at all. Proof: scenes for full and part returns, a return after a month closed, a retry, and the wrong role.
+- [x] **Returns and credit notes.** `return_goods`: full and part returns reverse sale, VAT and the original cost exactly; a returned serial goes back to a shelf, repair or scrap and can be sold again; a credit note (doc CN) records what the customer is owed, paid out through `refund_order`. Retry-safe, counter and accountant only. Proof: 101 rule scenes (92 old + 9 new) on PGlite and real Postgres, 15 race scenes (13 old + 2 new). A second reader found 3 serial and lock holes, all fixed with scenes. Open: cash back stays accountant-only; owner to confirm counters may authorise returns.
 - [ ] **Owner's money and the safe.** Owner puts money in or takes it out (not a running cost). Safe count, so ledger cash can be compared with tills plus safe. See "Known gaps" in `power-database`.
 - [ ] **POS settlement.** Card payments wait to be matched to the bank line like transfers do, without slowing the counter: goods still leave, and unmatched POS shows on the owner's list. Closes the known gap where a counter could record a fake POS payment.
 - [ ] **Quotes.** Versions, expiry, and an accepted quote becoming an order at its quoted price, even after prices change. Discount rules still apply. Plan step 1.5.
@@ -50,4 +50,5 @@ After these, stop. Everything left needs the owner and a real shop.
 
 Newest first. One or two lines per item: what now works, the test result, anything left open.
 
+- 2 Nov 2026 (OpenCode): returns and credit notes built and reviewed. 101 rules + 15 races green; reviewer's 3 holes fixed with scenes. Left open: refund cash-out stays accountant-only.
 - 1 Nov 2026 (Claude): core built, attacked and fixed. Handed to OpenCode.

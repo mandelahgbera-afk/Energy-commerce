@@ -117,6 +117,8 @@ const sale = (p, { qty = 1, method = 'cash', phone = null, key = k('sale'), who 
 const pay = (o, amount, method = 'pos', { who = COUNTER, reference = null } = {}) =>
   rpc(who, 'take_payment', { p_key: k('pay'), p_order: o, p_method: method, p_amount: amount, p_reference: reference });
 const deliver = (o, lines = null, who = COUNTER) => rpc(who, 'deliver_order', { p_key: k('go'), p_order: o, p_lines: lines });
+const ret = (o, lines, { key = k('ret'), who = COUNTER, at = null, reason = 'Changed mind' } = {}) =>
+  rpc(who, 'return_goods', { p_key: key, p_order: o, p_lines: lines, p_reason: reason, ...(at ? { p_location: at } : {}) });
 const orderRow = async (o) => (await q('select * from orders where id = $1', [o]))[0];
 const shelf = async (p, at = shop) => {
   const r = (await q('select qty, reserved from stock_balances where product_id = $1 and location_id = $2', [p.id, at]))[0];
@@ -1116,7 +1118,7 @@ await test('only the functions on this list can be run from outside', async () =
     'add_bank_line', 'approve_stock_count', 'availability', 'books_check', 'cancel_order', 'check_serial', 'close_month', 'close_till', 'confirm_payment',
     'counter_sale', 'create_order', 'customer_balance', 'debtors', 'decide_approval', 'deliver_order', 'has_staff_role', 'is_staff', 'month_report', 'move_money',
     'my_till', 'oldest_serials', 'open_till', 'owner_exceptions', 'pay_supplier', 'post_opening_balance', 'post_opening_debt', 'receipt_by_token', 'receive_goods',
-    'record_expense', 'refund_order', 'reject_payment', 'reject_stock_count', 'reserve_order', 'reverse_payment', 'reverse_txn', 'save_customer', 'save_location', 'save_product',
+    'record_expense', 'refund_order', 'reject_payment', 'reject_stock_count', 'reserve_order', 'return_goods', 'reverse_payment', 'reverse_txn', 'save_customer', 'save_location', 'save_product',
     'save_staff', 'save_supplier', 'set_customer_terms', 'set_last_cost', 'shop_today', 'submit_stock_count', 'take_payment', 'till_paid_out', 'transfer_stock', 'void_opening_debt',
   ].join());
 });
@@ -1144,6 +1146,7 @@ await test('each role is refused what is not its job', async () => {
     ['refund_order', { p_key: 'x', p_order: dummy, p_amount: 1, p_method: 'cash', p_reason: 'x' }, everyoneBut(ACCOUNT)],
     ['cancel_order', { p_order: dummy, p_reason: 'x' }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
     ['reserve_order', { p_order: dummy }, everyoneBut(COUNTER, COUNTER2, STORE, DISPATCH)],
+    ['return_goods', { p_key: 'x', p_order: dummy, p_lines: [], p_reason: 'x' }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
     ['decide_approval', { p_approval: dummy, p_yes: true }, everyoneBut()],
     ['save_staff', { p_user: dummy, p_name: 'x', p_role: 'owner' }, everyoneBut()],
     ['save_product', { p_sku: 'x', p_name: 'x', p_price: 1 }, everyoneBut()],
@@ -1210,6 +1213,140 @@ await test('every table has row-level security and every privileged function pin
   eq(loose.map((r) => r.n).join(), '');
 });
 
+// ---- Returns: goods that left can come back ----
+
+await test('goods come back: sale, stock and money reverse exactly, at the original cost', async () => {
+  const p = await product({ price: 10000000, cost: 6000000, qty: 3 });
+  const o = await order(p);
+  await pay(o, 10000000);
+  await deliver(o);
+  const m = await moved(() => ret(o, [{ product_id: p.id, qty: 1 }]));
+  same(m, { sales: 10000000, cogs: -6000000, stock: 6000000, goods_owed: -10000000 });
+  eq((await shelf(p)).qty, 3, 'the unit is back on the shelf:');
+  const r = await orderRow(o);
+  eq(N(r.billed_kobo), 0, 'nothing is billed any more:');
+  eq(r.goods_status, 'waiting');
+  eq(N(await val('select billed_kobo from returns where order_id = $1', [o])), 10000000, 'the credit note says what is owed:');
+  // The customer's money is now held for them again, so the accountant's refund pays it out.
+  same(await moved(() => rpc(ACCOUNT, 'refund_order', { p_key: k('rf'), p_order: o, p_amount: 10000000, p_method: 'transfer', p_reason: 'Returned' })),
+    { bank: -10000000, goods_owed: 10000000 });
+});
+
+await test('three part returns add up to the exact full return', async () => {
+  const p = await product({ price: 1000000, cost: 900000, qty: 3 });
+  const o = await order(p, { qty: 3 });
+  await pay(o, 3000000);
+  await deliver(o);
+  let sales = 0, stock = 0;
+  for (let i = 0; i < 3; i++) {
+    const m = await moved(() => ret(o, [{ product_id: p.id, qty: 1 }]));
+    same(m, { sales: 1000000, cogs: -900000, stock: 900000, goods_owed: -1000000 });
+    sales += m.sales; stock += m.stock;
+  }
+  eq(sales, 3000000, 'the three returns billed back exactly:');
+  eq(stock, 2700000, 'the original cost came back exactly:');
+  const r = await orderRow(o);
+  eq(N(r.billed_kobo), 0);
+  eq(r.goods_status, 'waiting');
+  eq((await shelf(p)).qty, 3);
+  eq(N(await val('select value_kobo from product_costs where product_id = $1', [p.id])), 2700000);
+});
+
+await test('a credit part-return cuts the debt, and the rest comes back as money owed', async () => {
+  const phone = '08030000005';
+  await rpc(COUNTER, 'save_customer', { p_phone: phone, p_name: 'Ngozi Returns' });
+  await rpc(OWNER, 'set_customer_terms', { p_customer: await customerByPhone(phone), p_kind: 'retail', p_credit_limit: 50000000 });
+  const p = await product({ price: 1000000, cost: 900000, qty: 3 });
+  const o = await order(p, { qty: 3, phone, credit: true });
+  await pay(o, 1500000, 'cash');
+  await deliver(o);
+  same(await moved(() => ret(o, [{ product_id: p.id, qty: 1 }])), { sales: 1000000, cogs: -900000, stock: 900000, customers_owe: -1000000 });
+  eq(N((await rpc(COUNTER, 'customer_balance', { p_customer: await customerByPhone(phone) })).owes), 500000, 'the debt shrank:');
+  same(await moved(() => ret(o, [{ product_id: p.id, qty: 2 }])),
+    { sales: 2000000, cogs: -1800000, stock: 1800000, customers_owe: -500000, goods_owed: -1500000 });
+  eq(N((await rpc(COUNTER, 'customer_balance', { p_customer: await customerByPhone(phone) })).owes), 0);
+  eq(N((await rpc(COUNTER, 'customer_balance', { p_customer: await customerByPhone(phone) })).holds), 1500000, 'the rest is held for the customer:');
+  same(await moved(() => rpc(ACCOUNT, 'refund_order', { p_key: k('rf'), p_order: o, p_amount: 1500000, p_method: 'transfer', p_reason: 'Returned' })),
+    { bank: -1500000, goods_owed: 1500000 });
+});
+
+await test('a returned serial goes back on the shelf and can be sold again', async () => {
+  const p = await product({ tracking: 'serial', qty: 2 });
+  const s = await sale(p, { serials: [p.serials[0]] });
+  eq((await val('select status from serial_units where serial = $1', [p.serials[0]])), 'sold');
+  await ret(s.order_id, [{ product_id: p.id, qty: 1, serials: [p.serials[0]] }]);
+  const u = (await q('select status, location_id from serial_units where serial = $1', [p.serials[0]]))[0];
+  eq(u.status, 'in_stock');
+  eq(u.location_id, shop);
+  eq((await shelf(p)).qty, 2, 'both units are on the shelf:');
+  // The same order can take the unit back and hand it out again.
+  await deliver(s.order_id, [{ product_id: p.id, qty: 1, serials: [p.serials[0]] }]);
+  eq(N((await orderRow(s.order_id)).billed_kobo), 10000000, 'the re-delivery re-billed the line:');
+  await ret(s.order_id, [{ product_id: p.id, qty: 1, serials: [p.serials[0]] }]);
+  const s2 = await sale(p, { serials: [p.serials[0]] });
+  eq(s2.state, 'done', 'the same unit sells again on a new order:');
+});
+
+await test('a serial re-sold on another order cannot be returned against the old one', async () => {
+  const p = await product({ tracking: 'serial', qty: 2 });
+  const oa = await order(p, { qty: 2 });
+  await pay(oa, 20000000);
+  await deliver(oa, [{ product_id: p.id, qty: 2, serials: [p.serials[0], p.serials[1]] }]);
+  await ret(oa, [{ product_id: p.id, qty: 1, serials: [p.serials[0]] }]);
+  const sb = await sale(p, { serials: [p.serials[0]] });
+  eq(sb.state, 'done', 'the unit sold again, to someone else:');
+  // The old order's line can no longer claim it: that would take the new sale's stock.
+  await fails(ret(oa, [{ product_id: p.id, qty: 1, serials: [p.serials[0]] }]), 'serial_not_on_line');
+  // The genuine return, against the order that actually sold it, still works.
+  await ret(sb.order_id, [{ product_id: p.id, qty: 1, serials: [p.serials[0]] }]);
+  eq((await val('select status from serial_units where serial = $1', [p.serials[0]])), 'in_stock');
+});
+
+await test('a returned serial can go to repair instead of the shelf', async () => {
+  const repair = await rpc(OWNER, 'save_location', { p_name: 'Repair bench', p_kind: 'repair' });
+  const p = await product({ tracking: 'serial', qty: 1 });
+  const s = await sale(p, { serials: [p.serials[0]] });
+  await ret(s.order_id, [{ product_id: p.id, qty: 1, serials: [p.serials[0]] }], { at: repair });
+  const u = (await q('select status, location_id from serial_units where serial = $1', [p.serials[0]]))[0];
+  eq(u.status, 'in_stock');
+  eq(u.location_id, repair);
+  eq((await shelf(p, repair)).qty, 1);
+  eq((await q(`select reason from stock_movements where serial_id = (select id from serial_units where serial = $1) order by id desc limit 1`, [p.serials[0]]))[0].reason, 'returned');
+});
+
+await test('retrying a return changes nothing, and a reused key is refused', async () => {
+  const p = await product({ price: 1000000, cost: 900000, qty: 2 });
+  const o = await order(p, { qty: 2 });
+  await pay(o, 2000000);
+  await deliver(o);
+  const key = k('ret');
+  const first = await ret(o, [{ product_id: p.id, qty: 1 }], { key });
+  const again = await ret(o, [{ product_id: p.id, qty: 1 }], { key });
+  eq(first, again, 'the retry returns the first return:');
+  eq(N(await val('select count(*) from returns where client_key = $1', [key])), 1);
+  eq(N(await val(`select count(*) from ledger_txns where idempotency_key = 'return:' || $1`, [first])), 1);
+  eq((await shelf(p)).qty, 1, 'the unit came back once:');
+  const o2 = await order(p);
+  await fails(ret(o2, [{ product_id: p.id, qty: 1 }], { key }), 'key_reused');
+});
+
+await test('you cannot return more than left, or return what never left', async () => {
+  const p = await product({ price: 1000000, cost: 900000, qty: 2 });
+  const o = await order(p, { qty: 2 });
+  await pay(o, 2000000);
+  await deliver(o, [{ product_id: p.id, qty: 1 }]);
+  await fails(ret(o, [{ product_id: p.id, qty: 2 }]), 'more_than_delivered');
+  await fails(ret(o, [{ product_id: p.id, qty: 1, serials: ['XX'] }]), 'serials_not_tracked');
+  // The remaining unit of p is still reserved for o, so a fresh product proves the never-left case.
+  const p2 = await product({ price: 1000000, cost: 900000, qty: 1 });
+  const o2 = await order(p2);
+  await fails(ret(o2, [{ product_id: p2.id, qty: 1 }]), 'nothing_to_return');
+  const ps = await product({ tracking: 'serial', qty: 2 });
+  const sa = await sale(ps, { serials: [ps.serials[0]] });
+  const sb = await sale(ps, { serials: [ps.serials[1]] });
+  await fails(ret(sa.order_id, [{ product_id: ps.id, qty: 1, serials: [ps.serials[1]] }]), 'serial_not_on_line');
+});
+
 // ---- Last, because it closes the month that every other scene posts into ----
 
 await test('a month closes only when tills, counts, transfers and the bank all agree, and then it stays shut', async () => {
@@ -1254,6 +1391,16 @@ await test('a month closes only when tills, counts, transfers and the bank all a
   const s = await sale(p, { method: 'pos' });
   eq(s.state, 'done', 'the new month works:');
   eq(await val(`select to_char(occurred_on, 'YYYY-MM-01') from ledger_txns where ref_type = 'delivery' and ref_id = (select id from deliveries where order_id = $1)`, [s.order_id]), nextMonth);
+});
+
+await test('a return after a month closed lands in the open month', async () => {
+  const p = await product({ price: 1000000, cost: 900000, qty: 2 });
+  const s = await sale(p, { method: 'pos' });
+  const r = await ret(s.order_id, [{ product_id: p.id, qty: 1 }]);
+  expect(N(await val('select count(*) from closed_periods')) > 0, 'expected a closed month');
+  eq(await val(`select to_char(occurred_on, 'YYYY-MM-01') from ledger_txns where ref_type = 'return' and ref_id = $1`, [r]),
+    await val(`select to_char(shop_today(), 'YYYY-MM-01')`));
+  eq((await shelf(p)).qty, 2, 'the unit is back:');
 });
 
 const failed = results.filter((r) => !r.ok);

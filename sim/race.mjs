@@ -187,6 +187,39 @@ await scene('cash sales racing a till close: every naira is counted exactly once
   return `${wins.length - 1} sales before the close, ${errors.till_not_open ?? 0} after`;
 });
 
+await scene('ten people return one delivered order at once: the stock comes back once', async () => {
+  const p = await product({ qty: 2 });
+  const o = await rpc(COUNTER, 'create_order', { p_key: k('ord'), p_location: shop, p_lines: [{ product_id: p.id, qty: 1 }] });
+  await rpc(COUNTER, 'take_payment', { p_key: k('pay'), p_order: o, p_method: 'pos', p_amount: 10000000 });
+  await rpc(COUNTER, 'deliver_order', { p_key: k('go'), p_order: o });
+  const { wins, errors } = await settle(Array.from({ length: 10 }, () => rpc(COUNTER, 'return_goods', { p_key: k('ret'), p_order: o, p_lines: [{ product_id: p.id, qty: 1 }], p_reason: 'Bad unit' })));
+  eq(wins.length, 1);
+  onlyErrors(errors, ['nothing_to_return']);
+  eq(N(await val('select qty from stock_balances where product_id = $1 and location_id = $2', [p.id, shop])), 2);
+  return '1 return, 9 refused';
+});
+
+await scene('a return racing a sale of the same serial never deadlocks and never doubles the unit', async () => {
+  const round = async () => {
+    const p = await product({ qty: 2, tracking: 'serial' });
+    const o = await rpc(COUNTER, 'create_order', { p_key: k('ord'), p_location: shop, p_lines: [{ product_id: p.id, qty: 1 }] });
+    await rpc(COUNTER, 'take_payment', { p_key: k('pay'), p_order: o, p_method: 'pos', p_amount: 10000000 });
+    await rpc(COUNTER, 'deliver_order', { p_key: k('go'), p_order: o, p_lines: [{ product_id: p.id, qty: 1, serials: [p.serials[0]] }] });
+    const { errors } = await settle([
+      rpc(COUNTER, 'return_goods', { p_key: k('ret'), p_order: o, p_lines: [{ product_id: p.id, qty: 1, serials: [p.serials[0]] }], p_reason: 'Bad unit' }),
+      sale(p, { serials: [p.serials[0]] }),
+    ]);
+    onlyErrors(errors, ['serial_not_available']);
+    const sold = N(await val(`select count(*) from serial_units where product_id = $1 and status = 'sold'`, [p.id]));
+    const onShelf = N(await val('select qty from stock_balances where product_id = $1 and location_id = $2', [p.id, shop]));
+    eq(sold + onShelf, 2, 'the unit is never both sold and on the shelf:');
+    return Object.keys(errors).length;
+  };
+  const refused = await Promise.all(Array.from({ length: 8 }, round));
+  eq(N(await val('select deadlocks from pg_stat_database where datname = current_database()')), 0, 'deadlocks:');
+  return `8 rounds, ${refused.filter(Boolean).length} with a refused sale, 0 deadlocks`;
+});
+
 await scene('two opens of the same till at once leave one open', async () => {
   const { errors } = await settle([rpc(COUNTER, 'open_till', { p_float: 0 }), rpc(COUNTER, 'open_till', { p_float: 0 }), rpc(COUNTER, 'open_till', { p_float: 0 })]);
   eq(N(await val(`select count(*) from till_sessions where staff_id = $1 and status = 'open'`, [COUNTER])), 1);
