@@ -116,7 +116,7 @@ Also:
 
 ## Not built yet
 
-Quotes and versions, returns and credit notes, delivery trips and waybills, supplier orders and landed cost, warranty claims, trade-ins, reminders and outbox, instalment plans, public online checkout and gateway webhook, exchange-rate repricing, serial numbers in stock counts, part search and substitutes, undelivered-remainder cancellation, one customer payment across orders without a bank line. See plan section 11 for the intended tables and section 10 for what not to copy from Nazia.
+Quotes and versions, delivery trips and waybills, supplier orders and landed cost, warranty claims, trade-ins, reminders and outbox, instalment plans, public online checkout and gateway webhook, exchange-rate repricing, serial numbers in stock counts, part search and substitutes, undelivered-remainder cancellation, one customer payment across orders without a bank line. See plan section 11 for the intended tables and section 10 for what not to copy from Nazia.
 
 ## Known gaps, stated honestly
 
@@ -124,10 +124,10 @@ Not bugs to fix quietly. Each needs a plan or a decision.
 
 - **Blind counts are blind on screen, not absolute.** A counter can add up their own cash payments for the day, as they could on paper. Storekeepers have no shelf numbers, and a pick list stops at 20 units.
 - **POS is trusted on entry.** A counter can record `pos` and goods leave with no second person. Only the bank match at month end catches a fake one. Fix with POS settlement matching in step 5.3.
-- **Cash in the safe isn't modelled.** Ledger `cash` is tills plus safe, and only tills are counted. A safe count is needed.
+- **The safe is counted, not continuously tracked.** Ledger `cash` is tills plus safe; safe counts (blind, owner-decided, `count_out_of_date` if money moved since counted) keep it honest, and `cash_position()` shows the split. Whether a monthly safe count should be mandatory is an open shop question.
 - **A whole bounce after a part refund is refused** (`already_refunded`). Rare, and needs a decision.
 - **A bank line isn't tied to a payment by reference.** One line can pay several orders, so the second person decides. The screen must show both side by side.
-- **An opening bank balance can't be overdrawn.** Owner drawings and capital aren't built either.
+- **An opening bank balance can't be overdrawn.** Owner drawings and capital are built now (`owner_money_in`/`owner_money_out`, equity, reversible); the overdrawn-opening question remains.
 
 ## Open questions only the shop or an accountant can answer
 

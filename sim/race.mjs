@@ -278,6 +278,44 @@ await scene('a busy shop: 300 mixed actions on a few products, no deadlocks, boo
   return `${done} finished, ${errors.insufficient_stock ?? 0} refused for lack of stock, 0 deadlocks`;
 });
 
+await scene('cash sales racing a safe count approval: the naira lands exactly once', async () => {
+  const p = await product({ qty: 50, price: 1000000 });
+  await rpc(ACCOUNT, 'owner_money_in', { p_key: k('oin'), p_account: 'cash', p_amount: 100000000, p_what: 'Race float' });
+  await rpc(COUNTER, 'open_till', { p_float: 0 });
+  const safeNow = async () => N(await val(`select coalesce(sum(amount_kobo), 0) from ledger_entries where account_code = 'cash'`)) - N(await val('select i_tills_expected()'));
+  const w = await safeNow();
+  const c = await rpc(ACCOUNT, 'submit_safe_count', { p_key: k('safe'), p_counted: w, p_counted_at: new Date().toISOString() });
+  const { wins, errors } = await settle([
+    ...Array.from({ length: 10 }, () => sale(p, { method: 'cash' })),
+    rpc(OWNER, 'approve_safe_count', { p_count: c }),
+  ]);
+  onlyErrors(errors, ['count_out_of_date']); // the approval either won the race or was told to recount
+  expect(wins.length === 10 || wins.length === 11, `expected 10 or 11 finished, got ${wins.length}`);
+  // A fresh count sees the sales' cash in the till, not in the safe: the safe is still exactly w.
+  const c2 = await rpc(ACCOUNT, 'submit_safe_count', { p_key: k('safe'), p_counted: w, p_counted_at: new Date().toISOString() });
+  eq(N(await rpc(OWNER, 'approve_safe_count', { p_count: c2 })), 0, 'the fresh count finds the safe exact:');
+  eq(N(await val(`select coalesce(sum(amount_kobo), 0) from ledger_entries where account_code = 'cash'`)), 110000000, 'ledger cash:');
+  eq(N(await val('select i_tills_expected()')), 10000000, 'the till holds its sales:');
+  eq(await safeNow(), w, 'and the safe is exactly as counted:');
+  await rpc(COUNTER, 'close_till', { p_counted: 10000000 });
+  return `${wins.length} finished, sales raced the approval`;
+});
+
+await scene('two people approve one safe count at once: the loss posts once', async () => {
+  await rpc(ACCOUNT, 'owner_money_out', { p_key: k('oout'), p_account: 'cash', p_amount: 300000, p_what: 'Race take' });
+  const w = N(await val(`select coalesce(sum(amount_kobo), 0) from ledger_entries where account_code = 'cash'`)) - N(await val('select i_tills_expected()'));
+  const c = await rpc(ACCOUNT, 'submit_safe_count', { p_key: k('safe'), p_counted: w - 100000, p_counted_at: new Date().toISOString() });
+  const { wins, errors } = await settle([
+    rpc(OWNER, 'approve_safe_count', { p_count: c }),
+    rpc(OWNER, 'approve_safe_count', { p_count: c }),
+  ]);
+  eq(wins.length, 1);
+  onlyErrors(errors, ['count_already_decided']);
+  eq(N(await val(`select coalesce(sum(amount_kobo), 0) from ledger_entries where account_code = 'safe_differences'`)), 100000, 'the loss posted twice:');
+  eq(N(await val(`select coalesce(sum(amount_kobo), 0) from ledger_entries where account_code = 'cash'`)) - N(await val('select i_tills_expected()')), w - 100000, 'the books landed anywhere but the counted figure:');
+  return '1 approved, 1 refused';
+});
+
 await scene('postings racing a month close: nothing lands in the month after it closes', async () => {
   const month = await val(`select (date_trunc('month', shop_today()) - interval '1 month')::date::text`);
   const inMonth = await val(`select ($1::date + 14)::text`, [month]);
