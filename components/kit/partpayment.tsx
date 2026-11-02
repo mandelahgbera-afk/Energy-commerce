@@ -65,7 +65,7 @@ export function PartPayment({ total = 480000000, paid = 300000000, tap = 6000000
             type="button"
             onClick={pay}
             className="press"
-            style={{ flex: 'none', minHeight: 44, padding: '0 14px', border: 0, borderRadius: 12, background: '#10161E', color: '#FFFFFF', font: '500 14px Geist, system-ui, sans-serif', cursor: 'pointer' }}
+            style={{ flex: 'none', minHeight: 44, padding: '0 14px', border: 0, borderRadius: 12, background: '#10161E', color: '#FFFFFF', font: '500 14px var(--sans)', cursor: 'pointer' }}
           >
             I sent {formatNaira(tap)}
           </button>

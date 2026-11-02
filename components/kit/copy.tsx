@@ -22,7 +22,7 @@ export function CopyRow({ label, value, copyValue }: { label: string; value: str
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 10px 10px 14px', marginTop: 'auto', background: '#F1F3F5', borderRadius: 14 }}>
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: 13, color: '#55606C' }}>{label}</div>
-        <div style={{ font: "500 18px 'Geist Mono', monospace", letterSpacing: '.02em' }}>{value}</div>
+        <div style={{ font: "500 18px var(--mono)", letterSpacing: '.02em' }}>{value}</div>
       </div>
       <button
         type="button"
@@ -39,7 +39,7 @@ export function CopyRow({ label, value, copyValue }: { label: string; value: str
           borderRadius: 11,
           background: state === 'ok' ? '#0E7A56' : '#10161E',
           color: '#FFFFFF',
-          font: '500 14px Geist, system-ui, sans-serif',
+          font: '500 14px var(--sans)',
           cursor: 'pointer',
         }}
       >

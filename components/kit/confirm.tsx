@@ -48,7 +48,7 @@ export function ConfirmButton({
         borderRadius: 14,
         background: bg,
         color: '#FFFFFF',
-        font: '550 15.5px Geist, system-ui, sans-serif',
+        font: '550 15.5px var(--sans)',
         cursor: 'pointer',
         boxShadow: '0 8px 20px rgba(27,92,240,.22)',
         transition: 'background .18s, transform .12s, box-shadow .18s',

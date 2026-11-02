@@ -33,7 +33,7 @@ export function PartSearch({ parts }: { parts: PartHit[] }) {
           borderRadius: 14,
           background: '#FFFFFF',
           color: '#10161E',
-          font: "400 16px 'Geist Mono', monospace",
+          font: "400 16px var(--mono)",
           outline: 'none',
         }}
       />
@@ -54,7 +54,7 @@ export function PartSearch({ parts }: { parts: PartHit[] }) {
             }}
           >
             <div style={{ minWidth: 0 }}>
-              <div style={{ font: "500 15px 'Geist Mono', monospace" }}>{p.code}</div>
+              <div style={{ font: "500 15px var(--mono)" }}>{p.code}</div>
               <div style={{ fontSize: 13.5, color: '#55606C' }}>{p.note}</div>
             </div>
             <div style={{ flex: 'none', textAlign: 'right' }}>

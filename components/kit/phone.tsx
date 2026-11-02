@@ -54,7 +54,7 @@ export function PhoneInput({ hint = 'We use this for your order and warranty.' }
             borderRadius: 14,
             background: '#FFFFFF',
             color: '#10161E',
-            font: '450 16px Geist, system-ui, sans-serif',
+            font: '450 16px var(--sans)',
             transition: 'border-color .2s',
             outline: 'none',
           }}

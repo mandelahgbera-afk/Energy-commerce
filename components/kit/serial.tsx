@@ -48,7 +48,7 @@ export function SerialCheck({ goodSerial = 'PS-5K-204417' }: { goodSerial?: stri
             borderRadius: 14,
             background: '#FFFFFF',
             color: '#10161E',
-            font: "400 16px 'Geist Mono', monospace",
+            font: "400 16px var(--mono)",
             outline: 'none',
           }}
         />
@@ -56,7 +56,7 @@ export function SerialCheck({ goodSerial = 'PS-5K-204417' }: { goodSerial?: stri
           type="button"
           onClick={check}
           className="press"
-          style={{ flex: 'none', height: 50, padding: '0 22px', border: 0, borderRadius: 14, background: '#10161E', color: '#FFFFFF', font: '550 15px Geist, system-ui, sans-serif', cursor: 'pointer' }}
+          style={{ flex: 'none', height: 50, padding: '0 22px', border: 0, borderRadius: 14, background: '#10161E', color: '#FFFFFF', font: '550 15px var(--sans)', cursor: 'pointer' }}
         >
           Check
         </button>

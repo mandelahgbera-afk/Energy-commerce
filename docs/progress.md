@@ -73,6 +73,8 @@ After these, stop. Everything left needs the owner and a real shop.
 
 Newest first. One or two lines per item: what now works, the test result, anything left open.
 
+- 2 Nov 2026 (Claude): design pass across the whole app. The Geist font now really loads (every screen had been falling back to the system font), one staff bar on every screen showing what each role can open, a staff home instead of the placeholder, and a finished sign-in, shop and requests. Fixed: after a scan the counter could pull the cursor out of the phone field. e2e 21 of 21, build green.
+
 - 2 Nov 2026 (Claude): public catalogue at /shop and quote requests at /requests. 129 rules, 19 races, e2e 21 of 21, staging has 16 migrations, baseline raised. Left open: bot protection before go-live, real photos.
 
 - 2 Nov 2026 (Claude): Books at /books. 128 rules, 19 races, e2e 18 of 18, staging has 15 migrations, baseline raised. Fixed: bigger statement lines could be one-tap matched to fake alerts. Left open: statement import, export.

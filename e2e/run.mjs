@@ -420,6 +420,7 @@ try {
     await card.getByRole('button', { name: 'Add to quote' }).click();
     await card.getByRole('button', { name: 'One more: 6205-2RS bearing' }).click();
     const panel = v.page.getByRole('complementary', { name: 'Your quote list' });
+    await v.page.screenshot({ path: path.join(shots, 'shop-desktop.png') });
     await panel.getByLabel('Your name').fill('Musa');
     await panel.getByLabel('Phone number').fill('+234 803 123 4567');
     await panel.getByLabel('Anything we should know').fill('For the Lekki job');
@@ -439,6 +440,9 @@ try {
   });
 
   await step('the counter turns the request into a quote, at trade price for a trade customer', async () => {
+    await p.goto(`${app}/`);
+    await p.getByText('Where to?').waitFor({ timeout: 20000 });
+    await p.screenshot({ path: path.join(shots, 'home-desktop.png') });
     await p.goto(`${app}/requests`);
     const card = p.locator('article', { hasText: 'For the Lekki job' });
     await card.waitFor({ timeout: 30000 });

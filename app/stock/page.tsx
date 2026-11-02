@@ -9,6 +9,7 @@ import { browserDb } from '@/lib/supabase';
 import { friendly } from '@/lib/errors';
 import { toQty } from '@/lib/quantity';
 import { Tick } from '@/components/kit/feel';
+import { StaffNav } from '@/components/staff-nav';
 
 type Tab = 'receive' | 'pack' | 'count';
 type Hit = { product: string; sku: string; name: string; part_number: string | null };
@@ -23,9 +24,9 @@ const allowed: Record<Tab, string[]> = {
   count: ['owner', 'storekeeper'],
 };
 const tabLabel: Record<Tab, string> = { receive: 'Receive', pack: 'Pack', count: 'Count' };
-const field = { width: '100%', height: 52, boxSizing: 'border-box', padding: '0 16px', border: '1.5px solid #10161E', borderRadius: 14, background: '#FFFFFF', color: '#10161E', font: "500 17px 'Geist Mono', monospace" } as const;
-const ghost = { minHeight: 44, padding: '0 14px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 12, background: '#FFFFFF', color: '#10161E', font: '500 14px Geist, system-ui, sans-serif', cursor: 'pointer' } as const;
-const solid = (on: boolean) => ({ width: '100%', minHeight: 56, marginTop: 14, border: 0, borderRadius: 15, background: on ? '#1B5CF0' : '#8E99A4', color: '#FFFFFF', font: '600 17px Geist, system-ui, sans-serif', cursor: on ? 'pointer' : 'default' }) as const;
+const field = { width: '100%', height: 52, boxSizing: 'border-box', padding: '0 16px', border: '1.5px solid #10161E', borderRadius: 14, background: '#FFFFFF', color: '#10161E', font: "500 17px var(--mono)" } as const;
+const ghost = { minHeight: 44, padding: '0 14px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 12, background: '#FFFFFF', color: '#10161E', font: '500 14px var(--sans)', cursor: 'pointer' } as const;
+const solid = (on: boolean) => ({ width: '100%', minHeight: 56, marginTop: 14, border: 0, borderRadius: 15, background: on ? '#1B5CF0' : '#8E99A4', color: '#FFFFFF', font: '600 17px var(--sans)', cursor: on ? 'pointer' : 'default' }) as const;
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 export default function StockRoom() {
@@ -67,16 +68,15 @@ export default function StockRoom() {
 
   return (
     <main style={{ minHeight: '100vh', boxSizing: 'border-box', padding: '12px clamp(10px, 2vw, 28px) 40px' }}>
-      <nav aria-label="Staff" className="glass" style={{ position: 'sticky', top: 12, zIndex: 30, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '4px 14px', padding: '6px 12px 6px 18px', borderRadius: 18, maxWidth: 980, margin: '0 auto' }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, fontWeight: 650, fontSize: 17, letterSpacing: '-.02em' }}>Stock room</span>
+      <StaffNav label="Staff" wide={980}>
         <div role="group" aria-label="Stock room" style={{ position: 'relative', display: 'grid', gridTemplateColumns: `repeat(${tabs.length}, 104px)`, padding: 3, background: 'rgba(16,24,34,.07)', borderRadius: 12 }}>
           <span aria-hidden="true" style={{ position: 'absolute', top: 3, bottom: 3, left: 3, width: 104, background: '#FFFFFF', borderRadius: 9, boxShadow: '0 1px 2px rgba(16,24,34,.12), 0 4px 10px rgba(16,24,34,.08)', transform: `translateX(${tabs.indexOf(tab) * 104}px)`, transition: 'transform .28s cubic-bezier(.3,1.2,.5,1)' }} />
           {tabs.map((t) => (
-            <button key={t} type="button" aria-pressed={tab === t} onClick={() => { setError(null); setTab(t); }} style={{ position: 'relative', height: 40, border: 0, background: 'transparent', color: '#10161E', font: '500 14px Geist, system-ui, sans-serif', cursor: 'pointer' }}>{tabLabel[t]}</button>
+            <button key={t} type="button" aria-pressed={tab === t} onClick={() => { setError(null); setTab(t); }} style={{ position: 'relative', height: 40, border: 0, background: 'transparent', color: '#10161E', font: '500 14px var(--sans)', cursor: 'pointer' }}>{tabLabel[t]}</button>
           ))}
         </div>
         <span style={{ fontSize: 13.5, color: '#434E5A' }}>{me.name}{locations[0] ? ` · ${locations[0].name}` : ''}</span>
-      </nav>
+      </StaffNav>
       <div style={{ maxWidth: 980, margin: '18px auto 0' }}>
         {error ? <p role="alert" style={{ margin: '0 2px 12px', padding: '10px 14px', borderRadius: 12, background: '#FDF3E7', color: '#92400E', fontSize: 14.5 }}>{error}</p> : null}
         {tab === 'receive' ? <Receive db={db} locations={locations} onError={showError} clearError={() => setError(null)} /> : null}
@@ -125,7 +125,7 @@ function PartSearch({ db, onPick, label }: { db: Db; onPick: (h: Hit) => void; l
       {hits.length ? (
         <div role="listbox" aria-label="Matching parts" style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 8 }}>
           {hits.map((h) => (
-            <button key={h.product} type="button" role="option" aria-selected={false} onClick={() => pick(h)} className="press" style={{ minHeight: 48, padding: '6px 12px', border: 0, borderRadius: 11, background: '#F4F6F8', color: '#10161E', textAlign: 'left', font: '500 15px Geist, system-ui, sans-serif', cursor: 'pointer' }}>
+            <button key={h.product} type="button" role="option" aria-selected={false} onClick={() => pick(h)} className="press" style={{ minHeight: 48, padding: '6px 12px', border: 0, borderRadius: 11, background: '#F4F6F8', color: '#10161E', textAlign: 'left', font: '500 15px var(--sans)', cursor: 'pointer' }}>
               {h.name} <span style={{ color: '#55606C', fontWeight: 400, fontSize: 13 }}>{h.part_number ?? h.sku}</span>
             </button>
           ))}
@@ -201,12 +201,12 @@ function Receive({ db, locations, onError, clearError }: Props & { locations: { 
       <div className="card" style={{ padding: 18, display: 'grid', gap: 12 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
           <label style={{ display: 'grid', gap: 6, fontSize: 14, fontWeight: 550 }}>From
-            <select value={supplier} onChange={(e) => setSupplier(e.target.value)} style={{ ...field, font: '500 15px Geist, system-ui, sans-serif', border: '1px solid rgba(16,24,34,.16)' }}>
+            <select value={supplier} onChange={(e) => setSupplier(e.target.value)} style={{ ...field, font: '500 15px var(--sans)', border: '1px solid rgba(16,24,34,.16)' }}>
               {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </label>
           <label style={{ display: 'grid', gap: 6, fontSize: 14, fontWeight: 550 }}>Into
-            <select value={location} onChange={(e) => setLocation(e.target.value)} style={{ ...field, font: '500 15px Geist, system-ui, sans-serif', border: '1px solid rgba(16,24,34,.16)' }}>
+            <select value={location} onChange={(e) => setLocation(e.target.value)} style={{ ...field, font: '500 15px var(--sans)', border: '1px solid rgba(16,24,34,.16)' }}>
               {locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
             </select>
           </label>
@@ -224,7 +224,7 @@ function Receive({ db, locations, onError, clearError }: Props & { locations: { 
                   <div style={{ fontSize: 13, color: '#55606C' }}>{l.serial ? `${plural(l.serials.length, 'unit')} scanned` : l.unit === 'metre' ? 'Metres received' : 'Quantity received'}</div>
                 </div>
                 {l.serial ? null : (
-                  <input inputMode="decimal" aria-label={`Quantity received of ${l.name}`} value={l.qty} onChange={(e) => update(l.productId, { qty: e.target.value.replace(/[^\d.]/g, '').slice(0, 10) })} className="tabular" style={{ width: 110, height: 46, boxSizing: 'border-box', padding: '0 12px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 12, textAlign: 'right', font: '600 16px Geist, system-ui, sans-serif' }} />
+                  <input inputMode="decimal" aria-label={`Quantity received of ${l.name}`} value={l.qty} onChange={(e) => update(l.productId, { qty: e.target.value.replace(/[^\d.]/g, '').slice(0, 10) })} className="tabular" style={{ width: 110, height: 46, boxSizing: 'border-box', padding: '0 12px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 12, textAlign: 'right', font: '600 16px var(--sans)' }} />
                 )}
                 <button type="button" onClick={() => setLines((cur) => cur.filter((x) => x.productId !== l.productId))} style={ghost}>Remove</button>
               </div>
@@ -233,12 +233,12 @@ function Receive({ db, locations, onError, clearError }: Props & { locations: { 
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <input aria-label={`Scan a serial for ${l.name}`} value={scan[l.productId] ?? ''} onChange={(e) => setScan((s) => ({ ...s, [l.productId]: e.target.value }))} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); scanSerial(l); } }} autoComplete="off" placeholder="Scan the serial, then Enter" style={{ ...field, flex: '1 1 220px', height: 46, fontSize: 15 }} />
                     <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13.5, color: '#434E5A' }}>Made on
-                      <input type="date" value={l.madeOn} onChange={(e) => update(l.productId, { madeOn: e.target.value })} style={{ height: 46, padding: '0 10px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 12, font: '500 14px Geist, system-ui, sans-serif' }} />
+                      <input type="date" value={l.madeOn} onChange={(e) => update(l.productId, { madeOn: e.target.value })} style={{ height: 46, padding: '0 10px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 12, font: '500 14px var(--sans)' }} />
                     </label>
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {l.serials.map((s) => (
-                      <button key={s} type="button" aria-label={`Remove ${s}`} onClick={() => update(l.productId, { serials: l.serials.filter((x) => x !== s) })} className="press rise" style={{ minHeight: 36, padding: '0 10px', border: 0, borderRadius: 9, background: '#10161E', color: '#FFFFFF', font: "500 13px 'Geist Mono', monospace", cursor: 'pointer' }}>{s} ×</button>
+                      <button key={s} type="button" aria-label={`Remove ${s}`} onClick={() => update(l.productId, { serials: l.serials.filter((x) => x !== s) })} className="press rise" style={{ minHeight: 36, padding: '0 10px', border: 0, borderRadius: 9, background: '#10161E', color: '#FFFFFF', font: "500 13px var(--mono)", cursor: 'pointer' }}>{s} ×</button>
                     ))}
                   </div>
                 </div>
@@ -425,7 +425,7 @@ function Count({ db, locations, onError, clearError }: Props & { locations: { id
           <h1 id="c1" style={{ margin: '0 2px', fontSize: 'clamp(24px, 3vw, 32px)', lineHeight: 1.1, fontWeight: 600, letterSpacing: '-.028em' }}>Count the shelf</h1>
           <p style={{ margin: '6px 2px 0', fontSize: 15, lineHeight: 1.45, color: '#434E5A' }}>Count what you see, and type it. Nobody is shown what the books expect, so nobody counts to match.</p>
         </div>
-        <select aria-label="Which shelf" value={location} onChange={(e) => setLocation(e.target.value)} style={{ height: 46, padding: '0 12px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 12, background: '#FFFFFF', font: '500 15px Geist, system-ui, sans-serif' }}>
+        <select aria-label="Which shelf" value={location} onChange={(e) => setLocation(e.target.value)} style={{ height: 46, padding: '0 12px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 12, background: '#FFFFFF', font: '500 15px var(--sans)' }}>
           {locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
         </select>
       </div>
@@ -439,7 +439,7 @@ function Count({ db, locations, onError, clearError }: Props & { locations: { id
               <div style={{ fontSize: 13, color: '#55606C' }}>{l.last_counted_on ? `Last counted ${l.last_counted_on}` : 'Never counted'}{l.unit === 'metre' ? ' · in metres' : ''}</div>
             </div>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#434E5A' }}>Counted
-              <input inputMode={l.unit === 'metre' ? 'decimal' : 'numeric'} aria-label={`Count of ${l.name}`} disabled={sent} value={vals[l.product_id] ?? ''} onChange={(e) => setVals((v) => ({ ...v, [l.product_id]: e.target.value.replace(l.unit === 'metre' ? /[^\d.]/g : /\D/g, '').slice(0, 9) }))} className="tabular" style={{ width: 96, height: 46, boxSizing: 'border-box', padding: '0 12px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 12, textAlign: 'right', font: '600 16px Geist, system-ui, sans-serif' }} />
+              <input inputMode={l.unit === 'metre' ? 'decimal' : 'numeric'} aria-label={`Count of ${l.name}`} disabled={sent} value={vals[l.product_id] ?? ''} onChange={(e) => setVals((v) => ({ ...v, [l.product_id]: e.target.value.replace(l.unit === 'metre' ? /[^\d.]/g : /\D/g, '').slice(0, 9) }))} className="tabular" style={{ width: 96, height: 46, boxSizing: 'border-box', padding: '0 12px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 12, textAlign: 'right', font: '600 16px var(--sans)' }} />
             </label>
           </div>
         ))}

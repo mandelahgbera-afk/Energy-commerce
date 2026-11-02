@@ -45,7 +45,7 @@ export function Segmented({ options, initial = 0 }: { options: string[]; initial
             border: 0,
             background: 'transparent',
             color: i === choice ? '#10161E' : '#434E5A',
-            font: '500 14px Geist, system-ui, sans-serif',
+            font: '500 14px var(--sans)',
             cursor: 'pointer',
             transition: 'color .2s',
           }}

@@ -36,7 +36,7 @@ export function Toast({ message = '6205-2RS removed', triggerLabel = 'Remove fro
           type="button"
           onClick={show}
           className="press"
-          style={{ alignSelf: 'center', minHeight: 44, padding: '0 16px', border: 0, borderRadius: 12, background: '#FFFFFF', color: '#10161E', font: '500 14px Geist, system-ui, sans-serif', cursor: 'pointer' }}
+          style={{ alignSelf: 'center', minHeight: 44, padding: '0 16px', border: 0, borderRadius: 12, background: '#FFFFFF', color: '#10161E', font: '500 14px var(--sans)', cursor: 'pointer' }}
         >
           {triggerLabel}
         </button>
@@ -51,7 +51,7 @@ export function Toast({ message = '6205-2RS removed', triggerLabel = 'Remove fro
             type="button"
             onClick={undo}
             className="press"
-            style={{ minHeight: 44, padding: '0 12px', border: 0, borderRadius: 10, background: '#10161E', color: '#FFFFFF', font: '500 13.5px Geist, system-ui, sans-serif', cursor: 'pointer' }}
+            style={{ minHeight: 44, padding: '0 12px', border: 0, borderRadius: 10, background: '#10161E', color: '#FFFFFF', font: '500 13.5px var(--sans)', cursor: 'pointer' }}
           >
             Undo
           </button>

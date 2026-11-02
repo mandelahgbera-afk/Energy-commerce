@@ -10,6 +10,7 @@ import { browserDb } from '@/lib/supabase';
 import { friendly } from '@/lib/errors';
 import { formatNaira, nairaToKobo, shortNaira } from '@/lib/money';
 import { Tick } from '@/components/kit/feel';
+import { StaffNav } from '@/components/staff-nav';
 
 type Kobo = number | string;
 type Tab = 'month' | 'entries' | 'bank' | 'close';
@@ -24,9 +25,9 @@ type Check = { name: string; ok: boolean; problem: string; difference?: Kobo | n
 const K = (v: Kobo | null | undefined): bigint => BigInt(String(v ?? 0).split('.')[0] || '0');
 const monthOf = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 const day = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
-const ghost = { minHeight: 44, padding: '0 14px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 12, background: '#FFFFFF', color: '#10161E', font: '500 14px Geist, system-ui, sans-serif', cursor: 'pointer' } as const;
+const ghost = { minHeight: 44, padding: '0 14px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 12, background: '#FFFFFF', color: '#10161E', font: '500 14px var(--sans)', cursor: 'pointer' } as const;
 const dark = { ...ghost, border: 0, background: '#10161E', color: '#FFFFFF' } as const;
-const input = { height: 46, boxSizing: 'border-box', padding: '0 12px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 12, background: '#FFFFFF', color: '#10161E', font: '500 15px Geist, system-ui, sans-serif' } as const;
+const input = { height: 46, boxSizing: 'border-box', padding: '0 12px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 12, background: '#FFFFFF', color: '#10161E', font: '500 15px var(--sans)' } as const;
 const h1 = { margin: '0 2px', fontSize: 'clamp(24px, 3vw, 32px)', lineHeight: 1.1, fontWeight: 600, letterSpacing: '-.028em' } as const;
 const lead = { margin: '6px 2px 14px', fontSize: 15, lineHeight: 1.45, color: '#434E5A' } as const;
 const tabLabel: Record<Tab, string> = { month: 'Month', entries: 'Entries', bank: 'Bank', close: 'Close' };
@@ -75,13 +76,13 @@ export default function Books() {
   const tabs: Tab[] = ['month', 'entries', 'bank', 'close'];
   return (
     <main style={{ minHeight: '100vh', boxSizing: 'border-box', padding: '12px clamp(10px, 2vw, 28px) 40px' }}>
-      <nav aria-label="Books" className="glass" style={{ position: 'sticky', top: 12, zIndex: 30, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '4px 14px', padding: '6px 12px 6px 18px', borderRadius: 18, maxWidth: 1040, margin: '0 auto' }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, fontWeight: 650, fontSize: 17, letterSpacing: '-.02em' }}>Books{month ? `, ${monthOf(month)}` : ''}</span>
+      <StaffNav label="Books" wide={1040}>
+        {month ? <span style={{ fontSize: 14, fontWeight: 550, color: '#434E5A' }}>{monthOf(month)}</span> : null}
         <div role="group" aria-label="Books" style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(4, minmax(64px, 88px))', padding: 3, background: 'rgba(16,24,34,.07)', borderRadius: 12 }}>
           <span aria-hidden="true" style={{ position: 'absolute', top: 3, bottom: 3, left: 3, width: 'calc((100% - 6px) / 4)', background: '#FFFFFF', borderRadius: 9, boxShadow: '0 1px 2px rgba(16,24,34,.12), 0 4px 10px rgba(16,24,34,.08)', transform: `translateX(${tabs.indexOf(tab) * 100}%)`, transition: 'transform .28s cubic-bezier(.3,1.2,.5,1)' }} />
-          {tabs.map((t) => <button key={t} type="button" aria-pressed={tab === t} onClick={() => { setError(null); setTab(t); }} style={{ position: 'relative', height: 40, border: 0, background: 'transparent', color: '#10161E', font: '500 14px Geist, system-ui, sans-serif', cursor: 'pointer' }}>{tabLabel[t]}</button>)}
+          {tabs.map((t) => <button key={t} type="button" aria-pressed={tab === t} onClick={() => { setError(null); setTab(t); }} style={{ position: 'relative', height: 40, border: 0, background: 'transparent', color: '#10161E', font: '500 14px var(--sans)', cursor: 'pointer' }}>{tabLabel[t]}</button>)}
         </div>
-      </nav>
+      </StaffNav>
       <div style={{ maxWidth: 1040, margin: '0 auto' }}>
         <div aria-live="polite" style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '12px 4px 16px', fontSize: 14, color: data && !data.balanced ? '#92400E' : '#0A6E4B' }}>
           {data ? (data.balanced ? <Tick size={16} stroke="#0D9465" /> : null) : null}
@@ -422,7 +423,7 @@ function Close({ db, owner, months, onError }: { db: ReturnType<typeof browserDb
       {closed || res?.closed ? (
         <div className="card rise" aria-live="polite" style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10, padding: 18, background: '#EEF9F4', fontSize: 16, fontWeight: 600 }}><Tick size={22} stroke="#0D9465" />{monthOf(month)} is closed.</div>
       ) : (
-        <button type="button" onClick={() => void close()} disabled={!ready || !owner || busy} className="press" style={{ width: '100%', minHeight: 56, marginTop: 14, border: 0, borderRadius: 15, background: ready && owner ? '#1B5CF0' : '#8E99A4', color: '#FFFFFF', font: '600 17px Geist, system-ui, sans-serif', cursor: ready && owner ? 'pointer' : 'default' }}>
+        <button type="button" onClick={() => void close()} disabled={!ready || !owner || busy} className="press" style={{ width: '100%', minHeight: 56, marginTop: 14, border: 0, borderRadius: 15, background: ready && owner ? '#1B5CF0' : '#8E99A4', color: '#FFFFFF', font: '600 17px var(--sans)', cursor: ready && owner ? 'pointer' : 'default' }}>
           {busy ? 'Closing…' : !res?.finished ? 'This month is not over yet' : !owner ? 'Only the owner closes a month' : ready ? `Close ${monthOf(month)}` : 'Clear every check first'}
         </button>
       )}

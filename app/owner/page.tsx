@@ -9,6 +9,7 @@ import { browserDb } from '@/lib/supabase';
 import { friendly } from '@/lib/errors';
 import { formatNaira, shortNaira } from '@/lib/money';
 import { Tick } from '@/components/kit/feel';
+import { StaffNav } from '@/components/staff-nav';
 
 type Kobo = number | string;
 type Person = { customer_id: string | null; name: string | null; phone: string | null; reminders_ok: boolean | null };
@@ -149,14 +150,13 @@ export default function Owner() {
 
   return (
     <main style={{ minHeight: '100vh', boxSizing: 'border-box', padding: '12px clamp(10px, 2vw, 28px) 40px' }}>
-      <nav aria-label="Owner" className="glass" style={{ position: 'sticky', top: 12, zIndex: 30, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '4px 14px', padding: '6px 12px 6px 18px', borderRadius: 18, maxWidth: 1240, margin: '0 auto' }}>
-        <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, fontWeight: 650, fontSize: 17, letterSpacing: '-.02em' }}>Power Store</Link>
+      <StaffNav label="Owner" wide={1240}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
           {[['#top', 'Today'], ['#money', 'Money'], ['#owes', 'Debts'], ['#stock', 'Stock']].map(([href, label]) => (
             <a key={href} href={href} style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: '0 12px', borderRadius: 10, fontSize: 14.5, color: '#434E5A' }}>{label}</a>
           ))}
         </div>
-      </nav>
+      </StaffNav>
 
       <div id="top" style={{ maxWidth: 1240, margin: '18px auto 0' }}>
         <h1 aria-live="polite" style={{ margin: '0 2px 16px', fontSize: 'clamp(26px, 3vw, 36px)', lineHeight: 1.1, fontWeight: 600, letterSpacing: '-.03em' }}>
@@ -196,7 +196,7 @@ export default function Owner() {
           <span style={{ fontSize: 14.5, color: '#434E5A' }}>Show</span>
           <div role="group" aria-label="Period" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 84px)', padding: 3, background: 'rgba(16,24,34,.07)', borderRadius: 12 }}>
             {([7, 30, 90] as const).map((p) => (
-              <button key={p} type="button" aria-pressed={period === p} onClick={() => { setHover(null); setPeriod(p); }} className="press" style={{ height: 40, border: 0, borderRadius: 9, background: period === p ? '#FFFFFF' : 'transparent', boxShadow: period === p ? '0 1px 2px rgba(16,24,34,.12)' : 'none', color: '#10161E', font: '500 14px Geist, system-ui, sans-serif', cursor: 'pointer' }}>
+              <button key={p} type="button" aria-pressed={period === p} onClick={() => { setHover(null); setPeriod(p); }} className="press" style={{ height: 40, border: 0, borderRadius: 9, background: period === p ? '#FFFFFF' : 'transparent', boxShadow: period === p ? '0 1px 2px rgba(16,24,34,.12)' : 'none', color: '#10161E', font: '500 14px var(--sans)', cursor: 'pointer' }}>
                 {p} days
               </button>
             ))}
@@ -220,7 +220,7 @@ export default function Owner() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 14 }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><span aria-hidden="true" style={{ width: 14, height: 3, borderRadius: 2, background: '#1B5CF0' }} />Money in</span>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><span aria-hidden="true" style={{ width: 14, height: 3, borderRadius: 2, background: '#D97A0B' }} />Money out</span>
-              <button type="button" aria-pressed={table} onClick={() => { setTable(!table); setHover(null); }} className="press" style={{ minHeight: 44, padding: '0 14px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 12, background: '#FFFFFF', color: '#10161E', font: '500 14px Geist, system-ui, sans-serif', cursor: 'pointer' }}>
+              <button type="button" aria-pressed={table} onClick={() => { setTable(!table); setHover(null); }} className="press" style={{ minHeight: 44, padding: '0 14px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 12, background: '#FFFFFF', color: '#10161E', font: '500 14px var(--sans)', cursor: 'pointer' }}>
                 {table ? 'View as graph' : 'View as table'}
               </button>
             </div>
@@ -322,8 +322,8 @@ function QueueCard({ item, done, busy, onAnswer }: { item: QueueItem; done?: str
             <div style={{ marginTop: 3, fontSize: 14, lineHeight: 1.45, color: '#434E5A' }}>{body}</div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button type="button" disabled={busy} onClick={() => onAnswer(false)} className="press" style={{ minHeight: 44, padding: '0 14px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 12, background: '#FFFFFF', color: '#10161E', font: '500 14px Geist, system-ui, sans-serif', cursor: 'pointer' }}>{altText}</button>
-            <button type="button" disabled={busy} onClick={() => onAnswer(true)} className="press" style={{ minHeight: 44, padding: '0 16px', border: 0, borderRadius: 12, background: '#10161E', color: '#FFFFFF', font: '500 14px Geist, system-ui, sans-serif', cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>{busy ? 'Saving…' : okText}</button>
+            <button type="button" disabled={busy} onClick={() => onAnswer(false)} className="press" style={{ minHeight: 44, padding: '0 14px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 12, background: '#FFFFFF', color: '#10161E', font: '500 14px var(--sans)', cursor: 'pointer' }}>{altText}</button>
+            <button type="button" disabled={busy} onClick={() => onAnswer(true)} className="press" style={{ minHeight: 44, padding: '0 16px', border: 0, borderRadius: 12, background: '#10161E', color: '#FFFFFF', font: '500 14px var(--sans)', cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>{busy ? 'Saving…' : okText}</button>
           </div>
         </div>
       )}
@@ -469,7 +469,7 @@ function Debts({ debts, band, setBand }: { debts: Today['debts']; band: number; 
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 6, marginTop: 10 }}>
         {debts.map((b) => (
-          <button key={b.band} type="button" aria-pressed={b.band === band} onClick={() => setBand(b.band)} className="press" style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 44, padding: '6px 10px', border: 0, borderRadius: 10, background: b.band === band ? '#F1F3F5' : 'transparent', color: '#10161E', textAlign: 'left', font: '450 13.5px Geist, system-ui, sans-serif', cursor: 'pointer' }}>
+          <button key={b.band} type="button" aria-pressed={b.band === band} onClick={() => setBand(b.band)} className="press" style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 44, padding: '6px 10px', border: 0, borderRadius: 10, background: b.band === band ? '#F1F3F5' : 'transparent', color: '#10161E', textAlign: 'left', font: '450 13.5px var(--sans)', cursor: 'pointer' }}>
             <span aria-hidden="true" style={{ flex: 'none', width: 10, height: 10, borderRadius: 3, background: bandColors[b.band] }} />
             <span><span style={{ display: 'block' }}>{b.label}</span><b className="tabular" style={{ fontWeight: 600 }}>{shortNaira(b.total)}</b></span>
           </button>

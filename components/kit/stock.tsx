@@ -21,7 +21,7 @@ export function StockState({ stock }: { stock: 'in' | 'low' | 'out' }) {
             borderRadius: 11,
             background: notified ? '#E7EEFE' : '#FFFFFF',
             color: notified ? '#1747C7' : '#10161E',
-            font: '500 13.5px Geist, system-ui, sans-serif',
+            font: '500 13.5px var(--sans)',
             cursor: 'pointer',
           }}
         >

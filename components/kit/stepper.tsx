@@ -48,6 +48,6 @@ const stepperButton: React.CSSProperties = {
   borderRadius: 13,
   background: 'transparent',
   color: '#10161E',
-  font: '400 22px Geist, system-ui, sans-serif',
+  font: '400 22px var(--sans)',
   cursor: 'pointer',
 };

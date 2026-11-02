@@ -22,7 +22,7 @@ function Row({ state, words }: { state: string; words: string }) {
 
 export default function Help() {
   return (
-    <main style={{ minHeight: '100vh', boxSizing: 'border-box', padding: 'clamp(18px, 3vw, 40px) clamp(14px, 3vw, 44px) 48px', fontFamily: 'Geist, system-ui, sans-serif', color: '#10161E', background: 'radial-gradient(70% 420px at 70% 0, #FFFFFF 0%, rgba(255,255,255,0) 100%), #EEF1F4' }}>
+    <main style={{ minHeight: '100vh', boxSizing: 'border-box', padding: 'clamp(18px, 3vw, 40px) clamp(14px, 3vw, 44px) 48px', fontFamily: 'var(--sans)', color: '#10161E', background: 'radial-gradient(70% 420px at 70% 0, #FFFFFF 0%, rgba(255,255,255,0) 100%), #EEF1F4' }}>
       <div style={{ maxWidth: 860, margin: '0 auto' }}>
         <h1 style={{ margin: 0, fontSize: 'clamp(28px, 3.2vw, 40px)', lineHeight: 1.08, fontWeight: 600, letterSpacing: '-.03em' }}>How the counter works</h1>
         <p style={{ margin: '8px 0 22px', fontSize: 16, lineHeight: 1.5, color: '#434E5A', maxWidth: 640 }}>

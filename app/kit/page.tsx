@@ -49,7 +49,7 @@ export default function Kit() {
         minHeight: '100vh',
         boxSizing: 'border-box',
         padding: 'clamp(18px, 3vw, 40px) clamp(14px, 3vw, 44px) 48px',
-        fontFamily: 'Geist, system-ui, -apple-system, "Segoe UI", sans-serif',
+        fontFamily: 'var(--sans)',
         color: '#10161E',
         background: 'radial-gradient(70% 420px at 70% 0, #FFFFFF 0%, rgba(255,255,255,0) 100%), #EEF1F4',
       }}

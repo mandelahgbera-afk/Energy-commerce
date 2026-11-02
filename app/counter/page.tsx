@@ -12,6 +12,7 @@ import { toQty } from '@/lib/quantity';
 import { saleBlocker, type SaleLine } from '@/lib/sale-math';
 import { cashNotes, countedKobo, noteKobo } from '@/lib/till';
 import { Tick } from '@/components/kit/feel';
+import { StaffNav } from '@/components/staff-nav';
 
 type Hit = { product: string; sku: string; name: string; part_number: string | null; price: bigint | number | string; match: string; state: string };
 type Kobo = bigint | number | string;
@@ -177,7 +178,9 @@ export default function Counter() {
       const { data } = await db.rpc('oldest_serials', { p_product: hit.product, p_location: location.id, p_count: 6 });
       if (data) setSerials((s) => ({ ...s, [hit.product]: (data as { serial: string }[]).map((x) => x.serial) }));
     }
-    focusScan();
+    // Back to the scan box, unless the cashier has already moved to another field.
+    const at = document.activeElement;
+    if (!(at instanceof HTMLInputElement || at instanceof HTMLTextAreaElement) || at === scanRef.current) focusScan();
   }, [db, location, focusScan]);
 
   const updateLine = (productId: string, patch: Partial<SaleLine>) =>
@@ -306,19 +309,18 @@ export default function Counter() {
           : phone ? 'Saved to their record, with warranty and reminders.' : 'Stock and books are updated.') : '';
 
   return (
-    <main style={{ minHeight: '100vh', boxSizing: 'border-box', padding: '12px clamp(10px, 2vw, 28px) 32px', fontFamily: 'Geist, system-ui, sans-serif', color: '#10161E', background: 'radial-gradient(70% 380px at 70% 0, #FFFFFF 0%, rgba(255,255,255,0) 100%), #EEF1F4' }}>
-      <nav aria-label="Staff" className="glass" style={{ position: 'sticky', top: 12, zIndex: 30, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '4px 14px', padding: '6px 12px 6px 18px', borderRadius: 18 }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', minHeight: 42, fontWeight: 650, fontSize: 17, letterSpacing: '-.02em' }}>Counter</span>
+    <main style={{ minHeight: '100vh', boxSizing: 'border-box', padding: '12px clamp(10px, 2vw, 28px) 32px', fontFamily: 'var(--sans)', color: '#10161E', background: 'radial-gradient(70% 380px at 70% 0, #FFFFFF 0%, rgba(255,255,255,0) 100%), #EEF1F4' }}>
+      <StaffNav label="Staff">
         <div role="group" aria-label="Counter" style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(2, 120px)', padding: 3, background: 'rgba(16,24,34,.07)', borderRadius: 12 }}>
           <span aria-hidden="true" style={{ position: 'absolute', top: 3, bottom: 3, left: 3, width: 120, background: '#FFFFFF', borderRadius: 9, boxShadow: '0 1px 2px rgba(16,24,34,.12), 0 4px 10px rgba(16,24,34,.08)', transform: `translateX(${tab === 'sell' ? 0 : 120}px)`, transition: 'transform .28s cubic-bezier(.3,1.2,.5,1)' }} />
           {(['sell', 'till'] as const).map((t) => (
-            <button key={t} type="button" onClick={() => setTab(t)} aria-pressed={tab === t} style={{ position: 'relative', height: 40, border: 0, background: 'transparent', color: '#10161E', font: '500 14px Geist, system-ui, sans-serif', cursor: 'pointer' }}>
+            <button key={t} type="button" onClick={() => setTab(t)} aria-pressed={tab === t} style={{ position: 'relative', height: 40, border: 0, background: 'transparent', color: '#10161E', font: '500 14px var(--sans)', cursor: 'pointer' }}>
               {t === 'sell' ? 'Sell' : 'Close the till'}
             </button>
           ))}
         </div>
         <span style={{ fontSize: 13.5, color: '#434E5A' }}>{session.email}{location ? ` · ${location.name}` : ''}</span>
-      </nav>
+      </StaffNav>
 
       {tab === 'sell' ? (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-start', maxWidth: 1320, margin: '14px auto 0' }}>
@@ -341,12 +343,12 @@ export default function Counter() {
                 }}
                 autoComplete="off"
                 placeholder="Scan the barcode, or type 6205 2rs"
-                style={{ width: '100%', height: 56, boxSizing: 'border-box', padding: '0 16px', border: '1.5px solid #10161E', borderRadius: 14, background: '#FFFFFF', color: '#10161E', font: "500 18px 'Geist Mono', monospace" }}
+                style={{ width: '100%', height: 56, boxSizing: 'border-box', padding: '0 16px', border: '1.5px solid #10161E', borderRadius: 14, background: '#FFFFFF', color: '#10161E', font: "500 18px var(--mono)" }}
               />
               {hits.length > 0 ? (
                 <div role="listbox" aria-label="Matching items" style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 8 }}>
                   {hits.map((h, i) => (
-                    <button key={h.product} type="button" role="option" aria-selected={i === active} onClick={() => void addHit(h)} className="press" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 50, padding: '6px 12px', border: 0, borderRadius: 11, background: i === active ? '#EEF3FF' : 'transparent', color: '#10161E', textAlign: 'left', fontFamily: 'Geist, system-ui, sans-serif', cursor: 'pointer' }}>
+                    <button key={h.product} type="button" role="option" aria-selected={i === active} onClick={() => void addHit(h)} className="press" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 50, padding: '6px 12px', border: 0, borderRadius: 11, background: i === active ? '#EEF3FF' : 'transparent', color: '#10161E', textAlign: 'left', fontFamily: 'var(--sans)', cursor: 'pointer' }}>
                       <span style={{ minWidth: 0 }}>
                         <span style={{ display: 'block', fontSize: 15, fontWeight: 500 }}>{h.name}</span>
                         <span style={{ display: 'block', fontSize: 13, color: '#55606C' }}>{h.part_number ?? h.sku} · {h.state}</span>
@@ -393,7 +395,7 @@ export default function Counter() {
                               <button key={code} type="button" onClick={() => {
                                 const picked = on ? l.serials.filter((c) => c !== code) : l.serials.length >= Number(l.qty) ? [...l.serials.slice(1), code] : [...l.serials, code];
                                 updateLine(l.productId, { serials: picked });
-                              }} aria-pressed={on} className="press" style={{ minHeight: 44, padding: '0 11px', border: `1px solid ${on ? '#10161E' : 'rgba(16,24,34,.16)'}`, borderRadius: 10, background: on ? '#10161E' : '#FFFFFF', color: on ? '#FFFFFF' : '#10161E', font: "500 13.5px 'Geist Mono', monospace", cursor: 'pointer' }}>
+                              }} aria-pressed={on} className="press" style={{ minHeight: 44, padding: '0 11px', border: `1px solid ${on ? '#10161E' : 'rgba(16,24,34,.16)'}`, borderRadius: 10, background: on ? '#10161E' : '#FFFFFF', color: on ? '#FFFFFF' : '#10161E', font: "500 13.5px var(--mono)", cursor: 'pointer' }}>
                                 {code}
                               </button>
                             );
@@ -411,7 +413,7 @@ export default function Counter() {
             {!done ? (
               <>
                 <label htmlFor="ph" style={{ display: 'block', marginBottom: 6, fontSize: 14, fontWeight: 550 }}>Customer phone, for warranty and reminders</label>
-                <input id="ph" inputMode="numeric" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))} placeholder="0803 123 4567, or leave blank" className="tabular" style={{ width: '100%', height: 48, boxSizing: 'border-box', padding: '0 14px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 13, background: '#FFFFFF', color: '#10161E', font: '450 15.5px Geist, system-ui, sans-serif' }} />
+                <input id="ph" inputMode="numeric" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))} placeholder="0803 123 4567, or leave blank" className="tabular" style={{ width: '100%', height: 48, boxSizing: 'border-box', padding: '0 14px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 13, background: '#FFFFFF', color: '#10161E', font: '450 15.5px var(--sans)' }} />
                 {current?.customer ? (
                   <div className="rise" style={{ marginTop: 6, padding: '9px 12px', background: '#EEF3FF', borderRadius: 11, fontSize: 13.5, lineHeight: 1.4 }}>
                     <b style={{ fontWeight: 600 }}>{current.customer.name ?? 'Known customer'}.</b>{current.customer.trade ? ' Trade prices applied.' : ''} Owes {formatNaira(current.customer.owes)}. Holds {formatNaira(current.customer.holds)}.
@@ -421,7 +423,7 @@ export default function Counter() {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 12 }}>
                   <label htmlFor="disc" style={{ fontSize: 14, fontWeight: 550 }}>Discount</label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <input id="disc" inputMode="numeric" value={discount} onChange={(e) => setDiscount(e.target.value.replace(/\D/g, '').slice(0, 3))} aria-describedby="disc-note" style={{ width: 64, height: 44, boxSizing: 'border-box', padding: '0 10px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 11, background: '#FFFFFF', color: '#10161E', textAlign: 'right', font: '500 15px Geist, system-ui, sans-serif' }} />
+                    <input id="disc" inputMode="numeric" value={discount} onChange={(e) => setDiscount(e.target.value.replace(/\D/g, '').slice(0, 3))} aria-describedby="disc-note" style={{ width: 64, height: 44, boxSizing: 'border-box', padding: '0 10px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 11, background: '#FFFFFF', color: '#10161E', textAlign: 'right', font: '500 15px var(--sans)' }} />
                     <span style={{ fontSize: 15 }}>%</span>
                   </div>
                 </div>
@@ -443,7 +445,7 @@ export default function Counter() {
                     const off = m === 'Credit' && !current?.customer;
                     const on = method === m;
                     return (
-                      <button key={m} type="button" onClick={() => { setMethod(m); setTender(null); }} aria-pressed={on} disabled={off} className="press" style={{ minHeight: 48, padding: '0 2px', border: `1px solid ${on ? '#10161E' : 'rgba(16,24,34,.16)'}`, borderRadius: 12, background: on ? '#10161E' : '#FFFFFF', color: on ? '#FFFFFF' : '#10161E', font: '500 14px Geist, system-ui, sans-serif', cursor: 'pointer', opacity: off ? 0.45 : 1 }}>
+                      <button key={m} type="button" onClick={() => { setMethod(m); setTender(null); }} aria-pressed={on} disabled={off} className="press" style={{ minHeight: 48, padding: '0 2px', border: `1px solid ${on ? '#10161E' : 'rgba(16,24,34,.16)'}`, borderRadius: 12, background: on ? '#10161E' : '#FFFFFF', color: on ? '#FFFFFF' : '#10161E', font: '500 14px var(--sans)', cursor: 'pointer', opacity: off ? 0.45 : 1 }}>
                         {m}
                       </button>
                     );
@@ -456,7 +458,7 @@ export default function Counter() {
                       {[0n, ...([100000n, 500000n, 1000000n].map((r) => payable + (r - (payable % r)) % r))]
                         .filter((v, i, arr) => arr.findIndex((x) => x === v) === i)
                         .map((v) => (
-                          <button key={String(v)} type="button" onClick={() => setTender(v)} aria-pressed={tender === v} className="press" style={{ flex: '1 1 70px', minHeight: 44, border: `1px solid ${tender === v ? '#10161E' : 'rgba(16,24,34,.16)'}`, borderRadius: 11, background: tender === v ? '#10161E' : '#FFFFFF', color: tender === v ? '#FFFFFF' : '#10161E', font: '500 13.5px Geist, system-ui, sans-serif', cursor: 'pointer' }}>
+                          <button key={String(v)} type="button" onClick={() => setTender(v)} aria-pressed={tender === v} className="press" style={{ flex: '1 1 70px', minHeight: 44, border: `1px solid ${tender === v ? '#10161E' : 'rgba(16,24,34,.16)'}`, borderRadius: 11, background: tender === v ? '#10161E' : '#FFFFFF', color: tender === v ? '#FFFFFF' : '#10161E', font: '500 13.5px var(--sans)', cursor: 'pointer' }}>
                             {v === 0n ? 'Exact' : formatNaira(v)}
                           </button>
                         ))}
@@ -474,8 +476,8 @@ export default function Counter() {
                   <div className="rise" style={{ marginTop: 10, padding: '10px 12px', background: '#F4F6F8', borderRadius: 12 }}>
                     <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.4, color: '#434E5A' }}>Your till is not open. Open it with the float you received.</p>
                     <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                      <input inputMode="decimal" value={floatText} onChange={(e) => setFloatText(e.target.value)} aria-label="Float" className="tabular" style={{ flex: 1, height: 44, boxSizing: 'border-box', padding: '0 12px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 11, background: '#FFFFFF', color: '#10161E', font: '500 15px Geist, system-ui, sans-serif' }} />
-                      <button type="button" className="press" onClick={() => void openTill()} style={{ minHeight: 44, padding: '0 16px', border: 0, borderRadius: 11, background: '#10161E', color: '#FFFFFF', font: '500 14px Geist, system-ui, sans-serif', cursor: 'pointer' }}>
+                      <input inputMode="decimal" value={floatText} onChange={(e) => setFloatText(e.target.value)} aria-label="Float" className="tabular" style={{ flex: 1, height: 44, boxSizing: 'border-box', padding: '0 12px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 11, background: '#FFFFFF', color: '#10161E', font: '500 15px var(--sans)' }} />
+                      <button type="button" className="press" onClick={() => void openTill()} style={{ minHeight: 44, padding: '0 16px', border: 0, borderRadius: 11, background: '#10161E', color: '#FFFFFF', font: '500 14px var(--sans)', cursor: 'pointer' }}>
                         Open till
                       </button>
                     </div>
@@ -483,7 +485,7 @@ export default function Counter() {
                 ) : null}
 
                 <p aria-live="polite" style={{ minHeight: 18, margin: '8px 0 0', fontSize: 13.5, color: '#92400E' }}>{error ?? blockerText()}</p>
-                <button type="button" onClick={() => void complete()} disabled={blocked} className="press" style={{ width: '100%', minHeight: 56, marginTop: 4, border: 0, borderRadius: 15, background: blocked ? '#8E99A4' : '#1B5CF0', color: '#FFFFFF', font: '600 17px Geist, system-ui, sans-serif', cursor: 'pointer' }}>
+                <button type="button" onClick={() => void complete()} disabled={blocked} className="press" style={{ width: '100%', minHeight: 56, marginTop: 4, border: 0, borderRadius: 15, background: blocked ? '#8E99A4' : '#1B5CF0', color: '#FFFFFF', font: '600 17px var(--sans)', cursor: 'pointer' }}>
                   {busy ? 'Recording…' : method === 'Transfer' ? 'Send to finance, hold goods' : 'Complete sale'}
                 </button>
               </>
@@ -495,7 +497,7 @@ export default function Counter() {
                 </div>
                 <div style={{ marginTop: 4, fontSize: 14, color: '#434E5A' }}>{doneNote}</div>
                 {done.invoice ? (
-                  <div style={{ marginTop: 12, padding: 14, background: '#FFFFFF', borderRadius: 12, font: '400 13px/1.55 "Geist Mono", monospace' }}>
+                  <div style={{ marginTop: 12, padding: 14, background: '#FFFFFF', borderRadius: 12, font: '400 13px/1.55 var(--mono)' }}>
                     <div style={{ fontWeight: 500 }}>POWER STORE</div>
                     <div>Receipt {done.invoice}</div>
                     <div style={{ margin: '6px 0', borderTop: '1px dashed #C6CED6' }} />
@@ -512,7 +514,7 @@ export default function Counter() {
                     </div>
                   </div>
                 ) : null}
-                <button type="button" onClick={() => { setDone(null); setLines([]); setPhone(''); setDiscount('0'); setError(null); focusScan(); }} className="press" style={{ width: '100%', minHeight: 56, marginTop: 8, border: 0, borderRadius: 15, background: '#1B5CF0', color: '#FFFFFF', font: '600 17px Geist, system-ui, sans-serif', cursor: 'pointer' }}>
+                <button type="button" onClick={() => { setDone(null); setLines([]); setPhone(''); setDiscount('0'); setError(null); focusScan(); }} className="press" style={{ width: '100%', minHeight: 56, marginTop: 8, border: 0, borderRadius: 15, background: '#1B5CF0', color: '#FFFFFF', font: '600 17px var(--sans)', cursor: 'pointer' }}>
                   New sale
                 </button>
               </div>
@@ -531,7 +533,7 @@ export default function Counter() {
                 <span className="tabular" style={{ flex: '0 0 70px', fontSize: 15.5, fontWeight: 550 }}>₦{n.toLocaleString('en-NG')}</span>
                 <div role="group" aria-label={`Number of ₦${n} notes`} style={{ display: 'flex', alignItems: 'center', background: '#F1F3F5', borderRadius: 12 }}>
                   <button type="button" aria-label={`One fewer ₦${n} note`} disabled={tillClosed} className="press" style={stepStyle} onClick={() => setTillCounts((c) => ({ ...c, [n]: String(Math.max(0, Number(c[n]?.replace(/\D/g, '') || 0) - 1)) }))}>−</button>
-                  <input inputMode="numeric" aria-label={`Number of ₦${n} notes`} disabled={tillClosed} value={tillCounts[n] ?? ''} onChange={(e) => setTillCounts((c) => ({ ...c, [n]: e.target.value.replace(/\D/g, '').slice(0, 5) }))} className="tabular" style={{ width: 58, height: 44, boxSizing: 'border-box', padding: 0, border: 0, background: 'transparent', color: '#10161E', textAlign: 'center', font: '600 15.5px Geist, system-ui, sans-serif' }} />
+                  <input inputMode="numeric" aria-label={`Number of ₦${n} notes`} disabled={tillClosed} value={tillCounts[n] ?? ''} onChange={(e) => setTillCounts((c) => ({ ...c, [n]: e.target.value.replace(/\D/g, '').slice(0, 5) }))} className="tabular" style={{ width: 58, height: 44, boxSizing: 'border-box', padding: 0, border: 0, background: 'transparent', color: '#10161E', textAlign: 'center', font: '600 15.5px var(--sans)' }} />
                   <button type="button" aria-label={`One more ₦${n} note`} disabled={tillClosed} className="press" style={stepStyle} onClick={() => setTillCounts((c) => ({ ...c, [n]: String(Number(c[n]?.replace(/\D/g, '') || 0) + 1) }))}>+</button>
                 </div>
                 <span className="tabular" style={{ flex: '0 0 100px', textAlign: 'right', fontSize: 15.5 }}>{formatNaira(noteKobo(n, tillCounts[n]))}</span>
@@ -543,7 +545,7 @@ export default function Counter() {
             </div>
           </section>
           {!tillClosed ? (
-            <button type="button" onClick={() => void submitTill()} disabled={busy || countedKobo(tillCounts) === 0n} className="press" style={{ width: '100%', minHeight: 54, marginTop: 12, border: 0, borderRadius: 15, background: busy || countedKobo(tillCounts) === 0n ? '#8E99A4' : '#1B5CF0', color: '#FFFFFF', font: '600 16px Geist, system-ui, sans-serif', cursor: 'pointer' }}>
+            <button type="button" onClick={() => void submitTill()} disabled={busy || countedKobo(tillCounts) === 0n} className="press" style={{ width: '100%', minHeight: 54, marginTop: 12, border: 0, borderRadius: 15, background: busy || countedKobo(tillCounts) === 0n ? '#8E99A4' : '#1B5CF0', color: '#FFFFFF', font: '600 16px var(--sans)', cursor: 'pointer' }}>
               This is my count
             </button>
           ) : (
@@ -558,4 +560,4 @@ export default function Counter() {
   );
 }
 
-const stepStyle: React.CSSProperties = { width: 44, height: 44, border: 0, borderRadius: 12, background: 'transparent', color: '#10161E', font: '400 21px Geist, system-ui, sans-serif', cursor: 'pointer' };
+const stepStyle: React.CSSProperties = { width: 44, height: 44, border: 0, borderRadius: 12, background: 'transparent', color: '#10161E', font: '400 21px var(--sans)', cursor: 'pointer' };

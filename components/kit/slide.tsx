@@ -102,7 +102,7 @@ export function SlideToConfirm({ text = 'Slide to confirm ₦1,500,000', onConfi
             setDone(false);
             setX(0);
           }}
-          style={{ alignSelf: 'flex-start', minHeight: 44, padding: '0 2px', border: 0, background: 'transparent', color: '#1747C7', font: '500 14px Geist, system-ui, sans-serif', cursor: 'pointer' }}
+          style={{ alignSelf: 'flex-start', minHeight: 44, padding: '0 2px', border: 0, background: 'transparent', color: '#1747C7', font: '500 14px var(--sans)', cursor: 'pointer' }}
         >
           Undo within 10 seconds
         </button>

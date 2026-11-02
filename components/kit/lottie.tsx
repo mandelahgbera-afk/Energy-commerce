@@ -61,7 +61,7 @@ export function LottieMoment({ name, label, loop = false }: { name: keyof typeof
         borderRadius: 16,
         background: '#F7F8FA',
         color: '#10161E',
-        font: '500 13.5px Geist, system-ui, sans-serif',
+        font: '500 13.5px var(--sans)',
         cursor: 'pointer',
       }}
     >
