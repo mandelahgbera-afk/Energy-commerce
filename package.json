@@ -10,6 +10,8 @@
     "db:apply": "node scripts/db-apply.mjs",
     "db:owner": "node scripts/db-owner.mjs",
     "db:demo": "node scripts/db-demo.mjs",
+    "db:staff": "node scripts/db-staff.mjs",
+    "db:reset": "node scripts/db-reset.mjs",
     "check:staging": "node scripts/check-staging.mjs"
   },
   "dependencies": {
