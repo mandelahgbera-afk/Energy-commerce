@@ -9,7 +9,8 @@
     "check:errors": "node scripts/check-errors.mjs",
     "db:apply": "node scripts/db-apply.mjs",
     "db:owner": "node scripts/db-owner.mjs",
-    "db:demo": "node scripts/db-demo.mjs"
+    "db:demo": "node scripts/db-demo.mjs",
+    "check:staging": "node scripts/check-staging.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",

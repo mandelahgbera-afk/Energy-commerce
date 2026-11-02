@@ -48,7 +48,13 @@ try {
   for (const p of catalogue) {
     const id = await rpc('save_product', { p_sku: p.sku, p_name: p.name, p_price: p.price, p_trade: p.trade, p_tracking: p.tracking ?? 'count', p_unit: p.unit ?? 'each' });
     await rpc('set_last_cost', { p_product: id, p_cost: p.cost });
-    if (p.part) await rpc('save_part_details', { p_product: id, p_part_number: p.part, p_bore: p.size?.[0], p_outside: p.size?.[1], p_width: p.size?.[2] });
+    if (p.part) {
+      await rpc('save_part_details', {
+        p_product: id,
+        p_part_number: p.part,
+        ...(p.size ? { p_bore: p.size[0], p_outside: p.size[1], p_width: p.size[2] } : {}),
+      });
+    }
     await rpc('receive_goods', { p_key: key('rcv'), p_supplier: sup, p_location: p.unit === 'metre' ? back : shop, p_lines: [{ product_id: id, qty: p.qty, ...(p.serials ? { serials: p.serials } : {}) }] });
   }
   console.log(`demo catalogue ready: ${catalogue.length} products in ${shop ? 'Ikeja shop' : 'the shop'} and the warehouse.`);
