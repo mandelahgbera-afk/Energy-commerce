@@ -67,7 +67,7 @@ try {
 
   // Test logins, made fresh for this run and never written down.
   const people = {};
-  for (const who of ['owner', 'counter', 'accountant']) {
+  for (const who of ['owner', 'counter', 'accountant', 'storekeeper']) {
     const password = `e2e-${crypto.randomBytes(9).toString('base64url')}`;
     const email = `${who}@e2e.local`;
     const r = await fetch(`http://127.0.0.1:${ports.gateway}/auth/v1/admin/users`, {
@@ -82,6 +82,7 @@ try {
   const counter = as(people.counter.id);
   await owner('save_staff', { p_user: people.counter.id, p_name: 'Ada', p_role: 'counter', p_discount_limit: 5 });
   await owner('save_staff', { p_user: people.accountant.id, p_name: 'Fatima', p_role: 'accountant' });
+  await owner('save_staff', { p_user: people.storekeeper.id, p_name: 'Bola', p_role: 'storekeeper' });
   const shop = await owner('save_location', { p_name: 'Ikeja shop' });
   const sup = await owner('save_supplier', { p_name: 'Lagos Batteries' });
   let n = 0;
@@ -102,6 +103,12 @@ try {
   const waitingOrder = await counter('create_order', { p_key: key('ord'), p_location: shop, p_lines: [{ product_id: panel, qty: 1 }] });
   const waitingPay = await counter('take_payment', { p_key: key('pay'), p_order: waitingOrder, p_method: 'transfer', p_amount: 18500000, p_reference: 'GTB-2211' });
   await counter('open_till', { p_float: 0 });
+  // A phone order for a battery, paid by a card tap still waiting for the bank: ready to pack.
+  // Two units on the shelf, one made months earlier, so packing must offer the older one first.
+  const battery = await product({ sku: 'CB-24F', name: 'Car battery, size 24F', price: 7800000, trade: 7100000, cost: 5600000, qty: 1, tracking: 'serial', serials: ['CB-NEW-1'] });
+  await owner('receive_goods', { p_key: key('rcv'), p_supplier: sup, p_location: shop, p_lines: [{ product_id: battery, qty: 1, serials: ['CB-OLD-1'], made_on: '2026-05-01' }] });
+  const phoneOrder = await counter('create_order', { p_key: key('ord'), p_location: shop, p_lines: [{ product_id: battery, qty: 1 }], p_phone: '08039990001', p_channel: 'phone' });
+  await counter('take_payment', { p_key: key('pay'), p_order: phoneOrder, p_method: 'pos', p_amount: 7800000 });
 
   // The app, pointed at this stack. Settings passed here win over .env.local, which is left alone.
   next = spawn(process.execPath, [path.join(root, 'node_modules', 'next', 'dist', 'bin', 'next'), 'dev', '-p', String(appPort)], {
@@ -217,6 +224,62 @@ try {
     return '375 px';
   });
 
+  const store = await session('storekeeper');
+  const s = store.page;
+
+  await step('a delivery is received into the books, with no cost or shelf figure shown', async () => {
+    const before = N(await val('select qty from stock_balances where product_id = $1', [bearing]));
+    await s.goto(`${app}/stock`);
+    await s.fill('#part', '6205 2rs');
+    await s.press('#part', 'Enter');
+    await s.getByRole('textbox', { name: 'Quantity received of 6205-2RS bearing' }).fill('10');
+    await s.getByRole('button', { name: 'Finish, with 10 items' }).click();
+    await s.getByText('Recorded.').waitFor({ timeout: 20000 });
+    eq(N(await val('select qty from stock_balances where product_id = $1', [bearing])), before + 10, 'bearings on the shelf:');
+    const books = await val('select i_books_check()');
+    expect(books.ok, `books: ${books.problems?.join('; ')}`);
+    return `${before} to ${before + 10} bearings, books agree`;
+  });
+
+  await step('packing offers the oldest battery first, then hands over a card-paid order', async () => {
+    await s.getByRole('button', { name: 'Pack', exact: true }).click();
+    await s.getByRole('button', { name: /Phone order/ }).click();
+    await s.fill('#ps', 'CB-NEW-1');
+    await s.press('#ps', 'Enter');
+    await s.getByText('Take CB-OLD-1 first').waitFor({ timeout: 10000 });
+    await s.fill('#ps', 'cb-old-1');
+    await s.press('#ps', 'Enter');
+    await s.getByText('Ready to hand over').waitFor({ timeout: 10000 });
+    await s.getByRole('button', { name: 'Hand over' }).click();
+    await s.getByText('packed and handed over').waitFor({ timeout: 20000 });
+    eq((await sql`select goods_status from orders where id = ${phoneOrder}`)[0].goods_status, 'delivered', 'order:');
+    eq((await sql`select status from serial_units where serial = 'CB-OLD-1'`)[0].status, 'sold', 'the older unit left:');
+    eq((await sql`select status from serial_units where serial = 'CB-NEW-1'`)[0].status, 'in_stock', 'the newer unit stayed:');
+    return 'CB-OLD-1 out, CB-NEW-1 still on the shelf';
+  });
+
+  await step('a shelf count is typed blind and waits for the owner', async () => {
+    await s.getByRole('button', { name: 'Count', exact: true }).click();
+    await s.getByText('Never counted').first().waitFor({ timeout: 20000 });
+    for (const input of await s.getByRole('textbox', { name: /^Count of / }).all()) await input.fill('1');
+    await s.getByRole('button', { name: 'Finish the count' }).click();
+    await s.getByText('Sent to the owner.').waitFor({ timeout: 20000 });
+    eq(N(await val(`select count(*) from stock_counts where status = 'submitted'`)), 1, 'counts waiting:');
+    expect(!(await s.getByText(/expected/i).count()) || (await s.getByText('Nobody is shown what the books expect').count()) === 1, 'no expected figure on screen');
+    await s.screenshot({ path: path.join(shots, 'stock-desktop.png'), fullPage: true });
+    return 'submitted, stock unchanged until approved';
+  });
+
+  await step('the stock room fits a phone with no sideways scroll', async () => {
+    const phone = await session('storekeeper', { width: 375, height: 812 });
+    await phone.page.goto(`${app}/stock`);
+    await phone.page.getByText('Receive a delivery').waitFor({ timeout: 20000 });
+    await phone.page.screenshot({ path: path.join(shots, 'stock-phone.png'), fullPage: true });
+    expect(await noSideScroll(phone.page), 'the stock room scrolls sideways at 375px');
+    await phone.context.close();
+    return '375 px';
+  });
+
   const boss = await session('owner');
   const o = boss.page;
 
@@ -233,7 +296,7 @@ try {
 
   await step('the owner confirms the transfer, and only then is it money', async () => {
     eq((await sql`select status from payments where id = ${waitingPay}`)[0].status, 'pending', 'before:');
-    await o.getByRole('button', { name: 'It is in the bank' }).click();
+    await o.locator('article', { hasText: '₦185,000.00' }).getByRole('button', { name: 'It is in the bank' }).click();
     await o.getByText(/Confirmed\./).waitFor({ timeout: 20000 });
     eq((await sql`select status from payments where id = ${waitingPay}`)[0].status, 'confirmed', 'after:');
     const books = await val('select i_books_check()');

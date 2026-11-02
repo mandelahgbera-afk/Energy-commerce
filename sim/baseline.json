@@ -13,6 +13,7 @@
     "supabase/migrations/20261102000500_preview.sql": "f88711070c98a9c343e527335b471843331a05822c1345a606d3741c2fb21a2e",
     "supabase/migrations/20261102000600_review_fixes.sql": "e595889b6e2142db8b53cd141e95bc4840b00415c142fc8825402a482488e5e8",
     "supabase/migrations/20261102000700_owner_today.sql": "35da2c386be874ac8335a7597e68bea88da5fe017078a7699eff7aa8768a0789",
+    "supabase/migrations/20261102000800_stock_room.sql": "e419295f22495d105b7d7e55102dd6c99e9b0c8b09294c7d9b10767dc42b4c7d",
     "sim/stubs.sql": "9d5665be283d59691c8f76e1c07354f35e4104c2efeafafead17f7fc537fe0af"
   },
   "edge": [
@@ -140,6 +141,7 @@
     "owner money and safe counts stay out of the accountant's hands",
     "keys the system makes for itself cannot be taken first by a screen",
     "the owner's today screen adds up from the records",
+    "the stock room packs only what is paid for, oldest unit first, and counts blind",
     "a month closes only when tills, counts, transfers and the bank all agree, and then it stays shut",
     "a return after a month closed lands in the open month"
   ],

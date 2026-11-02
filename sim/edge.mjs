@@ -1129,9 +1129,9 @@ await test('only the functions on this list can be run from outside', async () =
   eq((await runnable('anon')).join(), 'availability,check_serial,has_staff_role,is_staff,receipt_by_token,shop_today');
   eq((await runnable('service_role')).join(), 'expire_holds,i_books_check,shop_today');
   eq((await runnable('authenticated')).join(), [
-    'accept_quote', 'add_bank_line', 'approve_safe_count', 'approve_stock_count', 'availability', 'books_check', 'cancel_order', 'cancel_quote', 'cash_position', 'check_serial', 'close_month', 'close_till', 'confirm_payment',
+    'accept_quote', 'add_bank_line', 'approve_safe_count', 'approve_stock_count', 'availability', 'books_check', 'cancel_order', 'cancel_quote', 'cash_position', 'check_serial', 'close_month', 'close_till', 'confirm_payment', 'count_list',
     'counter_sale', 'create_order', 'create_quote', 'customer_balance', 'debtors', 'decide_approval', 'deliver_order', 'has_staff_role', 'is_staff', 'month_report', 'move_money',
-    'my_till', 'oldest_serials', 'open_till', 'owner_exceptions', 'owner_money_in', 'owner_money_out', 'owner_today', 'pay_supplier', 'post_opening_balance', 'post_opening_debt', 'preview_sale', 'receipt_by_token', 'receive_goods',
+    'my_till', 'oldest_serials', 'open_till', 'owner_exceptions', 'owner_money_in', 'owner_money_out', 'owner_today', 'pack_list', 'pay_supplier', 'post_opening_balance', 'post_opening_debt', 'preview_sale', 'receipt_by_token', 'receive_goods',
     'record_expense', 'refund_order', 'reject_payment', 'reject_safe_count', 'reject_stock_count', 'reserve_order', 'return_goods', 'reverse_payment', 'reverse_txn', 'revise_quote', 'save_customer', 'save_location', 'save_part_details', 'save_product',
     'save_staff', 'save_supplier', 'search_parts', 'set_customer_terms', 'set_last_cost', 'shop_today', 'submit_safe_count', 'submit_stock_count', 'take_payment', 'till_paid_out', 'transfer_stock', 'void_opening_debt',
   ].join());
@@ -1184,6 +1184,8 @@ await test('each role is refused what is not its job', async () => {
     ['books_check', {}, everyoneBut(ACCOUNT)],
     ['owner_exceptions', {}, everyoneBut(ACCOUNT)],
     ['owner_today', {}, everyoneBut(ACCOUNT)],
+    ['pack_list', {}, everyoneBut(STORE, DISPATCH, COUNTER, COUNTER2)],
+    ['count_list', { p_location: dummy }, everyoneBut(STORE)],
     ['debtors', {}, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
     ['customer_balance', { p_customer: dummy }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
     ['preview_sale', { p_lines: [] }, everyoneBut(COUNTER, COUNTER2)],
@@ -1913,6 +1915,44 @@ await test('the owner\'s today screen adds up from the records', async () => {
   eq((await today(90)).series.length, 90, 'a quarter:');
   await fails(today(14), 'bad_period');
   for (const who of [COUNTER, STORE, DISPATCH, DRIVER]) await fails(rpc(who, 'owner_today', {}), 'not_allowed');
+});
+
+// ---- The stock room (Claude, 2 Nov 2026) ----
+
+await test('the stock room packs only what is paid for, oldest unit first, and counts blind', async () => {
+  const battery = await product({ qty: 0, tracking: 'serial', price: 8000000, cost: 5000000 });
+  await rpc(STORE, 'receive_goods', { p_key: k('rcv'), p_supplier: sup, p_location: shop, p_lines: [line(battery, 1, { serials: ['PK-NEW-1'], made_on: ago(1, 1) })] });
+  await rpc(STORE, 'receive_goods', { p_key: k('rcv'), p_supplier: sup, p_location: shop, p_lines: [line(battery, 1, { serials: ['PK-OLD-1'], made_on: ago(6, 1) })] });
+  const belt = await product({ unit: 'metre', qty: 20, price: 3000, cost: 1500 });
+  const tapped = await rpc(COUNTER, 'create_order', { p_key: k('ord'), p_location: shop, p_lines: [line(battery, 1), line(belt, 2.5)], p_phone: '08030000501', p_channel: 'phone' });
+  await pay(tapped, N((await orderRow(tapped)).total_kobo), 'pos');
+  const deposit = await order(belt, { qty: 1 });
+  await pay(deposit, 1000, 'transfer');
+
+  const list = await rpc(STORE, 'pack_list');
+  const mine = list.ready.find((o) => o.order_id === tapped);
+  expect(mine, 'an order paid by a card tap waiting for the bank should be ready, as it is at delivery');
+  expect(!list.ready.some((o) => o.order_id === deposit), 'an order waiting on a transfer must not be packed');
+  expect(N(list.waiting_for_money) >= 1, 'orders waiting for money are counted');
+  eq(mine.lines.find((l) => l.product_id === battery.id).oldest[0], 'PK-OLD-1', 'oldest unit first:');
+  eq(Number(mine.lines.find((l) => l.product_id === belt.id).remaining), 2.5, 'metres to cut:');
+  expect(!/"[a-z_]*cost[a-z_]*"|2348030000501|08030000501/i.test(JSON.stringify(list)), "the pack list must carry no cost and no phone number");
+  await rpc(STORE, 'deliver_order', { p_key: k('go'), p_order: tapped, p_lines: [line(battery, 1, { serials: ['PK-OLD-1'] }), line(belt, 2.5)] });
+  expect(!(await rpc(STORE, 'pack_list')).ready.some((o) => o.order_id === tapped), 'a packed order leaves the list');
+  for (const who of [DISPATCH, COUNTER]) await rpc(who, 'pack_list');
+  for (const who of [DRIVER, STRANGER]) await fails(rpc(who, 'pack_list'), 'not_allowed');
+
+  const shelf2 = await rpc(OWNER, 'save_location', { p_name: k('Count shelf') });
+  const counted = await product({ qty: 5, at: shelf2 });
+  const never = await product({ qty: 7, at: shelf2 });
+  await product({ qty: 2, tracking: 'serial', at: shelf2 });
+  const c1 = await rpc(STORE, 'submit_stock_count', { p_key: k('cnt'), p_location: shelf2, p_lines: [{ product_id: counted.id, counted: 5 }] });
+  await rpc(OWNER, 'approve_stock_count', { p_count: c1 });
+  const cl = await rpc(STORE, 'count_list', { p_location: shelf2 });
+  eq(cl.map((x) => x.product_id).join(), [never.id, counted.id].join(), 'never-counted first, and no serial units:');
+  expect(!/"(qty|expected|on_hand|free|reserved)"/.test(JSON.stringify(cl)), 'a count list must carry no quantities');
+  await fails(rpc(STORE, 'count_list', { p_location: shelf2, p_limit: 0 }), 'bad_limit');
+  await fails(rpc(COUNTER, 'count_list', { p_location: shelf2 }), 'not_allowed');
 });
 
 // ---- Last, because it closes the month that every other scene posts into ----
