@@ -15,11 +15,11 @@ Read at the start of every session. Update at the end. Keep it short. Long histo
 - returns and credit notes, owner money and blind safe counts, card taps waiting for the bank, quotes, part search
 - the counter's price preview and the owner's day (`owner_today`)
 
-**Tests:** 126 rule scenes on PGlite and real Postgres, 19 race scenes, all recorded in `sim/baseline.json` with every migration locked (raised 2 Nov after an outside review). Outside reviews have now found 15 serious bugs in the first core and 3 in the 2 Nov work. All are fixed, with scenes.
+**Tests:** 127 rule scenes on PGlite and real Postgres, 19 race scenes, all recorded in `sim/baseline.json` with every migration locked (raised 2 Nov after an outside review). Outside reviews have now found 15 serious bugs in the first core and 3 in the 2 Nov work. All are fixed, with scenes.
 
-**Screens (Next.js):** `/counter` (sale and till), `/owner` (the owner's day), `/kit`, `/login`. `npm run e2e` drives `/counter` and `/owner` in Chrome against a throwaway local Supabase, with test logins, and checks each result in the books: 9 of 9 pass, at desktop and phone width. Not yet seen by the owner with their own login on staging.
+**Screens (Next.js):** `/counter` (sale and till), `/owner` (the owner's day), `/stock` (receive, pack, count), `/kit`, `/login`. `npm run e2e` drives `/counter`, `/owner` and `/stock` in Chrome against a throwaway local Supabase, with test logins, and checks each result in the books: 13 of 13 pass, at desktop and phone width. Not yet seen by the owner with their own login on staging.
 
-**Staging:** the owner's free Supabase project has all 13 migrations, recorded in `ops.applied_migrations`. Apply new ones with `npm run db:apply` (a dry run), then `--yes`. Nothing is deployed for customers. The shop visit (plan Phase 0) hasn't happened and is still required before go-live.
+**Staging:** the owner's free Supabase project has all 14 migrations, recorded in `ops.applied_migrations`. Apply new ones with `npm run db:apply` (a dry run), then `--yes`. Nothing is deployed for customers. The shop visit (plan Phase 0) hasn't happened and is still required before go-live.
 
 ## Next items, in order: one per session
 
@@ -45,7 +45,12 @@ Database first, because these need no accounts and the core can't handle a retur
   - no sideways scroll at 375px, and the owner screen refused to a counter
 
   Proof: 9 of 9, five runs in a row after the fixes. It found a real race on its second run: an older price or search answer landing late could replace a newer one, and a scanner's Enter could add the wrong part. Both are fixed. All 13 migrations also apply cleanly on Supabase's real Postgres image.
-- [ ] **Stock room.** Receive, pack with oldest-first picks, blind count.
+- [x] **Stock room.** `/stock` has three tabs, each shown only to the roles allowed it:
+  - **Receive:** from a supplier into a shelf, by part search or scan. Serial numbers are scanned and duplicates refused, and a made-on date can be recorded.
+  - **Pack:** works from `pack_list()`, which holds only orders whose money is in, by the delivery's own rule (card taps waiting for the bank count, transfers don't). It shows the oldest units first and warns before a newer one leaves. Then hand over.
+  - **Count:** works from `count_list()`, never-counted shelves first. The storekeeper types the count blind, and it goes to the owner.
+
+  Neither list shows quantities, costs or phone numbers. Proof: 127 rule scenes on both databases, 19 races, and `npm run e2e` 13 of 13 (receive 10 bearings, pack a card-paid phone order taking the older battery, a blind count, 375px). Changed from the prototype on purpose: after a count the storekeeper sees "Sent to the owner", not the differences or their naira value, because storekeepers see no shelf figures or costs. Open: receiving against supplier orders waits for plan 5.1, the battery charge check needs its own tracking, and hand-over means delivered until dispatch and trips exist.
 - [ ] **Books.** Month report, ledger, bank matching, month close, with the graphs from plan section 15.
 - [ ] **Public catalogue with request a quote.** Plan step 1.8, without go-live.
 
@@ -61,6 +66,8 @@ After these, stop. Everything left needs the owner and a real shop.
 ## Log
 
 Newest first. One or two lines per item: what now works, the test result, anything left open.
+
+- 2 Nov 2026 (Claude): stock room at /stock, from pack_list() and count_list(). 127 rules, 19 races, e2e 13 of 13, staging has 14 migrations, baseline raised. Left open: supplier orders, the charge check, dispatch.
 
 - 2 Nov 2026 (Claude): end-to-end test stack, `npm run e2e`, 9 of 9. Fixed a late-answer race in the counter's price preview and search. Left open: the owner's own look at both screens on staging.
 
