@@ -339,6 +339,20 @@ await scene('ten card payments race one bank line: only what the line covers is 
   return '4 confirmed, 6 refused, 90 cash sales receipted';
 });
 
+await scene('two counters accept one quote at once: one order', async () => {
+  const p = await product({ qty: 5 });
+  const qid = await rpc(COUNTER, 'create_quote', { p_key: k('q'), p_location: shop, p_lines: [{ product_id: p.id, qty: 1 }] });
+  const { wins, errors } = await settle([
+    rpc(COUNTER, 'accept_quote', { p_quote: qid }),
+    rpc(COUNTER2, 'accept_quote', { p_quote: qid }),
+  ]);
+  onlyErrors(errors, []);
+  eq(new Set(wins).size, 1);
+  eq(N(await val(`select count(*) from orders where client_key = 'quote_accept:' || $1`, [qid])), 1);
+  eq(N(await val('select reserved from stock_balances where product_id = $1', [p.id])), 1);
+  return '1 order from 2 accept taps';
+});
+
 await scene('postings racing a month close: nothing lands in the month after it closes', async () => {
   const month = await val(`select (date_trunc('month', shop_today()) - interval '1 month')::date::text`);
   const inMonth = await val(`select ($1::date + 14)::text`, [month]);

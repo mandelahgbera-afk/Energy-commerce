@@ -1016,6 +1016,8 @@ await test('a write with no key is refused, because it could never be retried sa
   await fails(rpc(ACCOUNT, 'owner_money_in', { p_key: null, p_account: 'cash', p_amount: 5, p_what: 'x' }), 'key_required');
   await fails(rpc(ACCOUNT, 'owner_money_out', { p_key: ' ', p_account: 'cash', p_amount: 5, p_what: 'x' }), 'key_required');
   await fails(rpc(COUNTER, 'submit_safe_count', { p_key: null, p_counted: 0, p_counted_at: '2026-01-01T00:00:00Z' }), 'key_required');
+  await fails(rpc(COUNTER, 'create_quote', { p_key: null, p_location: shop, p_lines: [] }), 'key_required');
+  await fails(rpc(COUNTER, 'revise_quote', { p_key: ' ', p_quote: randomUUID(), p_lines: [] }), 'key_required');
 });
 
 await test('a retry gets its first answer even after the till has closed', async () => {
@@ -1127,10 +1129,10 @@ await test('only the functions on this list can be run from outside', async () =
   eq((await runnable('anon')).join(), 'availability,check_serial,has_staff_role,is_staff,receipt_by_token,shop_today');
   eq((await runnable('service_role')).join(), 'expire_holds,i_books_check,shop_today');
   eq((await runnable('authenticated')).join(), [
-    'add_bank_line', 'approve_safe_count', 'approve_stock_count', 'availability', 'books_check', 'cancel_order', 'cash_position', 'check_serial', 'close_month', 'close_till', 'confirm_payment',
-    'counter_sale', 'create_order', 'customer_balance', 'debtors', 'decide_approval', 'deliver_order', 'has_staff_role', 'is_staff', 'month_report', 'move_money',
+    'accept_quote', 'add_bank_line', 'approve_safe_count', 'approve_stock_count', 'availability', 'books_check', 'cancel_order', 'cancel_quote', 'cash_position', 'check_serial', 'close_month', 'close_till', 'confirm_payment',
+    'counter_sale', 'create_order', 'create_quote', 'customer_balance', 'debtors', 'decide_approval', 'deliver_order', 'has_staff_role', 'is_staff', 'month_report', 'move_money',
     'my_till', 'oldest_serials', 'open_till', 'owner_exceptions', 'owner_money_in', 'owner_money_out', 'pay_supplier', 'post_opening_balance', 'post_opening_debt', 'receipt_by_token', 'receive_goods',
-    'record_expense', 'refund_order', 'reject_payment', 'reject_safe_count', 'reject_stock_count', 'reserve_order', 'return_goods', 'reverse_payment', 'reverse_txn', 'save_customer', 'save_location', 'save_product',
+    'record_expense', 'refund_order', 'reject_payment', 'reject_safe_count', 'reject_stock_count', 'reserve_order', 'return_goods', 'reverse_payment', 'reverse_txn', 'revise_quote', 'save_customer', 'save_location', 'save_product',
     'save_staff', 'save_supplier', 'set_customer_terms', 'set_last_cost', 'shop_today', 'submit_safe_count', 'submit_stock_count', 'take_payment', 'till_paid_out', 'transfer_stock', 'void_opening_debt',
   ].join());
 });
@@ -1192,6 +1194,10 @@ await test('each role is refused what is not its job', async () => {
     ['approve_safe_count', { p_count: dummy }, everyoneBut()],
     ['reject_safe_count', { p_count: dummy, p_reason: 'x' }, everyoneBut()],
     ['cash_position', {}, everyoneBut(ACCOUNT)],
+    ['create_quote', { p_key: 'x', p_location: dummy, p_lines: [] }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
+    ['revise_quote', { p_key: 'x', p_quote: dummy, p_lines: [] }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
+    ['accept_quote', { p_quote: dummy }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
+    ['cancel_quote', { p_quote: dummy, p_reason: 'x' }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
   ];
   for (const [fn, args, forbidden] of rules) {
     for (const who of forbidden) await fails(rpc(who, fn, args).catch((e) => { throw new Error(`${fn} as ${who}: ${e.message}`); }), 'not_allowed');
@@ -1584,6 +1590,96 @@ await test('a double card tap is refused, and a retry returns the one pending pa
   await rpc(COUNTER, 'take_payment', { p_key: k('pay'), p_order: o2, p_method: 'pos', p_amount: 600000 });
   await fails(rpc(COUNTER, 'take_payment', { p_key: k('pay'), p_order: o2, p_method: 'cash', p_amount: 600000 }), 'more_than_owed');
   same(await moved(() => rpc(COUNTER, 'take_payment', { p_key: k('pay'), p_order: o2, p_method: 'cash', p_amount: 400000 })), { cash: 400000, goods_owed: -400000 });
+});
+
+// ---- Quotes: a promise on paper ----
+
+await test('a quote keeps its price when the price moves, and acceptance obeys the discount rules', async () => {
+  const p = await product({ price: 10000000, cost: 6000000, qty: 2 });
+  const qid = await rpc(COUNTER, 'create_quote', { p_key: k('q'), p_location: shop, p_lines: [line(p)] });
+  const qrow = (await q('select * from quotes where id = $1', [qid]))[0];
+  eq(N(qrow.total_kobo), 10000000);
+  eq(await val('select valid_until::text from quotes where id = $1', [qid]), await val('select (shop_today() + 7)::text'), 'the quote is good for a week:');
+  await rpc(OWNER, 'save_product', { p_sku: p.sku, p_name: `Test ${p.sku}`, p_price: 15000000 }); // the price rises
+  const o = await rpc(COUNTER, 'accept_quote', { p_quote: qid });
+  const ord = await orderRow(o);
+  eq(N(ord.total_kobo), 10000000, 'the quoted price held:');
+  eq(ord.needs_approval, true, 'the drop against the new list price waits for the owner:');
+  // The other direction: the price falls, the quoted price still holds, and there is nothing to approve.
+  const p2 = await product({ price: 10000000, cost: 6000000, qty: 2 });
+  const q2 = await rpc(COUNTER, 'create_quote', { p_key: k('q'), p_location: shop, p_lines: [line(p2)] });
+  await rpc(OWNER, 'save_product', { p_sku: p2.sku, p_name: `Test ${p2.sku}`, p_price: 8000000 });
+  const o2 = await rpc(COUNTER, 'accept_quote', { p_quote: q2 });
+  const ord2 = await orderRow(o2);
+  eq(N(ord2.total_kobo), 10000000);
+  eq(ord2.needs_approval, false);
+});
+
+await test('a quote expires, versions supersede, and a cancelled quote stays dead', async () => {
+  const p = await product({ qty: 3 });
+  const v1 = await rpc(COUNTER, 'create_quote', { p_key: k('q'), p_location: shop, p_lines: [line(p)] });
+  const v2 = await rpc(COUNTER, 'revise_quote', { p_key: k('q'), p_quote: v1, p_lines: [line(p, 2)] });
+  const r2 = (await q('select * from quotes where id = $1', [v2]))[0];
+  eq(N(r2.version), 2);
+  eq(r2.root_id, v1);
+  await fails(rpc(COUNTER, 'accept_quote', { p_quote: v1 }), 'quote_superseded');
+  const o = await rpc(COUNTER, 'accept_quote', { p_quote: v2 });
+  eq(await rpc(COUNTER, 'accept_quote', { p_quote: v2 }), o, 'a retry returns the first order:');
+  eq(N((await orderRow(o)).total_kobo), 20000000);
+  await fails(rpc(COUNTER, 'revise_quote', { p_key: k('q'), p_quote: v2, p_lines: [line(p)] }), 'quote_not_active');
+  // An expired quote cannot be accepted or revised; the customer asks afresh.
+  const e = await rpc(COUNTER, 'create_quote', { p_key: k('q'), p_location: shop, p_lines: [line(p)], p_valid_days: 3 });
+  await q('update quotes set valid_until = shop_today() - 1 where id = $1', [e]);
+  await fails(rpc(COUNTER, 'accept_quote', { p_quote: e }), 'quote_expired');
+  await fails(rpc(COUNTER, 'revise_quote', { p_key: k('q'), p_quote: e, p_lines: [line(p)] }), 'quote_expired');
+  // A cancelled quote is dead for good, and needs a reason.
+  const cq = await rpc(COUNTER, 'create_quote', { p_key: k('q'), p_location: shop, p_lines: [line(p)] });
+  await fails(rpc(COUNTER, 'cancel_quote', { p_quote: cq, p_reason: '  ' }), 'reason_required');
+  await rpc(COUNTER, 'cancel_quote', { p_quote: cq, p_reason: 'Customer walked' });
+  await fails(rpc(COUNTER, 'accept_quote', { p_quote: cq }), 'quote_not_active');
+  await fails(rpc(COUNTER, 'cancel_quote', { p_quote: cq, p_reason: 'Again' }), 'quote_not_active');
+});
+
+await test('a quote holds nothing, and accepting it needs the stock to be there', async () => {
+  const p = await product({ qty: 2 });
+  const qid = await rpc(COUNTER, 'create_quote', { p_key: k('q'), p_location: shop, p_lines: [line(p, 2)] });
+  same(await shelf(p), { qty: 2, reserved: 0 }, 'a quote holds nothing:');
+  same(await moved(() => rpc(COUNTER, 'accept_quote', { p_quote: qid })), {}, 'acceptance moves no money:');
+  same(await shelf(p), { qty: 2, reserved: 2 }, 'acceptance reserves like any order:');
+  const p2 = await product({ qty: 1 });
+  const q3 = await rpc(COUNTER, 'create_quote', { p_key: k('q'), p_location: shop, p_lines: [line(p2)] });
+  await sale(p2); // the only unit leaves before the customer comes back
+  await fails(rpc(COUNTER, 'accept_quote', { p_quote: q3 }), 'insufficient_stock');
+  // Retries and key rules, like every other write.
+  const key = k('q');
+  const a = await rpc(COUNTER, 'create_quote', { p_key: key, p_location: shop, p_lines: [line(p2)] });
+  eq(await rpc(COUNTER, 'create_quote', { p_key: key, p_location: shop, p_lines: [line(p2)] }), a, 'the retry returns the first quote:');
+  await fails(rpc(COUNTER, 'create_quote', { p_key: key, p_location: shop, p_lines: [line(p2, 2)] }), 'key_reused');
+  await fails(rpc(COUNTER, 'create_quote', { p_key: k('q'), p_location: shop, p_lines: [] }), 'empty_quote');
+  await fails(rpc(COUNTER, 'create_quote', { p_key: k('q'), p_location: shop, p_lines: [line(p2)], p_valid_days: 0 }), 'bad_valid_days');
+  await fails(rpc(COUNTER, 'create_quote', { p_key: k('q'), p_location: shop, p_lines: [line(p2)], p_valid_days: 91 }), 'bad_valid_days');
+});
+
+await test('quote totals match the order, VAT and trade price included', async () => {
+  const belt = await product({ unit: 'metre', qty: 10, price: 3333, cost: 2000, vat: 750 });
+  const vq = await rpc(COUNTER, 'create_quote', { p_key: k('q'), p_location: shop, p_lines: [line(belt, 2.5)] });
+  const qr = (await q('select * from quotes where id = $1', [vq]))[0];
+  eq(N(qr.total_kobo), 8333);
+  eq(N(qr.vat_kobo), 581);
+  const vo = await rpc(COUNTER, 'accept_quote', { p_quote: vq });
+  const vr = await orderRow(vo);
+  eq(N(vr.total_kobo), N(qr.total_kobo), 'the order totals equal the quote:');
+  eq(N(vr.vat_kobo), N(qr.vat_kobo));
+  eq(N(vr.list_total_kobo), N(qr.list_total_kobo));
+  // An installer's quote shows the trade price, and so does the order it becomes.
+  const phone = '08030000013';
+  await rpc(COUNTER, 'save_customer', { p_phone: phone });
+  await rpc(OWNER, 'set_customer_terms', { p_customer: await customerByPhone(phone), p_kind: 'installer', p_credit_limit: 0 });
+  const tp = await product({ price: 10000000, trade: 8500000, qty: 1 });
+  const tq = await rpc(COUNTER, 'create_quote', { p_key: k('q'), p_location: shop, p_lines: [line(tp)], p_customer: await customerByPhone(phone) });
+  eq(N((await q('select total_kobo from quotes where id = $1', [tq]))[0].total_kobo), 8500000);
+  const to = await rpc(COUNTER, 'accept_quote', { p_quote: tq });
+  eq(N((await orderRow(to)).total_kobo), 8500000);
 });
 
 // ---- Last, because it closes the month that every other scene posts into ----

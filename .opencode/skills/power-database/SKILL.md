@@ -116,7 +116,7 @@ Also:
 
 ## Not built yet
 
-Quotes and versions, delivery trips and waybills, supplier orders and landed cost, warranty claims, trade-ins, reminders and outbox, instalment plans, public online checkout and gateway webhook, exchange-rate repricing, serial numbers in stock counts, part search and substitutes, undelivered-remainder cancellation, one customer payment across orders without a bank line. See plan section 11 for the intended tables and section 10 for what not to copy from Nazia.
+Delivery trips and waybills, supplier orders and landed cost, warranty claims, trade-ins, reminders and outbox, instalment plans, public online checkout and gateway webhook, exchange-rate repricing, serial numbers in stock counts, part search and substitutes, undelivered-remainder cancellation, one customer payment across orders without a bank line. See plan section 11 for the intended tables and section 10 for what not to copy from Nazia.
 
 ## Known gaps, stated honestly
 
