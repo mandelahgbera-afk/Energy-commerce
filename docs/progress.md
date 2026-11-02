@@ -15,11 +15,11 @@ Read at the start of every session. Update at the end. Keep it short. Long histo
 - returns and credit notes, owner money and blind safe counts, card taps waiting for the bank, quotes, part search
 - the counter's price preview and the owner's day (`owner_today`)
 
-**Tests:** 127 rule scenes on PGlite and real Postgres, 19 race scenes, all recorded in `sim/baseline.json` with every migration locked (raised 2 Nov after an outside review). Outside reviews have now found 15 serious bugs in the first core and 3 in the 2 Nov work. All are fixed, with scenes.
+**Tests:** 128 rule scenes on PGlite and real Postgres, 19 race scenes, all recorded in `sim/baseline.json` with every migration locked (raised 2 Nov after an outside review). Outside reviews have now found 15 serious bugs in the first core and 3 in the 2 Nov work. All are fixed, with scenes.
 
-**Screens (Next.js):** `/counter` (sale and till), `/owner` (the owner's day), `/stock` (receive, pack, count), `/kit`, `/login`. `npm run e2e` drives `/counter`, `/owner` and `/stock` in Chrome against a throwaway local Supabase, with test logins, and checks each result in the books: 13 of 13 pass, at desktop and phone width. Not yet seen by the owner with their own login on staging.
+**Screens (Next.js):** `/counter` (sale and till), `/owner` (the owner's day), `/stock` (receive, pack, count), `/books` (month, entries, bank, close), `/kit`, `/login`. `npm run e2e` drives `/counter`, `/owner`, `/stock` and `/books` in Chrome against a throwaway local Supabase, with test logins, and checks each result in the books: 18 of 18 pass, at desktop and phone width. Not yet seen by the owner with their own login on staging.
 
-**Staging:** the owner's free Supabase project has all 14 migrations, recorded in `ops.applied_migrations`. Apply new ones with `npm run db:apply` (a dry run), then `--yes`. Nothing is deployed for customers. The shop visit (plan Phase 0) hasn't happened and is still required before go-live.
+**Staging:** the owner's free Supabase project has all 15 migrations, recorded in `ops.applied_migrations`. Apply new ones with `npm run db:apply` (a dry run), then `--yes`. Nothing is deployed for customers. The shop visit (plan Phase 0) hasn't happened and is still required before go-live.
 
 ## Next items, in order: one per session
 
@@ -51,7 +51,13 @@ Database first, because these need no accounts and the core can't handle a retur
   - **Count:** works from `count_list()`, never-counted shelves first. The storekeeper types the count blind, and it goes to the owner.
 
   Neither list shows quantities, costs or phone numbers. Proof: 127 rule scenes on both databases, 19 races, and `npm run e2e` 13 of 13 (receive 10 bearings, pack a card-paid phone order taking the older battery, a blind count, 375px). Changed from the prototype on purpose: after a count the storekeeper sees "Sent to the owner", not the differences or their naira value, because storekeepers see no shelf figures or costs. Open: receiving against supplier orders waits for plan 5.1, the battery charge check needs its own tracking, and hand-over means delivered until dispatch and trips exist.
-- [ ] **Books.** Month report, ledger, bank matching, month close, with the graphs from plan section 15.
+- [x] **Books.** `/books` has four tabs, for the owner and accountant:
+  - **Month:** profit or loss with a waterfall from sales to profit, money earned and spent, and what is owned and owed. A balance line, "own = owe + owner", is worked out by `books_month()`.
+  - **Entries:** plain words, with debits and credits only in the accountant view. Search, and reverse with a reason, never edit or delete.
+  - **Bank:** typed statement balance against the books. Statement lines are added, and `bank_matches()` suggests lines for waiting transfers and card taps.
+  - **Close:** `month_close_checks()` shows each check before anyone presses Close, from the same `i_close_checks()` the close itself now uses, so they can't disagree.
+
+  Proof: 128 rule scenes on both databases, 19 races, and `npm run e2e` 18 of 18 (balance line checked, rent reversed, deposit matched to its statement line, fake alert refused, early close refused, 375px). It caught a real flaw: a bigger statement line was offered as a one-tap match, so a fake alert could be matched against someone else's real money. Now only an exact line is a plain match, a bigger one is shown as "part of a bigger line" with a warning, and no exact line means a fake-alert flag. Open: importing statements as CSV (plan 5.3), and the accountant's export.
 - [ ] **Public catalogue with request a quote.** Plan step 1.8, without go-live.
 
 After these, stop. Everything left needs the owner and a real shop.
@@ -66,6 +72,8 @@ After these, stop. Everything left needs the owner and a real shop.
 ## Log
 
 Newest first. One or two lines per item: what now works, the test result, anything left open.
+
+- 2 Nov 2026 (Claude): Books at /books. 128 rules, 19 races, e2e 18 of 18, staging has 15 migrations, baseline raised. Fixed: bigger statement lines could be one-tap matched to fake alerts. Left open: statement import, export.
 
 - 2 Nov 2026 (Claude): stock room at /stock, from pack_list() and count_list(). 127 rules, 19 races, e2e 13 of 13, staging has 14 migrations, baseline raised. Left open: supplier orders, the charge check, dispatch.
 

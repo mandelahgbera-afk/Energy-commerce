@@ -48,8 +48,10 @@ async function step(name, fn) {
     results.push({ name, ok: true, ms: Date.now() - t0, detail });
   } catch (e) {
     results.push({ name, ok: false, why: String(e.message).split('\n')[0] });
+    for (const [i, pg] of openPages.entries()) await pg.screenshot({ path: path.join(shots, `fail-${results.length}-${i}.png`), fullPage: true }).catch(() => {});
   }
 }
+const openPages = [];
 const expect = (cond, msg) => { if (!cond) throw new Error(msg); };
 const eq = (a, b, msg) => { if (a !== b) throw new Error(`${msg} expected ${b}, got ${a}`); };
 
@@ -109,6 +111,14 @@ try {
   await owner('receive_goods', { p_key: key('rcv'), p_supplier: sup, p_location: shop, p_lines: [{ product_id: battery, qty: 1, serials: ['CB-OLD-1'], made_on: '2026-05-01' }] });
   const phoneOrder = await counter('create_order', { p_key: key('ord'), p_location: shop, p_lines: [{ product_id: battery, qty: 1 }], p_phone: '08039990001', p_channel: 'phone' });
   await counter('take_payment', { p_key: key('pay'), p_order: phoneOrder, p_method: 'pos', p_amount: 7800000 });
+  // For the books: rent paid from the bank, a deposit transfer to match, and a "transfer" with no money behind it.
+  const accountant = as(people.accountant.id);
+  await accountant('record_expense', { p_key: key('exp'), p_account: 'rent', p_amount: 15000000, p_paid_from: 'bank', p_what: 'Shop rent' });
+  const depositOrder = await counter('create_order', { p_key: key('ord'), p_location: shop, p_lines: [{ product_id: panel, qty: 1 }] });
+  const depositPay = await counter('take_payment', { p_key: key('pay'), p_order: depositOrder, p_method: 'transfer', p_amount: 5000000, p_reference: 'ZEN-77' });
+  const fakeOrder = await counter('create_order', { p_key: key('ord'), p_location: shop, p_lines: [{ product_id: panel, qty: 1 }] });
+  const fakePay = await counter('take_payment', { p_key: key('pay'), p_order: fakeOrder, p_method: 'transfer', p_amount: 1234500, p_reference: 'FAKE-9' });
+  await sql`update payments set created_at = now() - interval '5 hours' where id = ${fakePay}`;
 
   // The app, pointed at this stack. Settings passed here win over .env.local, which is left alone.
   next = spawn(process.execPath, [path.join(root, 'node_modules', 'next', 'dist', 'bin', 'next'), 'dev', '-p', String(appPort)], {
@@ -127,6 +137,7 @@ try {
   const session = async (who, viewport = { width: 1280, height: 900 }) => {
     const context = await browser.newContext({ viewport });
     const page = await context.newPage();
+    openPages.unshift(page);
     page.on('pageerror', (e) => problems.push(`${who}: ${e.message}`));
     page.on('console', (m) => { if (m.type() === 'error' && !m.text().startsWith('Failed to load resource')) problems.push(`${who} console: ${m.text().slice(0, 200)}`); });
     page.on('response', async (r) => {
@@ -310,6 +321,82 @@ try {
     await phone.page.getByText('Money in today').waitFor({ timeout: 30000 });
     await phone.page.screenshot({ path: path.join(shots, 'owner-phone.png'), fullPage: true });
     expect(await noSideScroll(phone.page), 'the owner screen scrolls sideways at 375px');
+    await phone.context.close();
+    return '375 px';
+  });
+
+  const acc = await session('accountant');
+  const a = acc.page;
+  const balanceLine = async () => {
+    const t = await a.getByText(/Own -?₦[\d,.]+ = owe/).innerText();
+    const m = t.match(/Own (-?₦[\d,.]+) = owe (-?₦[\d,.]+) \+ owner (-?₦[\d,.]+)/);
+    const n = (x) => Math.round(Number(x.replace(/[₦,]/g, '')) * 100);
+    return { text: t, ok: t.startsWith('The books balance.') && m && n(m[1]) === n(m[2]) + n(m[3]) };
+  };
+
+  await step('the books balance on screen: own equals owe plus owner', async () => {
+    await a.goto(`${app}/books`);
+    await a.getByText(/The books balance./).waitFor({ timeout: 30000 });
+    const b = await balanceLine();
+    expect(b.ok, b.text);
+    await a.getByText(/(Profit|Loss) after all costs/).waitFor();
+    await a.screenshot({ path: path.join(shots, 'books-month.png'), fullPage: true });
+    return b.text.replace('The books balance. ', '');
+  });
+
+  await step('a mistake is reversed with a reason, never edited, and the books still balance', async () => {
+    await a.getByRole('button', { name: 'Entries', exact: true }).click();
+    expect(!(await a.getByText(/debit/i).count()), 'no accounting words until asked');
+    await a.getByRole('switch', { name: 'Accountant view' }).click();
+    await a.getByText('Debit').first().waitFor();
+    await a.fill('#f', 'rent');
+    await a.getByRole('button', { name: 'Reverse' }).first().waitFor({ timeout: 10000 });
+    expect(!(await a.getByRole('button', { name: /delete|edit/i }).count()), 'there is no delete or edit');
+    await a.getByRole('button', { name: 'Reverse' }).first().click();
+    await a.getByText('Why are you reversing this?').waitFor();
+    await a.getByRole('button', { name: 'Wrong amount' }).click();
+    await a.getByText('Reversal of: Shop rent').waitFor({ timeout: 20000 });
+    eq(N(await val(`select count(*) from ledger_txns where reversal_of is not null and reason = 'Wrong amount'`)), 1, 'reversals:');
+    await a.getByText(/The books balance./).waitFor();
+    expect((await balanceLine()).ok, 'books balance after the reversal');
+    return 'reversed with "Wrong amount", books balance';
+  });
+
+  await step('a transfer is matched to its statement line, and a fake alert is caught', async () => {
+    await a.getByRole('button', { name: 'Bank', exact: true }).click();
+    await a.getByText('This may be a fake alert').waitFor({ timeout: 20000 });
+    await a.getByRole('textbox', { name: 'Amount on the statement' }).fill('50,000');
+    await a.getByRole('textbox', { name: 'Reference on the statement' }).fill('ZEN-77');
+    await a.getByRole('button', { name: 'Add line' }).click();
+    expect(!(await a.locator('article', { hasText: 'This may be a fake alert' }).getByRole('button', { name: /^Match to/ }).count()), 'a fake alert must never get a plain match');
+    await a.locator('article', { hasText: 'ZEN-77' }).getByRole('button', { name: /Match to ₦50,000.00/ }).click();
+    await a.getByText(/Matched. ₦50,000.00/).waitFor({ timeout: 20000 });
+    const p = (await sql`select status, bank_line_id from payments where id = ${depositPay}`)[0];
+    eq(p.status, 'confirmed', 'deposit:');
+    expect(p.bank_line_id, 'matched to a statement line');
+    await a.locator('article', { hasText: 'This may be a fake alert' }).getByRole('button', { name: 'Not in the bank' }).click();
+    await a.getByText('Marked as not received.').first().waitFor({ timeout: 20000 });
+    eq((await sql`select status from payments where id = ${fakePay}`)[0].status, 'rejected', 'fake alert:');
+    const books = await val('select i_books_check()');
+    expect(books.ok, `books: ${books.problems?.join('; ')}`);
+    return 'deposit matched, fake alert refused, books agree';
+  });
+
+  await step('a month cannot be closed before it is over, and the checks say why', async () => {
+    await o.goto(`${app}/books`);
+    await o.getByRole('button', { name: 'Close', exact: true }).click();
+    await o.getByText('The bank matches the statement').waitFor({ timeout: 20000 });
+    expect(await o.getByRole('button', { name: 'This month is not over yet' }).isDisabled(), 'close must be refused');
+    await o.screenshot({ path: path.join(shots, 'books-close.png'), fullPage: true });
+    return 'refused, checks listed';
+  });
+
+  await step('the books fit a phone with no sideways scroll', async () => {
+    const phone = await session('accountant', { width: 375, height: 812 });
+    await phone.page.goto(`${app}/books`);
+    await phone.page.getByText(/The books balance./).waitFor({ timeout: 30000 });
+    await phone.page.screenshot({ path: path.join(shots, 'books-phone.png'), fullPage: true });
+    expect(await noSideScroll(phone.page), 'the books scroll sideways at 375px');
     await phone.context.close();
     return '375 px';
   });

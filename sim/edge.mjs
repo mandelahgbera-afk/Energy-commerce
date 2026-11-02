@@ -1129,8 +1129,8 @@ await test('only the functions on this list can be run from outside', async () =
   eq((await runnable('anon')).join(), 'availability,check_serial,has_staff_role,is_staff,receipt_by_token,shop_today');
   eq((await runnable('service_role')).join(), 'expire_holds,i_books_check,shop_today');
   eq((await runnable('authenticated')).join(), [
-    'accept_quote', 'add_bank_line', 'approve_safe_count', 'approve_stock_count', 'availability', 'books_check', 'cancel_order', 'cancel_quote', 'cash_position', 'check_serial', 'close_month', 'close_till', 'confirm_payment', 'count_list',
-    'counter_sale', 'create_order', 'create_quote', 'customer_balance', 'debtors', 'decide_approval', 'deliver_order', 'has_staff_role', 'is_staff', 'month_report', 'move_money',
+    'accept_quote', 'add_bank_line', 'approve_safe_count', 'approve_stock_count', 'availability', 'bank_matches', 'books_check', 'books_month', 'cancel_order', 'cancel_quote', 'cash_position', 'check_serial', 'close_month', 'close_till', 'confirm_payment', 'count_list',
+    'counter_sale', 'create_order', 'create_quote', 'customer_balance', 'debtors', 'decide_approval', 'deliver_order', 'has_staff_role', 'is_staff', 'month_close_checks', 'month_report', 'move_money',
     'my_till', 'oldest_serials', 'open_till', 'owner_exceptions', 'owner_money_in', 'owner_money_out', 'owner_today', 'pack_list', 'pay_supplier', 'post_opening_balance', 'post_opening_debt', 'preview_sale', 'receipt_by_token', 'receive_goods',
     'record_expense', 'refund_order', 'reject_payment', 'reject_safe_count', 'reject_stock_count', 'reserve_order', 'return_goods', 'reverse_payment', 'reverse_txn', 'revise_quote', 'save_customer', 'save_location', 'save_part_details', 'save_product',
     'save_staff', 'save_supplier', 'search_parts', 'set_customer_terms', 'set_last_cost', 'shop_today', 'submit_safe_count', 'submit_stock_count', 'take_payment', 'till_paid_out', 'transfer_stock', 'void_opening_debt',
@@ -1184,6 +1184,9 @@ await test('each role is refused what is not its job', async () => {
     ['books_check', {}, everyoneBut(ACCOUNT)],
     ['owner_exceptions', {}, everyoneBut(ACCOUNT)],
     ['owner_today', {}, everyoneBut(ACCOUNT)],
+    ['books_month', { p_month: '2026-01-01' }, everyoneBut(ACCOUNT)],
+    ['month_close_checks', { p_month: '2026-01-01' }, everyoneBut(ACCOUNT)],
+    ['bank_matches', {}, everyoneBut(ACCOUNT)],
     ['pack_list', {}, everyoneBut(STORE, DISPATCH, COUNTER, COUNTER2)],
     ['count_list', { p_location: dummy }, everyoneBut(STORE)],
     ['debtors', {}, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
@@ -1953,6 +1956,49 @@ await test('the stock room packs only what is paid for, oldest unit first, and c
   expect(!/"(qty|expected|on_hand|free|reserved)"/.test(JSON.stringify(cl)), 'a count list must carry no quantities');
   await fails(rpc(STORE, 'count_list', { p_location: shelf2, p_limit: 0 }), 'bad_limit');
   await fails(rpc(COUNTER, 'count_list', { p_location: shelf2 }), 'not_allowed');
+});
+
+// ---- Books (Claude, 2 Nov 2026) ----
+
+await test('the books screen balances, matches the bank, and previews the close by its own rules', async () => {
+  const month = await val(`select date_trunc('month', shop_today())::date::text`);
+  const b = await rpc(ACCOUNT, 'books_month', { p_month: month });
+  eq(b.balanced, true, 'own = owe + owner:');
+  eq(N(b.own), N(b.owe) + N(b.owner), 'the sides:');
+  const net = N(await val(`select coalesce(sum(e.amount_kobo), 0) from ledger_entries e join ledger_txns t on t.id = e.txn_id
+    join ledger_accounts a on a.code = e.account_code where a.kind in ('income', 'expense') and date_trunc('month', t.occurred_on)::date = $1::date`, [month]));
+  eq(N(b.profit), -net, 'profit from the entries:');
+  expect(b.months.includes(month), 'this month is listed');
+
+  const p = await product({ qty: 3, price: 5000000 });
+  const o = await order(p);
+  const waiting = await pay(o, 5000000, 'transfer', { reference: 'BK-1' });
+  const fake = await pay(await order(p), 4321000, 'transfer', { reference: 'BK-2' });
+  const exact = await bankLine(5000000);
+  await bankLine(9000000);
+  const m = await rpc(ACCOUNT, 'bank_matches');
+  const w = m.waiting.find((x) => x.payment_id === waiting);
+  eq(w.candidates[0].bank_line_id, exact, 'the exact line comes first:');
+  eq(w.candidates[0].exact, true, 'marked exact:');
+  const fk = m.waiting.find((x) => x.payment_id === fake);
+  expect(fk.candidates.length > 0 && fk.candidates.length <= 3 && fk.candidates.every((x) => N(x.left) >= 4321000), 'only lines big enough can match, three at most');
+  expect(m.unmatched.some((x) => x.bank_line_id === exact), 'an unmatched line is listed');
+  await rpc(ACCOUNT, 'confirm_payment', { p_payment: waiting, p_bank_line: exact });
+  expect(!(await rpc(ACCOUNT, 'bank_matches')).unmatched.some((x) => x.bank_line_id === exact), 'a used line leaves the list');
+  await q(`update payments set created_at = now() - interval '5 hours' where id = $1`, [fake]);
+  await q(`update bank_lines set matched_kobo = amount_kobo where matched_kobo < amount_kobo`);
+  eq((await rpc(ACCOUNT, 'bank_matches')).waiting.find((x) => x.payment_id === fake).no_money_seen, true, 'no money in the bank for it:');
+  await rpc(ACCOUNT, 'reject_payment', { p_payment: fake, p_reason: 'Not on the statement' });
+
+  const c = await rpc(ACCOUNT, 'month_close_checks', { p_month: month });
+  eq(c.finished, false, 'this month is not over yet:');
+  const bank = c.checks.find((x) => x.name === 'The bank matches the statement');
+  eq(bank.ok, false, 'no statement typed yet:');
+  const typed = await rpc(ACCOUNT, 'month_close_checks', { p_month: month, p_statement_balance: N(bank.books_bank) - 500 });
+  eq(N(typed.checks.find((x) => x.name === 'The bank matches the statement').difference), 500, 'difference:');
+  for (const who of [COUNTER, STORE, DRIVER]) {
+    for (const fn of ['books_month', 'month_close_checks', 'bank_matches']) await fails(rpc(who, fn, fn === 'bank_matches' ? {} : { p_month: month }), 'not_allowed');
+  }
 });
 
 // ---- Last, because it closes the month that every other scene posts into ----
