@@ -58,7 +58,7 @@ Database first, because these need no accounts and the core can't handle a retur
   - **Close:** `month_close_checks()` shows each check before anyone presses Close, from the same `i_close_checks()` the close itself now uses, so they can't disagree.
 
   Proof: 128 rule scenes on both databases, 19 races, and `npm run e2e` 18 of 18 (balance line checked, rent reversed, deposit matched to its statement line, fake alert refused, early close refused, 375px). It caught a real flaw: a bigger statement line was offered as a one-tap match, so a fake alert could be matched against someone else's real money. Now only an exact line is a plain match, a bigger one is shown as "part of a bigger line" with a warning, and no exact line means a fake-alert flag. Open: importing statements as CSV (plan 5.3), and the accountant's export.
-- [ ] **Public catalogue with request a quote.** Plan step 1.8, without go-live.
+- [x] **Public catalogue with request a quote.** `/shop` for anyone, no login: search by part number, size or name (`catalogue()`), kinds of goods, shelf price and in, low or out only. Never trade prices, costs or counts. An "Add to quote" list kept on the device; `request_quote()` takes name, phone, and an optional email and note, is retry-safe, and allows 5 a day per phone and 200 an hour for the shop until bot protection is on. The counter sees them at `/requests`, and "Make the quote" (`quote_from_request()`) prices it through `create_quote`, so a trade customer gets trade prices. Proof: 129 rule scenes on both databases, 19 races, `npm run e2e` 21 of 21 (a visitor finds the bearing by 25 x 52 x 15 and sends a request with no trade price in the page or its data, the counter quotes it at ₦8,400 trade for Musa, 375px). Staging has 16 migrations and its books agree. Open: bot protection before go-live (Cloudflare Turnstile is free), real photos instead of drawn stand-ins, the shop's phone number and hours on the page.
 
 After these, stop. Everything left needs the owner and a real shop.
 
@@ -72,6 +72,8 @@ After these, stop. Everything left needs the owner and a real shop.
 ## Log
 
 Newest first. One or two lines per item: what now works, the test result, anything left open.
+
+- 2 Nov 2026 (Claude): public catalogue at /shop and quote requests at /requests. 129 rules, 19 races, e2e 21 of 21, staging has 16 migrations, baseline raised. Left open: bot protection before go-live, real photos.
 
 - 2 Nov 2026 (Claude): Books at /books. 128 rules, 19 races, e2e 18 of 18, staging has 15 migrations, baseline raised. Fixed: bigger statement lines could be one-tap matched to fake alerts. Left open: statement import, export.
 

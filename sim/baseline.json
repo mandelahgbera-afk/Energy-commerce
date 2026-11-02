@@ -15,6 +15,7 @@
     "supabase/migrations/20261102000700_owner_today.sql": "35da2c386be874ac8335a7597e68bea88da5fe017078a7699eff7aa8768a0789",
     "supabase/migrations/20261102000800_stock_room.sql": "e419295f22495d105b7d7e55102dd6c99e9b0c8b09294c7d9b10767dc42b4c7d",
     "supabase/migrations/20261102000900_books.sql": "255eee2675f1b4d686da7ae05ebc32314fce5e6f7a2a00daaea9ae0e214646aa",
+    "supabase/migrations/20261102001000_catalogue.sql": "b24b767104cd321094747b4dfec51e58e0023889438ba69669a1b0420ec67e08",
     "sim/stubs.sql": "9d5665be283d59691c8f76e1c07354f35e4104c2efeafafead17f7fc537fe0af"
   },
   "edge": [
@@ -144,6 +145,7 @@
     "the owner's today screen adds up from the records",
     "the stock room packs only what is paid for, oldest unit first, and counts blind",
     "the books screen balances, matches the bank, and previews the close by its own rules",
+    "the public catalogue shows shelf prices and stock bands, and anyone can ask for a quote",
     "a month closes only when tills, counts, transfers and the bank all agree, and then it stays shut",
     "a return after a month closed lands in the open month"
   ],

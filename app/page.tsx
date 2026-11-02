@@ -68,6 +68,12 @@ export default function Home() {
           >
             Work the counter
           </Link>
+          <Link
+            href="/requests"
+            className="press flex h-12 items-center justify-center rounded-field border border-ink/15 bg-white text-sm font-medium"
+          >
+            Quote requests from the shop
+          </Link>
           <div className="flex gap-2">
             <Link
               href="/kit"
@@ -95,6 +101,9 @@ export default function Home() {
           Sign in
         </Link>
       )}
+      <Link href="/shop" className="mt-4 block text-center text-sm font-medium text-action">
+        Browse the shop
+      </Link>
     </main>
   );
 }

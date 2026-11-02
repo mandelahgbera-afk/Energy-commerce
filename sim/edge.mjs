@@ -1126,13 +1126,13 @@ await test('no login can write to any table directly, whatever its role', async 
 await test('only the functions on this list can be run from outside', async () => {
   const runnable = async (role) => (await q(`select p.proname n from pg_proc p join pg_namespace s on s.oid = p.pronamespace
     where s.nspname = 'public' and has_function_privilege($1, p.oid, 'execute') order by 1`, [role])).map((r) => r.n);
-  eq((await runnable('anon')).join(), 'availability,check_serial,has_staff_role,is_staff,receipt_by_token,shop_today');
+  eq((await runnable('anon')).join(), 'availability,catalogue,check_serial,has_staff_role,is_staff,receipt_by_token,request_quote,shop_today');
   eq((await runnable('service_role')).join(), 'expire_holds,i_books_check,shop_today');
   eq((await runnable('authenticated')).join(), [
-    'accept_quote', 'add_bank_line', 'approve_safe_count', 'approve_stock_count', 'availability', 'bank_matches', 'books_check', 'books_month', 'cancel_order', 'cancel_quote', 'cash_position', 'check_serial', 'close_month', 'close_till', 'confirm_payment', 'count_list',
+    'accept_quote', 'add_bank_line', 'approve_safe_count', 'approve_stock_count', 'availability', 'bank_matches', 'books_check', 'books_month', 'cancel_order', 'cancel_quote', 'cash_position', 'catalogue', 'check_serial', 'close_month', 'close_quote_request', 'close_till', 'confirm_payment', 'count_list',
     'counter_sale', 'create_order', 'create_quote', 'customer_balance', 'debtors', 'decide_approval', 'deliver_order', 'has_staff_role', 'is_staff', 'month_close_checks', 'month_report', 'move_money',
-    'my_till', 'oldest_serials', 'open_till', 'owner_exceptions', 'owner_money_in', 'owner_money_out', 'owner_today', 'pack_list', 'pay_supplier', 'post_opening_balance', 'post_opening_debt', 'preview_sale', 'receipt_by_token', 'receive_goods',
-    'record_expense', 'refund_order', 'reject_payment', 'reject_safe_count', 'reject_stock_count', 'reserve_order', 'return_goods', 'reverse_payment', 'reverse_txn', 'revise_quote', 'save_customer', 'save_location', 'save_part_details', 'save_product',
+    'my_till', 'oldest_serials', 'open_quote_requests', 'open_till', 'owner_exceptions', 'owner_money_in', 'owner_money_out', 'owner_today', 'pack_list', 'pay_supplier', 'post_opening_balance', 'post_opening_debt', 'preview_sale', 'quote_from_request', 'receipt_by_token', 'receive_goods',
+    'record_expense', 'refund_order', 'reject_payment', 'reject_safe_count', 'reject_stock_count', 'request_quote', 'reserve_order', 'return_goods', 'reverse_payment', 'reverse_txn', 'revise_quote', 'save_customer', 'save_location', 'save_part_details', 'save_product',
     'save_staff', 'save_supplier', 'search_parts', 'set_customer_terms', 'set_last_cost', 'shop_today', 'submit_safe_count', 'submit_stock_count', 'take_payment', 'till_paid_out', 'transfer_stock', 'void_opening_debt',
   ].join());
 });
@@ -1187,6 +1187,9 @@ await test('each role is refused what is not its job', async () => {
     ['books_month', { p_month: '2026-01-01' }, everyoneBut(ACCOUNT)],
     ['month_close_checks', { p_month: '2026-01-01' }, everyoneBut(ACCOUNT)],
     ['bank_matches', {}, everyoneBut(ACCOUNT)],
+    ['open_quote_requests', {}, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
+    ['quote_from_request', { p_request: dummy, p_location: dummy }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
+    ['close_quote_request', { p_request: dummy, p_reason: 'x' }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
     ['pack_list', {}, everyoneBut(STORE, DISPATCH, COUNTER, COUNTER2)],
     ['count_list', { p_location: dummy }, everyoneBut(STORE)],
     ['debtors', {}, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
@@ -1999,6 +2002,57 @@ await test('the books screen balances, matches the bank, and previews the close 
   for (const who of [COUNTER, STORE, DRIVER]) {
     for (const fn of ['books_month', 'month_close_checks', 'bank_matches']) await fails(rpc(who, fn, fn === 'bank_matches' ? {} : { p_month: month }), 'not_allowed');
   }
+});
+
+// ---- The public catalogue and quote requests (Claude, 2 Nov 2026) ----
+
+await test('the public catalogue shows shelf prices and stock bands, and anyone can ask for a quote', async () => {
+  const fam = k('Bearings');
+  const id = await rpc(OWNER, 'save_product', { p_sku: k('CAT'), p_name: 'Deep groove bearing 6305', p_price: 650000, p_trade: 600000, p_family: fam, p_low_stock_at: 2 });
+  await rpc(OWNER, 'set_last_cost', { p_product: id, p_cost: 400000 });
+  await rpc(OWNER, 'save_part_details', { p_product: id, p_part_number: '6305 2RS', p_bore: 25, p_outside: 62, p_width: 17 });
+  await rpc(STORE, 'receive_goods', { p_key: k('rcv'), p_supplier: sup, p_location: shop, p_lines: [{ product_id: id, qty: 9 }] });
+  const draft = await rpc(OWNER, 'save_product', { p_sku: k('DRAFT'), p_name: 'Deep groove bearing secret', p_price: 1, p_family: fam });
+  await q(`update products set status = 'draft' where id = $1`, [draft]);
+  const look = (args) => rpc('anon', 'catalogue', args);
+  for (const query of ['6305-2rs', '63052RS', 'deep groove', '25 x 62 x 17']) {
+    const r = await look({ p_query: query, p_family: fam });
+    eq(r.items.length, 1, `"${query}" finds it once:`);
+    eq(r.items[0].product, id);
+    eq(r.items[0].state, 'in');
+    eq(N(r.items[0].price), 650000);
+  }
+  const all = JSON.stringify(await look({ p_family: fam }));
+  expect(!all.includes(draft) && !all.includes('600000') && !all.includes('400000') && !/"(cost|trade|qty|free|on_hand)/.test(all), 'no drafts, trade prices, costs or counts');
+  expect((await look({})).families.some((f) => f.family === fam), 'families are listed');
+  await fails(look({ p_limit: 0 }), 'bad_limit');
+  await fails(look({ p_query: 'x'.repeat(81) }), 'bad_query');
+
+  const ask = (key, phone = '08030000601', lines = [{ product_id: id, qty: 4 }]) => rpc('anon', 'request_quote', { p_key: key, p_name: 'Kemi Adewale', p_phone: phone, p_lines: lines, p_note: 'For a water pump' });
+  const key = k('rq');
+  const r1 = await ask(key);
+  expect(/^RQ-/.test(r1.request_no), 'a request number');
+  eq((await ask(key)).request_no, r1.request_no, 'a retry gets the same request:');
+  await fails(rpc('anon', 'request_quote', { p_key: key, p_name: 'Kemi Adewale', p_phone: '08030000601', p_lines: [{ product_id: id, qty: 5 }] }), 'key_reused');
+  await fails(ask(k('rq'), '123'), 'bad_phone');
+  await fails(ask(k('rq'), '08030000601', [{ product_id: draft, qty: 1 }]), 'no_such_product');
+  await fails(ask(k('rq'), '08030000601', [{ product_id: id, qty: 1.5 }]), 'bad_qty');
+  await fails(ask(k('rq'), '08030000601', []), 'bad_lines');
+  for (let i = 0; i < 5; i++) await ask(k('rq'), '08030000602');
+  await fails(ask(k('rq'), '08030000602'), 'too_many_requests');
+  await fails(as('anon', () => q('select * from quote_requests')), 'permission denied');
+  eq((await as(STORE, () => q('select * from quote_requests'))).length, 0, 'storekeeper reads requests:');
+
+  const open = await rpc(COUNTER, 'open_quote_requests');
+  const mine = open.find((x) => x.request_no === r1.request_no);
+  eq(N(mine.lines[0].price), 650000, "today's price beside the request:");
+  const quote = await rpc(COUNTER, 'quote_from_request', { p_request: mine.id, p_location: shop });
+  eq(await rpc(COUNTER, 'quote_from_request', { p_request: mine.id, p_location: shop }), quote, 'a retry returns the same quote:');
+  eq(N(await val('select total_kobo from quotes where id = $1', [quote])), 2600000, 'quoted at the shelf price:');
+  expect(!(await rpc(COUNTER, 'open_quote_requests')).some((x) => x.id === mine.id), 'a quoted request leaves the list');
+  const other = (await rpc(COUNTER, 'open_quote_requests'))[0];
+  await rpc(COUNTER, 'close_quote_request', { p_request: other.id, p_reason: 'Duplicate' });
+  await fails(rpc(COUNTER, 'close_quote_request', { p_request: other.id, p_reason: 'again' }), 'request_not_open');
 });
 
 // ---- Last, because it closes the month that every other scene posts into ----

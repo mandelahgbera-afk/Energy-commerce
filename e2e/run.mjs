@@ -89,15 +89,15 @@ try {
   const sup = await owner('save_supplier', { p_name: 'Lagos Batteries' });
   let n = 0;
   const key = (p) => `${p}-${++n}`;
-  const product = async ({ sku, name, price, trade, cost, qty, tracking = 'count', unit = 'each', part, size, serials }) => {
-    const id = await owner('save_product', { p_sku: sku, p_name: name, p_price: price, p_trade: trade, p_tracking: tracking, p_unit: unit, p_low_stock_at: 3 });
+  const product = async ({ sku, name, price, trade, cost, qty, tracking = 'count', unit = 'each', part, size, serials, family = 'general', warranty = 0 }) => {
+    const id = await owner('save_product', { p_sku: sku, p_name: name, p_price: price, p_trade: trade, p_tracking: tracking, p_unit: unit, p_low_stock_at: 3, p_family: family, p_warranty_months: warranty });
     await owner('set_last_cost', { p_product: id, p_cost: cost });
     if (part) await owner('save_part_details', { p_product: id, p_part_number: part, ...(size ? { p_bore: size[0], p_outside: size[1], p_width: size[2] } : {}) });
     await owner('receive_goods', { p_key: key('rcv'), p_supplier: sup, p_location: shop, p_lines: [{ product_id: id, qty, ...(serials ? { serials } : {}) }] });
     return id;
   };
-  const bearing = await product({ sku: 'B-6205-2RS', name: '6205-2RS bearing', price: 480000, trade: 420000, cost: 300000, qty: 48, part: '6205 2RS', size: [25, 52, 15] });
-  const panel = await product({ sku: 'P-550', name: '550 W solar panel', price: 18500000, trade: 17000000, cost: 14000000, qty: 6 });
+  const bearing = await product({ sku: 'B-6205-2RS', name: '6205-2RS bearing', price: 480000, trade: 420000, cost: 300000, qty: 48, part: '6205 2RS', size: [25, 52, 15], family: 'bearings' });
+  const panel = await product({ sku: 'P-550', name: '550 W solar panel', price: 18500000, trade: 17000000, cost: 14000000, qty: 6, family: 'solar panels', warranty: 120 });
   const tradePhone = '08031234567';
   const musa = await counter('save_customer', { p_phone: tradePhone, p_name: 'Musa Installer', p_reminders_ok: true });
   await owner('set_customer_terms', { p_customer: musa, p_kind: 'installer', p_credit_limit: 50000000 });
@@ -107,7 +107,7 @@ try {
   await counter('open_till', { p_float: 0 });
   // A phone order for a battery, paid by a card tap still waiting for the bank: ready to pack.
   // Two units on the shelf, one made months earlier, so packing must offer the older one first.
-  const battery = await product({ sku: 'CB-24F', name: 'Car battery, size 24F', price: 7800000, trade: 7100000, cost: 5600000, qty: 1, tracking: 'serial', serials: ['CB-NEW-1'] });
+  const battery = await product({ sku: 'CB-24F', name: 'Car battery, size 24F', price: 7800000, trade: 7100000, cost: 5600000, qty: 1, tracking: 'serial', serials: ['CB-NEW-1'], family: 'batteries', warranty: 12 });
   await owner('receive_goods', { p_key: key('rcv'), p_supplier: sup, p_location: shop, p_lines: [{ product_id: battery, qty: 1, serials: ['CB-OLD-1'], made_on: '2026-05-01' }] });
   const phoneOrder = await counter('create_order', { p_key: key('ord'), p_location: shop, p_lines: [{ product_id: battery, qty: 1 }], p_phone: '08039990001', p_channel: 'phone' });
   await counter('take_payment', { p_key: key('pay'), p_order: phoneOrder, p_method: 'pos', p_amount: 7800000 });
@@ -134,7 +134,7 @@ try {
   }
 
   browser = await chromium.launch({ channel: 'chrome', headless: true });
-  const session = async (who, viewport = { width: 1280, height: 900 }) => {
+  const open = async (who, viewport) => {
     const context = await browser.newContext({ viewport });
     const page = await context.newPage();
     openPages.unshift(page);
@@ -146,6 +146,12 @@ try {
     });
     // A missing file is named, not just counted.
     page.on('response', (r) => { if (r.status() >= 400) problems.push(`${who}: ${r.status()} ${r.request().method()} ${r.url().replace(/^https?:\/\/[^/]+/, '')}`); });
+    return { context, page };
+  };
+  // A visitor from the street: no login at all.
+  const guest = (viewport = { width: 1280, height: 900 }) => open('visitor', viewport);
+  const session = async (who, viewport = { width: 1280, height: 900 }) => {
+    const { context, page } = await open(who, viewport);
     await page.goto(`${app}/login`);
     await page.fill('input[type=email]', people[who].email);
     await page.fill('input[type=password]', people[who].password);
@@ -398,6 +404,65 @@ try {
     await phone.page.screenshot({ path: path.join(shots, 'books-phone.png'), fullPage: true });
     expect(await noSideScroll(phone.page), 'the books scroll sideways at 375px');
     await phone.context.close();
+    return '375 px';
+  });
+
+  await step('a visitor finds a part by its size and asks for a quote, with no account and no trade price shown', async () => {
+    const v = await guest();
+    const answers = [];
+    v.page.on('response', async (r) => { if (r.url().includes('/rpc/catalogue')) answers.push(await r.text().catch(() => '')); });
+    await v.page.goto(`${app}/shop`);
+    await v.page.getByText('550 W solar panel').waitFor({ timeout: 30000 });
+    await v.page.fill('#q', '25 x 52 x 15');
+    const card = v.page.locator('article', { hasText: '6205-2RS bearing' });
+    await card.waitFor();
+    await v.page.getByText(/^1 item for/).waitFor();
+    await card.getByRole('button', { name: 'Add to quote' }).click();
+    await card.getByRole('button', { name: 'One more: 6205-2RS bearing' }).click();
+    const panel = v.page.getByRole('complementary', { name: 'Your quote list' });
+    await panel.getByLabel('Your name').fill('Musa');
+    await panel.getByLabel('Phone number').fill('+234 803 123 4567');
+    await panel.getByLabel('Anything we should know').fill('For the Lekki job');
+    await panel.getByRole('button', { name: 'Send request' }).click();
+    const done = await panel.getByText(/Request RQ-\S+ received/).textContent({ timeout: 20000 });
+    const no = done.match(/RQ-\S+/)[0];
+    for (const a of answers) expect(!/trade|cost|reserved|"qty"/.test(a), 'the public catalogue sent a trade price, cost or count');
+    expect(!(await v.page.content()).includes('4,200'), 'the trade price is on the public page');
+    const [r] = await sql`select phone, status, lines, note from quote_requests where request_no = ${no}`;
+    eq(r.phone, '2348031234567', 'the request phone');
+    eq(r.status, 'new', 'the request status');
+    eq(r.lines.length, 1, 'request lines');
+    eq(N(r.lines[0].qty), 2, 'requested quantity');
+    eq(r.lines[0].product_id, bearing, 'requested product');
+    await v.context.close();
+    return no;
+  });
+
+  await step('the counter turns the request into a quote, at trade price for a trade customer', async () => {
+    await p.goto(`${app}/requests`);
+    const card = p.locator('article', { hasText: 'For the Lekki job' });
+    await card.waitFor({ timeout: 30000 });
+    await card.getByRole('button', { name: 'Make the quote' }).click();
+    await p.getByText(/Quote \S+ made for ₦8,400\.00/).waitFor({ timeout: 20000 });
+    const [r] = await sql`select r.status, q.total_kobo, q.customer_id from quote_requests r join quotes q on q.id = r.quote_id where r.note = 'For the Lekki job'`;
+    eq(r.status, 'quoted', 'the request status');
+    eq(N(r.total_kobo), 840000, 'the quote total (2 at trade)');
+    eq(r.customer_id, musa, 'the quote customer');
+    return 'trade price';
+  });
+
+  await step('the shop fits a phone with no sideways scroll, and the quote list opens from the bottom', async () => {
+    const v = await guest({ width: 375, height: 812 });
+    await v.page.goto(`${app}/shop`);
+    const card = v.page.locator('article', { hasText: 'Car battery, size 24F' });
+    await card.waitFor({ timeout: 30000 });
+    await card.getByRole('button', { name: 'Add to quote' }).click();
+    await v.page.getByRole('button', { name: /Quote list, 1 item/ }).click();
+    await v.page.getByRole('complementary', { name: 'Your quote list' }).getByLabel('Your name').waitFor();
+    await v.page.waitForTimeout(400);
+    await v.page.screenshot({ path: path.join(shots, 'shop-phone.png') });
+    expect(await noSideScroll(v.page), 'the shop scrolls sideways at 375px');
+    await v.context.close();
     return '375 px';
   });
 
