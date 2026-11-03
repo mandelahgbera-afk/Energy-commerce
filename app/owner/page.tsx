@@ -237,7 +237,7 @@ export default function Owner() {
           <section className="card" style={{ flex: '1 1 420px', minWidth: 0, padding: 22 }}>
             <h2 className="title" style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>If the dollar moves</h2>
             <p className="sub" style={{ marginTop: 6 }}>
-              This needs each product&apos;s dollar cost, which comes with supplier orders and landed cost (plan step 5.1). Until then the graph would be guesswork, so it is not shown.
+              Once supplier orders record what each product cost in dollars, this shows how much your stock and margins move when the naira does. Until then it would be guesswork, so it stays empty.
             </p>
           </section>
         </div>
@@ -259,6 +259,15 @@ export default function Owner() {
     </main>
   );
 }
+
+// One look per kind of decision, so a transfer to confirm and a stock count read apart at a glance.
+const queueLook = (kind: string) =>
+  kind.startsWith('Confirm') ? { icon: 'M3 10l9-6 9 6M5 10v8M10 10v8M14 10v8M19 10v8M3 20h18', ink: '#0A6E4B', bg: '#EEF9F4' }
+  : kind === 'Stock count' ? { icon: 'M3 8l9-5 9 5v8l-9 5-9-5ZM3 8l9 5 9-5M12 13v8', ink: '#92400E', bg: '#FDF3E7' }
+  : kind === 'Safe count' ? { icon: 'M4 4h16v16H4ZM15 12a3 3 0 1 1-6 0a3 3 0 0 1 6 0ZM12 4v2M12 18v2', ink: '#92400E', bg: '#FDF3E7' }
+  : kind === 'Hold ran out' ? { icon: 'M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18ZM12 7v5l3 2', ink: '#55606C', bg: '#F1F3F5' }
+  : kind === 'Credit request' ? { icon: 'M3 6h18v12H3ZM3 10h18M7 15h4', ink: '#1B5CF0', bg: '#EEF3FF' }
+  : { icon: 'M3 12V4h8l9 9-8 8ZM7.5 7.5h.01', ink: '#1B5CF0', bg: '#EEF3FF' };
 
 function QueueCard({ item, done, busy, onAnswer }: { item: QueueItem; done?: string; busy: boolean; onAnswer: (yes: boolean) => void }) {
   let kind = '';
@@ -310,16 +319,22 @@ function QueueCard({ item, done, busy, onAnswer }: { item: QueueItem; done?: str
     okText = 'Hold the goods again';
     altText = 'Leave for now';
   }
+  const look = queueLook(kind);
   return (
-    <article className="card rise" style={{ padding: 18, background: done ? '#EEF9F4' : '#FFFFFF' }}>
+    <article className="card rise" style={{ padding: 18, background: done ? '#F3FAF7' : '#FFFFFF', borderColor: done ? 'rgba(13,148,101,.18)' : undefined }}>
       {done ? (
-        <div aria-live="polite" style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 15, fontWeight: 550 }}><Tick size={20} stroke="#0D9465" />{done}</div>
+        <div aria-live="polite" style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 15, fontWeight: 550 }}><span style={{ display: 'grid', placeItems: 'center', width: 28, height: 28, flex: 'none', borderRadius: 14, background: '#0D9465' }}><Tick size={16} /></span>{done}</div>
       ) : (
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <div style={{ flex: '1 1 260px', minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#1B5CF0' }}>{kind}</div>
-            <div style={{ marginTop: 2, fontSize: 16.5, fontWeight: 600, letterSpacing: '-.012em' }}>{title}</div>
-            <div style={{ marginTop: 3, fontSize: 14, lineHeight: 1.45, color: '#434E5A' }}>{body}</div>
+          <div style={{ flex: '1 1 260px', minWidth: 0, display: 'flex', gap: 14 }}>
+            <span aria-hidden="true" style={{ display: 'grid', placeItems: 'center', width: 40, height: 40, flex: 'none', borderRadius: 12, background: look.bg }}>
+              <svg viewBox="0 0 24 24" width="20" height="20" style={{ fill: 'none', stroke: look.ink, strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}><path d={look.icon} /></svg>
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: look.ink }}>{kind}</div>
+              <div style={{ marginTop: 2, fontSize: 16.5, fontWeight: 600, letterSpacing: '-.012em' }}>{title}</div>
+              <div style={{ marginTop: 3, fontSize: 14, lineHeight: 1.45, color: '#434E5A' }}>{body}</div>
+            </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button type="button" disabled={busy} onClick={() => onAnswer(false)} className="press" style={{ minHeight: 44, padding: '0 14px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 12, background: '#FFFFFF', color: '#10161E', font: '500 14px var(--sans)', cursor: 'pointer' }}>{altText}</button>
@@ -338,8 +353,13 @@ function Tile({ label, note, now, before, upIsGood, days }: { label: string; not
     <div className="card" style={{ padding: 18 }}>
       <div style={{ fontSize: 14, color: '#434E5A' }}>{label}</div>
       <div className="tabular" style={{ marginTop: 4, fontSize: 28, fontWeight: 600, letterSpacing: '-.028em' }}>{shortNaira(now)}</div>
-      <div style={{ marginTop: 2, fontSize: 13, color: good === null ? '#55606C' : good ? '#0A6E4B' : '#92400E' }}>
-        {change === null ? `Nothing in the ${days} days before to compare with.` : `${Math.abs(change)}% ${change >= 0 ? 'more' : 'less'} than the ${days} days before`}
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 13, color: '#55606C' }}>
+        {change === null ? `Nothing in the ${days} days before to compare with.` : (
+          <>
+            <span className="tabular" style={{ padding: '2px 8px', borderRadius: 10, fontWeight: 650, background: good ? '#EEF9F4' : '#FDF3E7', color: good ? '#0A6E4B' : '#92400E' }}>{change >= 0 ? '↑' : '↓'} {Math.abs(change)}%</span>
+            {`${change >= 0 ? 'more' : 'less'} than the ${days} days before`}
+          </>
+        )}
       </div>
       {note ? <div style={{ marginTop: 4, fontSize: 12.5, color: '#55606C' }}>{note}</div> : null}
     </div>
@@ -357,7 +377,7 @@ function MoneyChart({ points, hover, setHover, plotRef }: { points: Point[]; hov
     ro.observe(el);
     return () => ro.disconnect();
   }, [plotRef]);
-  const max = points.reduce((m, p) => (p.in > m ? p.in : p.out > m ? p.out : m), 0n);
+  const max = points.reduce((m, p) => { const hi = p.in > p.out ? p.in : p.out; return hi > m ? hi : m; }, 0n);
   // A round top for the scale, so the gridlines read as plain amounts.
   const nice = (v: number) => { const e = 10 ** Math.floor(Math.log10(v || 1)); const f = v / e; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * e; };
   const step = nice((Number(max) * 1.12) / 4) || 100000;
@@ -467,7 +487,7 @@ function Debts({ debts, band, setBand }: { debts: Today['debts']; band: number; 
           <button key={b.band} type="button" aria-label={`${b.label}, ${formatNaira(b.total)}`} aria-pressed={b.band === band} onClick={() => setBand(b.band)} style={{ flexGrow: Number(K(b.total) / 10000n) || 1, border: 0, padding: 0, background: bandColors[b.band], opacity: b.band === band ? 1 : 0.55, cursor: 'pointer' }} />
         ))}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 6, marginTop: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(108px, 1fr))', gap: 6, marginTop: 10 }}>
         {debts.map((b) => (
           <button key={b.band} type="button" aria-pressed={b.band === band} onClick={() => setBand(b.band)} className="press" style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 44, padding: '6px 10px', border: 0, borderRadius: 10, background: b.band === band ? '#F1F3F5' : 'transparent', color: '#10161E', textAlign: 'left', font: '450 13.5px var(--sans)', cursor: 'pointer' }}>
             <span aria-hidden="true" style={{ flex: 'none', width: 10, height: 10, borderRadius: 3, background: bandColors[b.band] }} />

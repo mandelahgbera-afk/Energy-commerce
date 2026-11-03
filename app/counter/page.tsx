@@ -362,7 +362,19 @@ export default function Counter() {
             </section>
 
             <section className="card" aria-label="Items on this sale" style={{ padding: '8px 18px 10px' }}>
-              {lines.length === 0 ? <div style={{ padding: '22px 0', textAlign: 'center', fontSize: 15, color: '#55606C' }}>Scan the first item to start.</div> : null}
+              {lines.length === 0 ? (
+                <div style={{ padding: '26px 8px 22px', textAlign: 'center' }}>
+                  <svg aria-hidden="true" viewBox="0 0 64 40" width="64" height="40" style={{ fill: 'none', stroke: '#B9CBF8', strokeWidth: 3, strokeLinecap: 'round' }}><path d="M6 6v28M14 6v28M20 6v28M30 6v28M36 6v28M44 6v28M50 6v28M58 6v28" /></svg>
+                  <div style={{ marginTop: 10, fontSize: 16, fontWeight: 600 }}>Scan the first item to start.</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginTop: 12, fontSize: 13, color: '#55606C' }}>
+                    {[['Enter', 'adds the top match'], ['↑ ↓', 'choose another'], ['25 x 52 x 15', 'finds by size']].map(([k, t]) => (
+                      <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px 4px 4px', borderRadius: 10, background: '#F6F8FA' }}>
+                        <kbd style={{ padding: '2px 7px', borderRadius: 6, border: '1px solid rgba(16,24,34,.14)', background: '#FFFFFF', color: '#2A3441', font: '500 12px var(--mono)' }}>{k}</kbd>{t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               {lines.map((l) => {
                 const pl = priced(l.productId);
                 return (

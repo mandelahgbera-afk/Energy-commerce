@@ -326,18 +326,32 @@ function Pack({ db, onError, clearError }: Props) {
       <section aria-labelledby="p0" className="rise">
         <h1 id="p0" style={{ margin: '0 2px', fontSize: 'clamp(24px, 3vw, 32px)', lineHeight: 1.1, fontWeight: 600, letterSpacing: '-.028em' }}>{list ? (list.ready.length ? `${plural(list.ready.length, 'order')} to pack` : 'Nothing to pack') : 'Getting the orders…'}</h1>
         <p style={{ margin: '6px 2px 14px', fontSize: 15, color: '#434E5A' }}>{list && list.waiting_for_money > 0 ? `${plural(list.waiting_for_money, 'order')} still waiting for their money. They appear here once it is in.` : 'Only orders whose money is in.'}</p>
-        {done ? <div className="card rise" aria-live="polite" style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10, padding: 18, background: '#EEF9F4', fontSize: 15.5 }}><Tick size={22} stroke="#0D9465" />{done}</div> : null}
+        {done ? <div className="card rise" aria-live="polite" style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12, padding: 18, background: '#F3FAF7', borderColor: 'rgba(13,148,101,.18)', fontSize: 15.5, fontWeight: 550 }}><span style={{ display: 'grid', placeItems: 'center', width: 28, height: 28, flex: 'none', borderRadius: 14, background: '#0D9465' }}><Tick size={16} /></span>{done}</div> : null}
+        {list && list.ready.length === 0 && !done ? (
+          <div className="card rise" style={{ padding: '32px 20px', textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: 16.5, fontWeight: 600 }}>All packed</p>
+            <p style={{ margin: '6px auto 0', maxWidth: 360, fontSize: 14.5, lineHeight: 1.5, color: '#55606C' }}>A paid order appears here the moment its money is in.</p>
+          </div>
+        ) : null}
         <div style={{ display: 'grid', gap: 10 }}>
-          {list?.ready.map((o) => (
-            <button key={o.order_id} type="button" onClick={() => { setDone(null); setMsg(null); setPicked({}); setOpen(o); }} className="card press" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 18, textAlign: 'left', cursor: 'pointer', color: '#10161E', font: 'inherit' }}>
-              <span>
-                <span style={{ display: 'block', fontSize: 16.5, fontWeight: 600 }}>{o.invoice_no ?? 'Order'}{o.customer ? ` for ${o.customer}` : ''}</span>
-                <span style={{ display: 'block', marginTop: 2, fontSize: 13.5, color: '#55606C' }}>{plural(o.lines.length, 'line')} · {o.channel === 'counter' ? 'At the counter' : o.channel === 'phone' ? 'Phone order' : 'Online order'}{o.on_credit ? ' · On account' : ''}</span>
+          {list?.ready.map((o, i) => (
+            <button key={o.order_id} type="button" onClick={() => { setDone(null); setMsg(null); setPicked({}); setOpen(o); }} className="card press rise pack-row" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 16, textAlign: 'left', cursor: 'pointer', color: '#10161E', font: 'inherit', animationDelay: `${Math.min(i, 6) * 40}ms` }}>
+              <span aria-hidden="true" style={{ display: 'grid', placeItems: 'center', width: 42, height: 42, flex: 'none', borderRadius: 12, background: 'linear-gradient(160deg, #EEF3FF, #E3EAFD)' }}>
+                <svg viewBox="0 0 24 24" width="21" height="21" style={{ fill: 'none', stroke: '#1B5CF0', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}><path d="M3 8l9-5 9 5v8l-9 5-9-5ZM3 8l9 5 9-5M12 13v8" /></svg>
               </span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#1B5CF0' }}>Pack</span>
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: 'block', fontSize: 16.5, fontWeight: 600 }}>{o.invoice_no ?? 'Order'}{o.customer ? ` for ${o.customer}` : ''}</span>
+                <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 13.5, color: '#55606C' }}>
+                  {plural(o.lines.length, 'line')}
+                  <span style={{ padding: '1px 8px', borderRadius: 9, background: '#F1F3F5', fontSize: 12.5, fontWeight: 550, color: '#434E5A' }}>{o.channel === 'counter' ? 'At the counter' : o.channel === 'phone' ? 'Phone order' : 'Online order'}</span>
+                  {o.on_credit ? <span style={{ padding: '1px 8px', borderRadius: 9, background: '#EEF3FF', fontSize: 12.5, fontWeight: 550, color: '#1B5CF0' }}>On account</span> : null}
+                </span>
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 14, fontWeight: 600, color: '#1B5CF0' }}>Pack<svg aria-hidden="true" className="pack-arrow" viewBox="0 0 24 24" width="16" height="16" style={{ fill: 'none', stroke: '#1B5CF0', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', transition: 'transform .2s' }}><path d="M9 6l6 6-6 6" /></svg></span>
             </button>
           ))}
         </div>
+        <style>{'.pack-row:hover .pack-arrow { transform: translateX(3px) } @media (hover: none), (prefers-reduced-motion: reduce) { .pack-row:hover .pack-arrow { transform: none } }'}</style>
       </section>
     );
   }

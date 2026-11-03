@@ -73,6 +73,8 @@ After these, stop. Everything left needs the owner and a real shop.
 
 Newest first. One or two lines per item: what now works, the test result, anything left open.
 
+- 3 Nov 2026 (Claude): second design pass, inside the four staff screens. Owner's day: queue cards with an icon per kind, rise-or-fall pills on the tiles, the four debt bands on one row. Books: the month chart gets a zero line, values and connecting lines, and losses read as "Loss" with a true minus instead of a struck-looking naira sign. Counter: a proper empty sale with key hints. Stock room: richer pack list and an "All packed" state. Fixed: the owner's money chart sized its scale from money in only, so a big money-out day ran off the chart and down the page. e2e 21 of 21, build green.
+
 - 2 Nov 2026 (Claude): design pass across the whole app. The Geist font now really loads (every screen had been falling back to the system font), one staff bar on every screen showing what each role can open, a staff home instead of the placeholder, and a finished sign-in, shop and requests. Fixed: after a scan the counter could pull the cursor out of the phone field. e2e 21 of 21, build green.
 
 - 2 Nov 2026 (Claude): public catalogue at /shop and quote requests at /requests. 129 rules, 19 races, e2e 21 of 21, staging has 16 migrations, baseline raised. Left open: bot protection before go-live, real photos.

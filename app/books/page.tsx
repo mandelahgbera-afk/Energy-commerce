@@ -124,18 +124,25 @@ function MonthTab({ data, month, setMonth }: { data: Month; month: string; setMo
         </select>
       </div>
       <div className="card" style={{ marginTop: 14, padding: 22 }}>
-        <div className="tabular" style={{ fontSize: 40, fontWeight: 600, letterSpacing: '-.035em', color: profit < 0n ? '#92400E' : '#10161E' }}>{formatNaira(profit)}</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+          <div className="tabular" style={{ fontSize: 44, fontWeight: 600, letterSpacing: '-.038em', color: profit < 0n ? '#92400E' : '#10161E' }}>{formatNaira(profit < 0n ? -profit : profit)}</div>
+          <span style={{ padding: '4px 11px', borderRadius: 12, fontSize: 13, fontWeight: 650, background: profit < 0n ? '#FDF3E7' : '#EEF9F4', color: profit < 0n ? '#92400E' : '#0A6E4B' }}>{profit < 0n ? 'Loss' : 'Profit'}</span>
+        </div>
         <div style={{ fontSize: 14, color: '#434E5A' }}>{profit < 0n ? 'Loss after all costs' : 'Profit after all costs'}, worked out from every entry this month</div>
-        <div role="img" aria-label={steps.map((s) => `${s.label} ${formatNaira(s.value)}`).join(', ')} style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, height: 180, marginTop: 18, alignItems: 'stretch' }}>
-          {steps.map((s) => (
+        <div role="img" aria-label={steps.map((s) => `${s.label} ${formatNaira(s.value)}`).join(', ')} style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: gutter, height: 200, marginTop: 34, alignItems: 'stretch' }}>
+          <div aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, bottom: `${pct(0n)}%`, borderTop: '1.5px solid rgba(16,24,34,.26)' }} />
+          {steps.map((s, i) => (
             <div key={s.label} style={{ position: 'relative' }}>
-              <div style={{ position: 'absolute', left: 0, right: 0, bottom: `${pct(s.from)}%`, height: `${Math.max(1, pct(s.to) - pct(s.from))}%`, borderRadius: '6px 6px 2px 2px', background: s.color, transition: 'height .5s cubic-bezier(.25,.8,.25,1), bottom .5s' }} />
+              {i > 0 ? <div aria-hidden="true" style={{ position: 'absolute', right: '100%', width: gutter, bottom: `${pct(steps[i - 1].value < 0n ? steps[i - 1].from : steps[i - 1].to)}%`, borderTop: '1.5px dashed rgba(16,24,34,.28)' }} /> : null}
+              <div className="wf-bar" style={{ position: 'absolute', left: 0, right: 0, bottom: `${pct(s.from)}%`, height: `${Math.max(1, pct(s.to) - pct(s.from))}%`, borderRadius: 8, background: `linear-gradient(180deg, ${s.color}, ${s.color}CC)`, animationDelay: `${i * 90}ms` }} />
+              <div className="tabular" style={{ position: 'absolute', left: 0, right: 0, bottom: `calc(${pct(s.to)}% + 6px)`, textAlign: 'center', fontSize: 13.5, fontWeight: 650 }}>{signed(s.value, shortNaira)}</div>
             </div>
           ))}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginTop: 8 }}>
-          {steps.map((s) => <div key={s.label}><div style={{ fontSize: 13, color: '#55606C' }}>{s.label}</div><div className="tabular" style={{ fontSize: 15, fontWeight: 600 }}>{shortNaira(s.value)}</div></div>)}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: gutter, marginTop: 12 }}>
+          {steps.map((s) => <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: '#434E5A' }}><span aria-hidden="true" style={{ width: 9, height: 9, flex: 'none', borderRadius: 3, background: s.color }} />{s.label}</div>)}
         </div>
+        <style>{'@keyframes wf-grow { from { transform: scaleY(0) } } .wf-bar { transform-origin: bottom; animation: wf-grow .6s cubic-bezier(.2,.7,.2,1) both } @media (prefers-reduced-motion: reduce) { .wf-bar { animation: none } }'}</style>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 12, alignItems: 'flex-start' }}>
         <Table id="m2" title="Money earned and spent" rows={data.lines.map((l) => ({ name: l.name, value: l.kind === 'expense' ? -K(l.amount) : K(l.amount) }))} total={{ name: profit < 0n ? 'Loss' : 'Profit', value: profit }} />
@@ -150,14 +157,18 @@ function MonthTab({ data, month, setMonth }: { data: Month; month: string; setMo
   );
 }
 
+// A true minus and a thin gap, so a negative amount never reads as a struck-through naira sign.
+const signed = (v: bigint, show: (k: bigint) => string = formatNaira) => (v < 0n ? `− ${show(-v)}` : show(v));
+const gutter = 'clamp(10px, 3vw, 28px)';
+
 function Table({ id, title, rows, total, note }: { id: string; title: string; rows: { name: string; value: bigint; strong?: boolean }[]; total?: { name: string; value: bigint }; note?: string }) {
   return (
     <section aria-labelledby={id} className="card" style={{ flex: '1 1 380px', minWidth: 0, padding: 22 }}>
       <h2 id={id} style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>{title}</h2>
       <table className="tabular" style={{ width: '100%', marginTop: 10, borderCollapse: 'collapse', fontSize: 14.5 }}>
         <tbody>
-          {rows.map((r) => <tr key={r.name}><td style={{ padding: '8px 0', borderBottom: '1px solid #F1F3F5', fontWeight: r.strong ? 600 : 400 }}>{r.name}</td><td style={{ padding: '8px 0', textAlign: 'right', borderBottom: '1px solid #F1F3F5', fontWeight: r.strong ? 600 : 500 }}>{formatNaira(r.value)}</td></tr>)}
-          {total ? <tr><td style={{ padding: '10px 0 0', fontWeight: 600 }}>{total.name}</td><td style={{ padding: '10px 0 0', textAlign: 'right', fontWeight: 650 }}>{formatNaira(total.value)}</td></tr> : null}
+          {rows.map((r) => <tr key={r.name}><td style={{ padding: '8px 0', borderBottom: '1px solid #F1F3F5', fontWeight: r.strong ? 600 : 400 }}>{r.name}</td><td style={{ padding: '8px 0', textAlign: 'right', borderBottom: '1px solid #F1F3F5', fontWeight: r.strong ? 600 : 500, color: r.value < 0n ? '#92400E' : undefined }}>{signed(r.value)}</td></tr>)}
+          {total ? <tr><td style={{ padding: '10px 0 0', fontWeight: 600 }}>{total.name}</td><td style={{ padding: '10px 0 0', textAlign: 'right', fontWeight: 650, color: total.value < 0n ? '#92400E' : undefined }}>{signed(total.value)}</td></tr> : null}
         </tbody>
       </table>
       {rows.length === 0 ? <p className="sub">Nothing recorded yet.</p> : null}
