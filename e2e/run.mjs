@@ -160,12 +160,17 @@ try {
     return { context, page };
   };
   const noSideScroll = (page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
+  // Pictures of each step of the key actions, for the product video. The viewport only, page at the top.
+  fs.mkdirSync(path.join(shots, 'states'), { recursive: true });
+  const shot = async (pg, name) => { await pg.waitForTimeout(450); await pg.screenshot({ path: path.join(shots, 'states', `${name}.png`) }); };
 
   const desk = await session('counter');
   const p = desk.page;
 
   await step('a trade customer is recognised and priced at trade, from any phone format', async () => {
     await p.goto(`${app}/counter`);
+    await p.locator('#scan').waitFor();
+    await shot(p, 'counter-1-empty');
     await p.fill('#scan', '6205 2rs');
     // Like a barcode scanner: the code and Enter at once, before any results are back.
     await p.press('#scan', 'Enter');
@@ -173,6 +178,7 @@ try {
     await p.fill('#ph', tradePhone);
     await p.getByText('Trade prices applied.').waitFor({ timeout: 20000 });
     await p.getByText('₦4,200.00 each, trade price').waitFor();
+    await shot(p, 'counter-2-trade');
     return 'Musa Installer, ₦4,200.00 a bearing';
   });
 
@@ -313,8 +319,11 @@ try {
 
   await step('the owner confirms the transfer, and only then is it money', async () => {
     eq((await sql`select status from payments where id = ${waitingPay}`)[0].status, 'pending', 'before:');
+    await o.evaluate(() => window.scrollTo(0, 0));
+    await shot(o, 'owner-1-waiting');
     await o.locator('article', { hasText: '₦185,000.00' }).getByRole('button', { name: 'It is in the bank' }).click();
     await o.getByText(/Confirmed\./).waitFor({ timeout: 20000 });
+    await shot(o, 'owner-2-confirmed');
     eq((await sql`select status from payments where id = ${waitingPay}`)[0].status, 'confirmed', 'after:');
     const books = await val('select i_books_check()');
     expect(books.ok, `books: ${books.problems?.join('; ')}`);
@@ -415,13 +424,16 @@ try {
     const bad = ['P-600', '600 W solar panel', 'Solar panels', 'ask', '', '', '', '', '', ''].join('\t');
     await o.goto(`${app}/import`);
     await o.fill('#sheet', [head, good, old, bad].join('\n'));
+    await shot(o, 'import-1-pasted');
     await o.getByRole('button', { name: 'Check the list' }).click();
     await o.getByText('The price is not a usable amount.').waitFor({ timeout: 20000 });
+    await shot(o, 'import-2-problem');
     expect(await o.getByRole('button', { name: /^Save/ }).isDisabled(), 'saving is blocked while a line has a problem');
     await o.fill('#sheet', [head, good, old, bad.replace('\task\t', '\t210,000\t')].join('\n'));
     await o.getByRole('button', { name: 'Check the list' }).click();
     await o.getByRole('button', { name: 'Save 3 products' }).click();
     await o.getByText('Saved: 2 new, 1 changed. They are on the shop now.').waitFor({ timeout: 30000 });
+    await shot(o, 'import-3-saved');
     const [b] = await sql`select p.price_kobo, t.trade_price_kobo, s.bore_mm from products p join product_trade_prices t on t.product_id = p.id join product_sizes s on s.product_id = p.id where p.sku = 'B-6206-2RS'`;
     eq(N(b.price_kobo), 520000, 'the new bearing price');
     eq(N(b.trade_price_kobo), 470000, 'its trade price');
@@ -440,6 +452,7 @@ try {
     await o.fill('#shop-hours', 'Monday to Saturday, 8am to 6pm');
     await o.fill('#hold-hours', '48');
     await o.fill('#paid-out', '75,000');
+    await shot(o, 'settings-1-changes');
     await o.getByRole('button', { name: 'Save changes' }).click();
     await o.getByText('Saved. New orders and holds use these from now.').waitFor({ timeout: 20000 });
     const [st] = await sql`select hold_unpaid_hours, till_paid_out_limit_kobo, shop_name, shop_phone from shop_settings`;
@@ -462,12 +475,15 @@ try {
     v.page.on('response', async (r) => { if (r.url().includes('/rpc/catalogue')) answers.push(await r.text().catch(() => '')); });
     await v.page.goto(`${app}/shop`);
     await v.page.getByText('550 W solar panel').waitFor({ timeout: 30000 });
+    await shot(v.page, 'shop-1-hero');
     await v.page.fill('#q', '25 x 52 x 15');
     const card = v.page.locator('article', { hasText: '6205-2RS bearing' });
     await card.waitFor();
     await v.page.getByText(/^1 item for/).waitFor();
+    await shot(v.page, 'shop-2-found');
     await card.getByRole('button', { name: 'Add to quote' }).click();
     await card.getByRole('button', { name: 'One more: 6205-2RS bearing' }).click();
+    await shot(v.page, 'shop-3-listed');
     const panel = v.page.getByRole('complementary', { name: 'Your quote list' });
     await v.page.screenshot({ path: path.join(shots, 'shop-desktop.png') });
     await panel.getByLabel('Your name').fill('Musa');
@@ -475,6 +491,7 @@ try {
     await panel.getByLabel('Anything we should know').fill('For the Lekki job');
     await panel.getByRole('button', { name: 'Send request' }).click();
     const done = await panel.getByText(/Request RQ-\S+ received/).textContent({ timeout: 20000 });
+    await shot(v.page, 'shop-4-sent');
     const no = done.match(/RQ-\S+/)[0];
     for (const a of answers) expect(!/trade|cost|reserved|"qty"/.test(a), 'the public catalogue sent a trade price, cost or count');
     expect(!(await v.page.content()).includes('4,200'), 'the trade price is on the public page');
@@ -496,8 +513,10 @@ try {
     await p.goto(`${app}/requests`);
     const card = p.locator('article', { hasText: 'For the Lekki job' });
     await card.waitFor({ timeout: 30000 });
+    await shot(p, 'requests-1-waiting');
     await card.getByRole('button', { name: 'Make the quote' }).click();
     await p.getByText(/Quote \S+ made for ₦8,400\.00/).waitFor({ timeout: 20000 });
+    await shot(p, 'requests-2-quoted');
     const [r] = await sql`select r.status, q.total_kobo, q.customer_id from quote_requests r join quotes q on q.id = r.quote_id where r.note = 'For the Lekki job'`;
     eq(r.status, 'quoted', 'the request status');
     eq(N(r.total_kobo), 840000, 'the quote total (2 at trade)');
