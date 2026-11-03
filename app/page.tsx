@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { browserDb, connected } from '@/lib/supabase';
 import { Mark, StaffNav, screens } from '@/components/staff-nav';
+import { Landing } from '@/components/landing';
 
 const icon: Record<string, string> = {
   '/counter': 'M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2ZM9 8h6M9 12h6',
@@ -61,6 +62,7 @@ export default function Home() {
 
   if (state === 'loading') return <main style={{ minHeight: '100vh' }} aria-busy="true" />;
 
+  if (state === 'out') return <Landing />;
   if (state !== 'in') {
     return (
       <main style={{ display: 'grid', placeItems: 'center', minHeight: '100vh', boxSizing: 'border-box', padding: 20 }}>

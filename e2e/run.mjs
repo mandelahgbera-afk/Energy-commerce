@@ -539,6 +539,19 @@ try {
     return '375 px';
   });
 
+  await step('a visitor lands on the home page, and a kind of goods opens the shop on it', async () => {
+    const v = await guest({ width: 375, height: 812 });
+    await v.page.goto(`${app}/`);
+    await v.page.getByText('Steady power,').waitFor({ timeout: 30000 });
+    expect(await noSideScroll(v.page), 'the home page scrolls sideways at 375px');
+    await v.page.screenshot({ path: path.join(shots, 'landing-phone.png'), fullPage: true });
+    await v.page.getByRole('link', { name: /Batteries/ }).click();
+    await v.page.getByText('Car battery, size 24F').waitFor({ timeout: 30000 });
+    eq(await v.page.inputValue('#q'), 'battery', 'the shop search');
+    await v.context.close();
+    return 'home to batteries, 375 px';
+  });
+
   await step('a counter cannot open the owner screen', async () => {
     await p.goto(`${app}/owner`);
     await p.getByText('This page is for the owner and the accountant.').waitFor({ timeout: 20000 });

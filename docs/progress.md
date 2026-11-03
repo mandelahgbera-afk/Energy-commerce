@@ -77,6 +77,8 @@ After these, stop. Everything left needs the owner and a real shop.
 
 Newest first. One or two lines per item: what now works, the test result, anything left open.
 
+- 3 Nov 2026 (Claude): public landing page at / (calm energy illustration, kinds of goods that open the shop on them, shop details from Settings) and `npm run`-free demo day (`node scripts/db-demo-day.mjs`): 30 products by import, stock, installers on trade terms, transfers waiting and quote requests, loaded into staging, books agree. e2e 24 of 24.
+
 - 3 Nov 2026 (Claude): price list import at /import, from pasted Excel cells or a CSV. 131 rules, 19 races, e2e 23 of 23, staging has 18 migrations, baseline raised. Left open: opening stock comes from the go-live count.
 
 - 3 Nov 2026 (Claude): owner's settings at /settings, and the shop's contact details on the public shop. 130 rules, 19 races, e2e 22 of 22, staging has 17 migrations, baseline raised. Left open: adding new logins on screen.

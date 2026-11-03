@@ -71,6 +71,8 @@ export default function Shop() {
   const [bump, setBump] = useState(0);
   const key = useRef<string | null>(null);
   const [shop, setShop] = useState<{ name: string | null; phone: string | null; address: string | null; hours: string | null } | null>(null);
+  // The landing page links here with ?q= so a visitor lands on that kind of goods.
+  useEffect(() => { const q0 = new URLSearchParams(window.location.search).get('q'); if (q0) setQuery(q0.slice(0, 80)); }, []);
   useEffect(() => { void db.rpc('shop_details').then(({ data }) => { if (data) setShop(data as NonNullable<typeof shop>); }); }, [db]);
 
   // The list is kept on this device only, so a visitor can come back to it.
