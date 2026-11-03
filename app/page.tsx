@@ -13,6 +13,7 @@ const icon: Record<string, string> = {
   '/owner': 'M4 20V11M10 20V5M16 20v-6M2 20h20',
   '/books': 'M5 3h11l3 3v15H5ZM9 9h6M9 13h6M9 17h4',
   '/shop': 'M3 9l2-5h14l2 5M4 9v11h16V9M9 20v-6h6v6',
+  '/settings': 'M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4',
 };
 const roleName: Record<string, string> = { owner: 'Owner', counter: 'Counter', accountant: 'Accountant', storekeeper: 'Storekeeper', dispatcher: 'Dispatcher' };
 const greet = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; };

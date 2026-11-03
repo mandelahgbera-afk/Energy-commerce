@@ -28,6 +28,7 @@ const field = { width: '100%', height: 48, boxSizing: 'border-box', padding: '0 
 const errorOf = (message: string) => { const [n, ...rest] = message.split(':'); return friendly(n, rest.join(':').trim()); };
 // For the visitor's eyes only: the quote itself is priced by the database.
 const estimate = (list: Pick[]) => list.reduce((s, p) => { try { return s + lineTotalKobo(BigInt(p.price), p.qty); } catch { return s; } }, 0n);
+const local = (phone: string) => (phone.startsWith('234') ? `0${phone.slice(3)}` : phone);
 const warranty = (m: number) => (m >= 12 && m % 12 === 0 ? `${m / 12} ${m === 12 ? 'year' : 'years'} warranty` : `${m} months warranty`);
 
 // Naira large, kobo small: easier to read at a glance.
@@ -69,6 +70,8 @@ export default function Shop() {
   const [sent, setSent] = useState<{ no: string; phone: string } | null>(null);
   const [bump, setBump] = useState(0);
   const key = useRef<string | null>(null);
+  const [shop, setShop] = useState<{ name: string | null; phone: string | null; address: string | null; hours: string | null } | null>(null);
+  useEffect(() => { void db.rpc('shop_details').then(({ data }) => { if (data) setShop(data as NonNullable<typeof shop>); }); }, [db]);
 
   // The list is kept on this device only, so a visitor can come back to it.
   useEffect(() => { try { const saved = localStorage.getItem(store); if (saved) setList(JSON.parse(saved)); } catch {} }, []);
@@ -131,7 +134,7 @@ export default function Shop() {
   return (
     <main style={{ minHeight: '100vh', boxSizing: 'border-box', padding: '12px clamp(10px, 2vw, 28px) 0', overflowX: 'clip' }}>
       <nav aria-label="Store" className="glass" style={{ position: 'sticky', top: 12, zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, padding: '6px 8px 6px 12px', borderRadius: 18, maxWidth: 1240, margin: '0 auto' }}>
-        <a href="#top" style={{ display: 'inline-flex', alignItems: 'center', gap: 9, minHeight: 44, fontWeight: 650, fontSize: 17, letterSpacing: '-.02em' }}><Mark />Power Store</a>
+        <a href="#top" style={{ display: 'inline-flex', alignItems: 'center', gap: 9, minHeight: 44, fontWeight: 650, fontSize: 17, letterSpacing: '-.02em' }}><Mark />{shop?.name ?? 'Power Store'}</a>
         <button type="button" onClick={() => setOpen(true)} aria-label={`Quote list, ${items}`} className="press" style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 8, minHeight: 44, padding: '0 10px 0 16px', border: 0, borderRadius: 13, background: '#10161E', color: '#FFFFFF', font: '500 14.5px var(--sans)', cursor: 'pointer' }}>
           Quote list
           <span key={bump} className={bump ? 'bump' : ''} style={{ display: 'grid', placeItems: 'center', minWidth: 24, height: 24, padding: '0 7px', boxSizing: 'border-box', borderRadius: 12, background: count ? '#1B5CF0' : 'rgba(255,255,255,.16)', fontSize: 12.5, fontWeight: 650 }}>{count}</span>
@@ -251,6 +254,7 @@ export default function Shop() {
                   </li>
                 ))}
               </ol>
+              {shop?.phone ? <p style={{ margin: '12px 0 0', fontSize: 13.5, color: '#434E5A' }}>Questions before then? Call the shop on <a href={`tel:+${shop.phone}`} style={{ fontWeight: 600, color: '#0A6E4B' }}>{local(shop.phone)}</a>.</p> : null}
             </div>
           ) : null}
           {list.length === 0 && !sent ? (
@@ -291,7 +295,17 @@ export default function Shop() {
       </div>
 
       <footer style={{ maxWidth: 1240, margin: '56px auto 0', padding: '20px 2px 110px', borderTop: '1px solid rgba(16,24,34,.08)', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10, fontSize: 13.5, color: '#55606C' }}>
-        <span>Prices are today&apos;s shelf prices and can change. A quote holds its price for 7 days.</span>
+        <div style={{ display: 'grid', gap: 8 }}>
+          {shop && (shop.phone || shop.address || shop.hours) ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px 18px', color: '#2A3441' }}>
+              {shop.phone ? <a href={`tel:+${shop.phone}`} style={{ fontWeight: 600 }}>Call {local(shop.phone)}</a> : null}
+              {shop.phone ? <a href={`https://wa.me/${shop.phone}`} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 600, color: '#0A6E4B' }}>WhatsApp</a> : null}
+              {shop.address ? <span>{shop.address}</span> : null}
+              {shop.hours ? <span>{shop.hours}</span> : null}
+            </div>
+          ) : null}
+          <span>Prices are today&apos;s shelf prices and can change. A quote holds its price for 7 days.</span>
+        </div>
         <Link href="/login" style={{ color: '#434E5A', fontWeight: 500 }}>Staff sign in</Link>
       </footer>
 

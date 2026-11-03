@@ -1126,14 +1126,14 @@ await test('no login can write to any table directly, whatever its role', async 
 await test('only the functions on this list can be run from outside', async () => {
   const runnable = async (role) => (await q(`select p.proname n from pg_proc p join pg_namespace s on s.oid = p.pronamespace
     where s.nspname = 'public' and has_function_privilege($1, p.oid, 'execute') order by 1`, [role])).map((r) => r.n);
-  eq((await runnable('anon')).join(), 'availability,catalogue,check_serial,has_staff_role,is_staff,receipt_by_token,request_quote,shop_today');
+  eq((await runnable('anon')).join(), 'availability,catalogue,check_serial,has_staff_role,is_staff,receipt_by_token,request_quote,shop_details,shop_today');
   eq((await runnable('service_role')).join(), 'expire_holds,i_books_check,shop_today');
   eq((await runnable('authenticated')).join(), [
     'accept_quote', 'add_bank_line', 'approve_safe_count', 'approve_stock_count', 'availability', 'bank_matches', 'books_check', 'books_month', 'cancel_order', 'cancel_quote', 'cash_position', 'catalogue', 'check_serial', 'close_month', 'close_quote_request', 'close_till', 'confirm_payment', 'count_list',
     'counter_sale', 'create_order', 'create_quote', 'customer_balance', 'debtors', 'decide_approval', 'deliver_order', 'has_staff_role', 'is_staff', 'month_close_checks', 'month_report', 'move_money',
     'my_till', 'oldest_serials', 'open_quote_requests', 'open_till', 'owner_exceptions', 'owner_money_in', 'owner_money_out', 'owner_today', 'pack_list', 'pay_supplier', 'post_opening_balance', 'post_opening_debt', 'preview_sale', 'quote_from_request', 'receipt_by_token', 'receive_goods',
     'record_expense', 'refund_order', 'reject_payment', 'reject_safe_count', 'reject_stock_count', 'request_quote', 'reserve_order', 'return_goods', 'reverse_payment', 'reverse_txn', 'revise_quote', 'save_customer', 'save_location', 'save_part_details', 'save_product',
-    'save_staff', 'save_supplier', 'search_parts', 'set_customer_terms', 'set_last_cost', 'shop_today', 'submit_safe_count', 'submit_stock_count', 'take_payment', 'till_paid_out', 'transfer_stock', 'void_opening_debt',
+    'save_settings', 'save_staff', 'save_supplier', 'search_parts', 'set_customer_terms', 'set_last_cost', 'shop_details', 'shop_today', 'submit_safe_count', 'submit_stock_count', 'take_payment', 'till_paid_out', 'transfer_stock', 'void_opening_debt',
   ].join());
 });
 
@@ -1190,6 +1190,7 @@ await test('each role is refused what is not its job', async () => {
     ['open_quote_requests', {}, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
     ['quote_from_request', { p_request: dummy, p_location: dummy }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
     ['close_quote_request', { p_request: dummy, p_reason: 'x' }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
+    ['save_settings', { p_hold_unpaid_hours: 24, p_hold_deposit_days: 14, p_till_paid_out_limit: 5000000, p_battery_life_months: 24 }, everyoneBut()],
     ['pack_list', {}, everyoneBut(STORE, DISPATCH, COUNTER, COUNTER2)],
     ['count_list', { p_location: dummy }, everyoneBut(STORE)],
     ['debtors', {}, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
@@ -2053,6 +2054,58 @@ await test('the public catalogue shows shelf prices and stock bands, and anyone 
   const other = (await rpc(COUNTER, 'open_quote_requests'))[0];
   await rpc(COUNTER, 'close_quote_request', { p_request: other.id, p_reason: 'Duplicate' });
   await fails(rpc(COUNTER, 'close_quote_request', { p_request: other.id, p_reason: 'again' }), 'request_not_open');
+});
+
+await test('the owner sets hold times, the drawer limit and battery life, and the public sees only how to reach the shop', async () => {
+  const defaults = { p_hold_unpaid_hours: 24, p_hold_deposit_days: 14, p_till_paid_out_limit: 5000000, p_battery_life_months: 24 };
+  const was = (await q(`select * from shop_settings`))[0];
+  try {
+    await rpc(OWNER, 'save_settings', { p_hold_unpaid_hours: 2, p_hold_deposit_days: 30, p_till_paid_out_limit: 7500000, p_battery_life_months: 36,
+      p_shop_name: '  Ikeja Power  ', p_shop_phone: '0803 555 0101', p_shop_address: '12 Allen Avenue, Ikeja', p_shop_hours: 'Monday to Saturday, 8am to 6pm' });
+    const s = (await q(`select * from shop_settings`))[0];
+    eq(s.hold_unpaid_hours, 2);
+    eq(s.hold_deposit_days, 30);
+    eq(N(s.till_paid_out_limit_kobo), 7500000);
+    eq(s.battery_life_months, 36);
+    eq(s.shop_name, 'Ikeja Power', 'the name is trimmed:');
+    eq(s.shop_phone, '2348035550101', 'the phone is kept in one format:');
+
+    // The new hold time is what the next unpaid order gets.
+    const id = await rpc(OWNER, 'save_product', { p_sku: k('SET'), p_name: 'Settings test fuse', p_price: 10000 });
+    await rpc(OWNER, 'set_last_cost', { p_product: id, p_cost: 6000 });
+    await rpc(STORE, 'receive_goods', { p_key: k('rcv'), p_supplier: sup, p_location: shop, p_lines: [{ product_id: id, qty: 3 }] });
+    const o = await rpc(COUNTER, 'create_order', { p_key: k('ord'), p_location: shop, p_lines: [{ product_id: id, qty: 1 }] });
+    const hours = Number((await q(`select extract(epoch from hold_until - now()) / 3600 h from orders where id = $1`, [o]))[0].h);
+    expect(hours > 1.9 && hours <= 2, `a new unpaid order is held for 2 hours, not ${hours}`);
+
+    // Every change keeps the values before and after.
+    const a = (await q(`select actor, detail from audit_log where action = 'save_settings' order by id desc limit 1`))[0];
+    eq(a.actor, OWNER, 'the change is signed by the owner:');
+    eq(a.detail.before.hold_unpaid_hours, was.hold_unpaid_hours, 'the audit keeps the old value:');
+    eq(a.detail.after.hold_unpaid_hours, 2);
+
+    // The public sees how to reach the shop, and nothing about its limits or holds.
+    const pub = await rpc('anon', 'shop_details', {});
+    eq(Object.keys(pub).sort().join(), 'address,hours,name,phone', 'the public shop details:');
+    eq(pub.phone, '2348035550101');
+    eq(pub.hours, 'Monday to Saturday, 8am to 6pm');
+
+    await fails(rpc(OWNER, 'save_settings', { ...defaults, p_hold_unpaid_hours: 0 }), 'bad_setting');
+    await fails(rpc(OWNER, 'save_settings', { ...defaults, p_hold_deposit_days: 400 }), 'bad_setting');
+    await fails(rpc(OWNER, 'save_settings', { ...defaults, p_till_paid_out_limit: -1 }), 'bad_setting');
+    await fails(rpc(OWNER, 'save_settings', { ...defaults, p_battery_life_months: 500 }), 'bad_setting');
+    await fails(rpc(OWNER, 'save_settings', { ...defaults, p_shop_hours: 'x'.repeat(121) }), 'bad_setting');
+    await fails(rpc(OWNER, 'save_settings', { ...defaults, p_shop_phone: '12' }), 'bad_phone');
+    await fails(rpc(ACCOUNT, 'save_settings', defaults), 'not_allowed');
+    eq((await q(`select hold_unpaid_hours from shop_settings`))[0].hold_unpaid_hours, 2, 'a refused change leaves the settings alone:');
+
+    // Blank details are cleared, so the public shop simply hides them.
+    await rpc(OWNER, 'save_settings', { ...defaults, p_shop_name: ' ', p_shop_phone: '' });
+    for (const v of Object.values(await rpc('anon', 'shop_details', {}))) eq(v, null, 'cleared details:');
+  } finally {
+    await q(`update shop_settings set hold_unpaid_hours = $1, hold_deposit_days = $2, till_paid_out_limit_kobo = $3, battery_life_months = $4,
+      shop_name = null, shop_phone = null, shop_address = null, shop_hours = null where id`, [was.hold_unpaid_hours, was.hold_deposit_days, was.till_paid_out_limit_kobo, was.battery_life_months]);
+  }
 });
 
 // ---- Last, because it closes the month that every other scene posts into ----

@@ -407,6 +407,30 @@ try {
     return '375 px';
   });
 
+  await step("the owner sets the shop's rules and details, and the public shop shows how to reach it", async () => {
+    await o.goto(`${app}/settings`);
+    await o.locator('#hold-hours').waitFor({ timeout: 30000 });
+    await o.fill('#shop-name', 'Ikeja Power');
+    await o.fill('#shop-phone', '0803 555 0101');
+    await o.fill('#shop-hours', 'Monday to Saturday, 8am to 6pm');
+    await o.fill('#hold-hours', '48');
+    await o.fill('#paid-out', '75,000');
+    await o.getByRole('button', { name: 'Save changes' }).click();
+    await o.getByText('Saved. New orders and holds use these from now.').waitFor({ timeout: 20000 });
+    const [st] = await sql`select hold_unpaid_hours, till_paid_out_limit_kobo, shop_name, shop_phone from shop_settings`;
+    eq(st.hold_unpaid_hours, 48, 'hold hours');
+    eq(N(st.till_paid_out_limit_kobo), 7500000, 'the paid-out limit in kobo');
+    eq(st.shop_phone, '2348035550101', 'the shop phone');
+    const v = await guest();
+    await v.page.goto(`${app}/shop`);
+    await v.page.getByText('Call 08035550101').waitFor({ timeout: 30000 });
+    await v.page.getByRole('link', { name: 'Ikeja Power' }).waitFor();
+    await v.context.close();
+    await p.goto(`${app}/settings`);
+    await p.getByText('Settings are for the owner.').waitFor({ timeout: 20000 });
+    return '48 hours, ₦75,000 limit, phone on the public shop, counter refused';
+  });
+
   await step('a visitor finds a part by its size and asks for a quote, with no account and no trade price shown', async () => {
     const v = await guest();
     const answers = [];
