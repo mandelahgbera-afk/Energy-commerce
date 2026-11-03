@@ -27,6 +27,8 @@ export const errorWords: Record<string, string> = {
   bad_location: 'That shelf or location does not exist.',
   bad_phone: 'That phone number does not look right. Check the digits.',
   bad_setting: 'That setting is outside what the shop can use. Check the number, or shorten the text.',
+  bad_import: 'That list could not be read. Paste it again with the header row first.',
+  import_has_errors: 'Some lines have problems. Fix them in the sheet and paste it again; nothing was saved.',
   bad_price: 'That price does not look right. Prices are in whole kobo, never negative.',
   bad_qty: 'That quantity does not look right. Up to three decimal places only.',
   bad_refund_method: 'A refund can only go out as cash or a bank transfer.',

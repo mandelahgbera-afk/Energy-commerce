@@ -408,6 +408,30 @@ try {
     return '375 px';
   });
 
+  await step('the owner pastes a price list from Excel: a problem line stops it, then the fixed list saves', async () => {
+    const head = ['SKU', 'Name', 'Kind', 'Selling price', 'Wholesale', 'Part no', 'Bore mm', 'Outside mm', 'Width mm', 'Serial numbers'].join('\t');
+    const good = ['B-6206-2RS', '6206-2RS bearing', 'Bearings', '5,200', '4,700', '6206 2RS', '30', '62', '16', 'no'].join('\t');
+    const old = ['P-550', '550 W solar panel', 'Solar panels', '₦190,000', '', '', '', '', '', ''].join('\t');
+    const bad = ['P-600', '600 W solar panel', 'Solar panels', 'ask', '', '', '', '', '', ''].join('\t');
+    await o.goto(`${app}/import`);
+    await o.fill('#sheet', [head, good, old, bad].join('\n'));
+    await o.getByRole('button', { name: 'Check the list' }).click();
+    await o.getByText('The price is not a usable amount.').waitFor({ timeout: 20000 });
+    expect(await o.getByRole('button', { name: /^Save/ }).isDisabled(), 'saving is blocked while a line has a problem');
+    await o.fill('#sheet', [head, good, old, bad.replace('\task\t', '\t210,000\t')].join('\n'));
+    await o.getByRole('button', { name: 'Check the list' }).click();
+    await o.getByRole('button', { name: 'Save 3 products' }).click();
+    await o.getByText('Saved: 2 new, 1 changed. They are on the shop now.').waitFor({ timeout: 30000 });
+    const [b] = await sql`select p.price_kobo, t.trade_price_kobo, s.bore_mm from products p join product_trade_prices t on t.product_id = p.id join product_sizes s on s.product_id = p.id where p.sku = 'B-6206-2RS'`;
+    eq(N(b.price_kobo), 520000, 'the new bearing price');
+    eq(N(b.trade_price_kobo), 470000, 'its trade price');
+    eq(N(b.bore_mm), 30, 'its bore');
+    const [old5] = await sql`select p.price_kobo, t.trade_price_kobo from products p join product_trade_prices t on t.product_id = p.id where p.sku = 'P-550'`;
+    eq(N(old5.price_kobo), 19000000, 'the existing panel has its new price');
+    eq(N(old5.trade_price_kobo), 17000000, 'and keeps its trade price from a blank cell');
+    return '2 new, 1 changed, blank cells kept';
+  });
+
   await step("the owner sets the shop's rules and details, and the public shop shows how to reach it", async () => {
     await o.goto(`${app}/settings`);
     await o.locator('#hold-hours').waitFor({ timeout: 30000 });

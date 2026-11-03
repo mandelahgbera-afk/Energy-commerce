@@ -13,6 +13,7 @@ export const screens = [
   { href: '/requests', label: 'Requests', about: 'Quote requests from the public shop.', roles: ['owner', 'counter', 'accountant'] },
   { href: '/owner', label: "Owner's day", about: 'Approvals, money in and out, who owes.', roles: ['owner', 'accountant'] },
   { href: '/books', label: 'Books', about: 'The month, entries, the bank and closing.', roles: ['owner', 'accountant'] },
+  { href: '/import', label: 'Price list', about: "Bring in the shop's price list from Excel.", roles: ['owner'] },
   { href: '/settings', label: 'Settings', about: 'Shop details, hold times, limits and the team.', roles: ['owner'] },
 ] as const;
 

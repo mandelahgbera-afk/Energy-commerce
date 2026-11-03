@@ -1130,7 +1130,7 @@ await test('only the functions on this list can be run from outside', async () =
   eq((await runnable('service_role')).join(), 'expire_holds,i_books_check,shop_today');
   eq((await runnable('authenticated')).join(), [
     'accept_quote', 'add_bank_line', 'approve_safe_count', 'approve_stock_count', 'availability', 'bank_matches', 'books_check', 'books_month', 'cancel_order', 'cancel_quote', 'cash_position', 'catalogue', 'check_serial', 'close_month', 'close_quote_request', 'close_till', 'confirm_payment', 'count_list',
-    'counter_sale', 'create_order', 'create_quote', 'customer_balance', 'debtors', 'decide_approval', 'deliver_order', 'has_staff_role', 'is_staff', 'month_close_checks', 'month_report', 'move_money',
+    'counter_sale', 'create_order', 'create_quote', 'customer_balance', 'debtors', 'decide_approval', 'deliver_order', 'has_staff_role', 'import_products', 'is_staff', 'month_close_checks', 'month_report', 'move_money',
     'my_till', 'oldest_serials', 'open_quote_requests', 'open_till', 'owner_exceptions', 'owner_money_in', 'owner_money_out', 'owner_today', 'pack_list', 'pay_supplier', 'post_opening_balance', 'post_opening_debt', 'preview_sale', 'quote_from_request', 'receipt_by_token', 'receive_goods',
     'record_expense', 'refund_order', 'reject_payment', 'reject_safe_count', 'reject_stock_count', 'request_quote', 'reserve_order', 'return_goods', 'reverse_payment', 'reverse_txn', 'revise_quote', 'save_customer', 'save_location', 'save_part_details', 'save_product',
     'save_settings', 'save_staff', 'save_supplier', 'search_parts', 'set_customer_terms', 'set_last_cost', 'shop_details', 'shop_today', 'submit_safe_count', 'submit_stock_count', 'take_payment', 'till_paid_out', 'transfer_stock', 'void_opening_debt',
@@ -1190,6 +1190,7 @@ await test('each role is refused what is not its job', async () => {
     ['open_quote_requests', {}, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
     ['quote_from_request', { p_request: dummy, p_location: dummy }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
     ['close_quote_request', { p_request: dummy, p_reason: 'x' }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
+    ['import_products', { p_key: 'x', p_rows: [{ sku: 'x' }] }, everyoneBut()],
     ['save_settings', { p_hold_unpaid_hours: 24, p_hold_deposit_days: 14, p_till_paid_out_limit: 5000000, p_battery_life_months: 24 }, everyoneBut()],
     ['pack_list', {}, everyoneBut(STORE, DISPATCH, COUNTER, COUNTER2)],
     ['count_list', { p_location: dummy }, everyoneBut(STORE)],
@@ -2106,6 +2107,64 @@ await test('the owner sets hold times, the drawer limit and battery life, and th
     await q(`update shop_settings set hold_unpaid_hours = $1, hold_deposit_days = $2, till_paid_out_limit_kobo = $3, battery_life_months = $4,
       shop_name = null, shop_phone = null, shop_address = null, shop_hours = null where id`, [was.hold_unpaid_hours, was.hold_deposit_days, was.till_paid_out_limit_kobo, was.battery_life_months]);
   }
+});
+
+await test('the price list goes in from a sheet: a preview first, then every row or none, and a retry adds nothing', async () => {
+  const base = k('IMP');
+  const old = await rpc(OWNER, 'save_product', { p_sku: `${base}-3`, p_name: 'V-belt A42', p_price: 100000, p_trade: 90000, p_warranty_months: 3, p_family: 'belts' });
+  await rpc(OWNER, 'save_product', { p_sku: `${base}-4`, p_name: 'Roller chain 08B', p_price: 300000, p_family: 'chains' });
+  const rows = [
+    { sku: `${base}-1`, name: 'Bearing 6206 2RS', family: 'Bearings', price: 520000, trade: 470000, cost: 330000, part: '6206 2RS', bore: 30, outside: 62, width: 16, warranty: 6 },
+    { sku: `${base}-2`, name: 'Inverter battery 200Ah', family: 'Batteries', unit: 'pcs', tracking: 'yes', price: 25000000, warranty: 12 },
+    { sku: `${base}-3`, name: 'V-belt A42', price: 120000 },
+    { sku: `${base}-4`, name: 'Roller chain 08B', price: 300000 },
+  ];
+  const look = await rpc(OWNER, 'import_products', { p_key: null, p_rows: rows });
+  eq(JSON.stringify(look.counts), JSON.stringify({ new: 2, same: 1, error: 0, update: 1 }), 'the preview counts:');
+  eq(look.rows[2].action, 'update');
+  eq(N(look.rows[2].price_before), 100000, 'the preview shows the old price:');
+  eq(N(look.rows[2].trade), 90000, 'a blank trade price keeps the old one:');
+  eq((await q(`select count(*)::int n from products where sku like $1`, [`${base}-%`]))[0].n, 2, 'a preview changes nothing:');
+
+  const bad = [
+    { name: 'No code', price: 1000 },
+    { sku: `${base}-1`, name: 'Bearing 6206 2RS', price: 520000 },
+    { sku: `${base}-1`, name: 'Twice', price: 520000 },
+    { sku: `${base}-5`, name: 'Dear trade', price: 1000, trade: 2000 },
+    { sku: `${base}-6`, name: 'Odd unit', price: 1000, unit: 'box' },
+    { sku: `${base}-7`, name: 'Words for a price', price: 'abc' },
+    { sku: `${base}-3`, name: 'V-belt A42', price: 120000, unit: 'metre' },
+  ];
+  const checked = await rpc(OWNER, 'import_products', { p_key: null, p_rows: bad });
+  eq(checked.counts.error, 6, 'six bad lines:');
+  eq(checked.rows.map((x) => x.problem ?? '').join('|'), ['The SKU is missing.', '', 'This SKU is already on an earlier line.', 'The trade price is above the shelf price.',
+    'The unit must be each or metre.', 'The price is not a usable amount.', 'The unit or serial numbers cannot change on a product that already exists.'].join('|'));
+  await fails(rpc(OWNER, 'import_products', { p_key: k('imp'), p_rows: bad, p_apply: true }), 'import_has_errors');
+  eq((await q(`select count(*)::int n from products where sku like $1`, [`${base}-%`]))[0].n, 2, 'one bad line stops every line:');
+
+  const key = k('imp');
+  const done = await rpc(OWNER, 'import_products', { p_key: key, p_rows: rows, p_apply: true });
+  eq(done.applied, true);
+  const [a] = await q(`select p.id, p.price_kobo, p.family, p.warranty_months, p.part_number, t.trade_price_kobo, c.last_cost_kobo, s.bore_mm, s.outside_mm, s.width_mm
+    from products p left join product_trade_prices t on t.product_id = p.id left join product_costs c on c.product_id = p.id left join product_sizes s on s.product_id = p.id
+    where p.sku = $1`, [`${base}-1`]);
+  eq(N(a.price_kobo), 520000); eq(N(a.trade_price_kobo), 470000); eq(N(a.last_cost_kobo), 330000);
+  eq(a.family, 'bearings'); eq(a.warranty_months, 6); eq(a.part_number, '6206 2RS');
+  eq([N(a.bore_mm), N(a.outside_mm), N(a.width_mm)].join(), '30,62,16', 'the sizes:');
+  const [b] = await q(`select tracking::text, unit::text from products where sku = $1`, [`${base}-2`]);
+  eq(`${b.tracking} ${b.unit}`, 'serial each', 'yes means serial numbers, pcs means each:');
+  const [c] = await q(`select p.price_kobo, p.warranty_months, p.family, t.trade_price_kobo from products p join product_trade_prices t on t.product_id = p.id where p.id = $1`, [old]);
+  eq(N(c.price_kobo), 120000, 'the new price:');
+  eq(`${N(c.trade_price_kobo)} ${c.warranty_months} ${c.family}`, '90000 3 belts', 'blank cells keep trade price, warranty and kind:');
+  const found = await rpc('anon', 'catalogue', { p_query: '30 x 62 x 16' });
+  expect(found.items.some((x) => x.sku === `${base}-1`), 'the imported bearing is found by its size');
+
+  // A retry after a dropped connection returns the same answer and adds nothing.
+  eq(JSON.stringify(await rpc(OWNER, 'import_products', { p_key: key, p_rows: rows, p_apply: true })), JSON.stringify(done), 'a retry gives the same answer:');
+  eq((await q(`select count(*)::int n from products where sku like $1`, [`${base}-%`]))[0].n, 4, 'and adds nothing:');
+  await fails(rpc(OWNER, 'import_products', { p_key: key, p_rows: rows.slice(0, 1), p_apply: true }), 'key_reused');
+  await fails(rpc(OWNER, 'import_products', { p_key: k('imp'), p_rows: [], p_apply: true }), 'bad_import');
+  await fails(rpc(ACCOUNT, 'import_products', { p_key: null, p_rows: rows }), 'not_allowed');
 });
 
 // ---- Last, because it closes the month that every other scene posts into ----

@@ -62,6 +62,8 @@ Database first, because these need no accounts and the core can't handle a retur
 
 - [x] **Owner's settings.** `/settings`, owner only: the shop's name, phone, address and hours (shown on the public shop through `shop_details()`, which returns nothing else), the selling rules the shop confirms on the day (unpaid hold hours, deposit hold days, the till's paid-out limit, battery life), and the team's roles, discount limits and sign-in. `save_settings()` checks every value, keeps the phone in one format, and audits the values before and after. Proof: 130 rule scenes on both databases (a new hold time is what the next order gets, refused changes leave settings alone, the public sees only contact details), 19 races, `npm run e2e` 22 of 22 (the owner sets 48 hours and a ₦75,000 limit, a stranger sees the shop's phone, a counter is refused). Open: adding a new person's login still needs the developer.
 
+- [x] **Price list import.** `/import`, owner only: copy rows from Excel and paste them, or choose a CSV, with the shop's own column names ("Selling price", "Wholesale", "Part no" are understood) and a downloadable template. `import_products()` previews every line in plain words (new, changes with the old price, unchanged, or the problem), then saves every line or none through `save_product`, `set_last_cost` and `save_part_details`. A blank cell on an existing product keeps what is there, the unit and serial tracking of an existing product cannot change, and a retry with the same key adds nothing. VAT is left out until the accountant decides. Proof: 131 rule scenes on both databases, 19 races, `npm run e2e` 23 of 23 (a pasted sheet with a bad price is refused whole, the fixed one saves 2 new and 1 changed, a blank trade price is kept). Open: opening stock quantities still come from the go-live count, not the import.
+
 After these, stop. Everything left needs the owner and a real shop.
 
 ## Waiting on the owner
@@ -74,6 +76,8 @@ After these, stop. Everything left needs the owner and a real shop.
 ## Log
 
 Newest first. One or two lines per item: what now works, the test result, anything left open.
+
+- 3 Nov 2026 (Claude): price list import at /import, from pasted Excel cells or a CSV. 131 rules, 19 races, e2e 23 of 23, staging has 18 migrations, baseline raised. Left open: opening stock comes from the go-live count.
 
 - 3 Nov 2026 (Claude): owner's settings at /settings, and the shop's contact details on the public shop. 130 rules, 19 races, e2e 22 of 22, staging has 17 migrations, baseline raised. Left open: adding new logins on screen.
 
