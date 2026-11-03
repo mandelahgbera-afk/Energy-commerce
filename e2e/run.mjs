@@ -346,6 +346,7 @@ try {
     const b = await balanceLine();
     expect(b.ok, b.text);
     await a.getByText(/(Profit|Loss) after all costs/).waitFor();
+    await a.waitForTimeout(1000); // let the chart finish growing before the picture
     await a.screenshot({ path: path.join(shots, 'books-month.png'), fullPage: true });
     return b.text.replace('The books balance. ', '');
   });
@@ -466,6 +467,7 @@ try {
   await step('the counter turns the request into a quote, at trade price for a trade customer', async () => {
     await p.goto(`${app}/`);
     await p.getByText('Where to?').waitFor({ timeout: 20000 });
+    await p.waitForTimeout(800);
     await p.screenshot({ path: path.join(shots, 'home-desktop.png') });
     await p.goto(`${app}/requests`);
     const card = p.locator('article', { hasText: 'For the Lekki job' });

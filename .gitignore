@@ -13,3 +13,4 @@ tsconfig.tsbuildinfo
 e2e/shots/
 .next-e2e/
 next-env.d.ts
+promo/
