@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<!-- The share image (1200 × 630) LinkedIn, X and WhatsApp show for the site. Rendered in Docker:
+     see scripts/og/README.md. Output: app/opengraph-image.png and app/twitter-image.png. -->
+<style>
+  @font-face { font-family: 'Geist'; src: url('geist.woff2') format('woff2'); font-weight: 100 900; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    position: relative; font-family: 'Geist', system-ui, sans-serif; color: #10161E; -webkit-font-smoothing: antialiased;
+    background:
+      radial-gradient(34% 50% at 88% 6%, rgba(255, 214, 120, .55), transparent 70%),
+      radial-gradient(40% 60% at 4% 100%, rgba(27, 92, 240, .12), transparent 70%),
+      linear-gradient(160deg, #EAF1FF 0%, #F5F3FF 55%, #FFF4E0 100%);
+  }
+  .brand { position: absolute; left: 72px; top: 64px; display: flex; align-items: center; gap: 16px; font-size: 30px; font-weight: 650; letter-spacing: -.02em; }
+  .mark { display: grid; place-items: center; width: 60px; height: 60px; border-radius: 18px; background: linear-gradient(150deg, #23324A, #10161E); box-shadow: 0 8px 20px rgba(16, 22, 30, .25); }
+  h1 { position: absolute; left: 72px; top: 178px; font-size: 76px; line-height: 1; font-weight: 600; letter-spacing: -.045em; }
+  h1 span { background: linear-gradient(90deg, #1B5CF0, #4F7BF5 60%, #0D9465); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sub { position: absolute; left: 72px; top: 362px; width: 560px; font-size: 27px; line-height: 1.38; color: #434E5A; }
+  .foot { position: absolute; left: 72px; bottom: 58px; font-size: 20px; font-weight: 550; color: #55606C; }
+  .stack { position: absolute; right: 64px; top: 150px; width: 430px; display: flex; flex-direction: column; gap: 18px; }
+  .chip {
+    display: flex; align-items: center; gap: 16px; padding: 22px 24px; border-radius: 22px; background: rgba(255, 255, 255, .86);
+    border: 1px solid rgba(255, 255, 255, .95); box-shadow: 0 1px 2px rgba(16, 24, 34, .06), 0 18px 40px rgba(16, 24, 34, .12);
+  }
+  .chip:nth-child(2) { margin-left: -46px; }
+  .ic { display: grid; place-items: center; width: 46px; height: 46px; flex: none; border-radius: 14px; font-size: 22px; font-weight: 700; color: #FFFFFF; }
+  .t { font-size: 21px; font-weight: 650; letter-spacing: -.01em; }
+  .s { margin-top: 3px; font-size: 17px; color: #55606C; }
+</style>
+</head>
+<body>
+  <div class="brand"><span class="mark"><svg viewBox="0 0 24 24" width="32" height="32"><path d="M13.5 2 5 13.2h6L9.8 22 19 10.4h-6.1Z" fill="#FFD25E"/></svg></span>Power Store</div>
+  <h1>Steady power,<br><span>honestly priced.</span></h1>
+  <p class="sub">The online store and back office for solar, battery and power-parts dealers.</p>
+  <div class="foot">Built for the ready.</div>
+  <div class="stack">
+    <div class="chip"><span class="ic" style="background:#0D9465"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19.5 7"/></svg></span><span><div class="t">₦185,000 confirmed</div><div class="s">Checked against the bank first</div></span></div>
+    <div class="chip"><span class="ic" style="background:#1B5CF0">₦</span><span><div class="t">₦4,200 · trade price</div><div class="s">Applied for installers, automatically</div></span></div>
+    <div class="chip"><span class="ic" style="background:#10161E"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l9-5 9 5v8l-9 5-9-5ZM3 8l9 5 9-5M12 13v8"/></svg></span><span><div class="t">Counted blind</div><div class="s">Stock and tills, sent to the owner</div></span></div>
+  </div>
+</body>
+</html>
