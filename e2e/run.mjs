@@ -540,14 +540,23 @@ try {
   });
 
   await step('a visitor lands on the home page, and a kind of goods opens the shop on it', async () => {
+    const d = await guest();
+    await d.page.goto(`${app}/`);
+    await d.page.getByText('On the shelf today').waitFor({ timeout: 30000 });
+    await d.page.evaluate(async () => { for (let y = 0; y < document.body.scrollHeight; y += 300) { window.scrollTo(0, y); await new Promise((r) => setTimeout(r, 90)); } window.scrollTo(0, 0); });
+    await d.page.waitForTimeout(1200);
+    await d.page.screenshot({ path: path.join(shots, 'landing-desktop.png'), fullPage: true });
+    await d.context.close();
     const v = await guest({ width: 375, height: 812 });
     await v.page.goto(`${app}/`);
     await v.page.getByText('Steady power,').waitFor({ timeout: 30000 });
     expect(await noSideScroll(v.page), 'the home page scrolls sideways at 375px');
     await v.page.screenshot({ path: path.join(shots, 'landing-phone.png'), fullPage: true });
     await v.page.getByRole('link', { name: /Batteries/ }).click();
-    await v.page.getByText('Car battery, size 24F').waitFor({ timeout: 30000 });
-    eq(await v.page.inputValue('#q'), 'battery', 'the shop search');
+    // The landing shows products too, so wait for the shop itself before reading its search.
+    await v.page.waitForURL(/\/shop\?q=battery/, { timeout: 30000 });
+    await v.page.waitForFunction(() => document.querySelector('#q')?.value === 'battery', null, { timeout: 30000 });
+    await v.page.locator('article', { hasText: 'Car battery, size 24F' }).waitFor({ timeout: 30000 });
     await v.context.close();
     return 'home to batteries, 375 px';
   });
