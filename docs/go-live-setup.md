@@ -28,7 +28,7 @@ it, so its migrations go in with `npm run db:apply` and get checked.
    sender `no-reply@mail.yourdomain.com`, sender name: the shop's name.
 5. **Authentication → Rate Limits.** Once SMTP is on, raise "emails per hour" from the built-in
    test limit to about 30.
-6. **Authentication → Emails → Templates** (optional). Put the shop's name in the subject lines.
+6. **Authentication → Emails → Templates.** Paste the five branded login emails from `supabase/templates/`. Its README lists which file goes where.
 7. **Project Settings → API.** Copy the Project URL and the anon (or "publishable") key for
    Vercel. Never copy the service_role (secret) key into Vercel: this app does not use it.
 8. Supabase Free has no daily backups. Before real money goes in, the backup job from plan step

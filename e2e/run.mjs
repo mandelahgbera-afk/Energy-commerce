@@ -561,6 +561,37 @@ try {
     return 'home to batteries, 375 px';
   });
 
+  await step('a reset link from the email sets a new password, and the new password signs in', async () => {
+    const email = 'reset@e2e.local';
+    const admin = async (p, body) => fetch(`http://127.0.0.1:${ports.gateway}/auth/v1/admin/${p}`, {
+      method: 'POST', headers: { apikey: k.service, authorization: `Bearer ${k.service}`, 'content-type': 'application/json' }, body: JSON.stringify(body),
+    });
+    expect((await admin('users', { email, password: `e2e-${crypto.randomBytes(9).toString('base64url')}`, email_confirm: true })).ok, 'the reset login was made');
+    const link = await (await admin('generate_link', { type: 'recovery', email })).json();
+    const hash = link.hashed_token ?? link.properties?.hashed_token;
+    expect(hash, 'Supabase gave a recovery token');
+    const fresh = `e2e-${crypto.randomBytes(9).toString('base64url')}`;
+    const v = await guest();
+    await v.page.goto(`${app}/auth/confirm?token_hash=${hash}&type=recovery`);
+    await v.page.getByLabel('New password').fill(fresh);
+    await v.page.getByLabel('Type it again').fill(fresh);
+    await v.page.getByRole('button', { name: 'Save my password' }).click();
+    await v.page.getByText(/You're in/).waitFor({ timeout: 20000 });
+    await v.context.close();
+    const w = await guest();
+    await w.page.goto(`${app}/login`);
+    await w.page.fill('input[type=email]', email);
+    await w.page.fill('input[type=password]', fresh);
+    await w.page.click('button[type=submit]');
+    await w.page.getByText('Ask the owner to give this login a role.').waitFor({ timeout: 30000 });
+    await w.context.close();
+    const v2 = await guest();
+    await v2.page.goto(`${app}/auth/confirm?token_hash=${hash}&type=recovery`);
+    await v2.page.getByText('This link has expired').waitFor({ timeout: 20000 });
+    await v2.context.close();
+    return 'new password works, the link works once';
+  });
+
   await step('a counter cannot open the owner screen', async () => {
     await p.goto(`${app}/owner`);
     await p.getByText('This page is for the owner and the accountant.').waitFor({ timeout: 20000 });

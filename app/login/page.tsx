@@ -35,6 +35,14 @@ export default function Login() {
     router.push('/');
   };
 
+  // The same answer either way, so the page never reveals which emails have a login.
+  const forgot = async () => {
+    if (!email.trim()) { setMessage('Type your email first, then tap Forgot password.'); return; }
+    if (!connected()) return;
+    await browserDb().auth.resetPasswordForEmail(email.trim());
+    setMessage('If that email has a login, a reset link is on its way.');
+  };
+
   return (
     <main className="grid min-h-screen place-items-center px-5 py-10">
       <div className="w-full max-w-[400px]">
@@ -56,6 +64,7 @@ export default function Login() {
                 </button>
               </span>
             </label>
+            <button type="button" onClick={() => void forgot()} className="-mt-2 self-end text-[13px] font-medium text-action hover:underline">Forgot password?</button>
             {message ? (
               <p className="rise rounded-small bg-warn/10 p-3 text-sm text-warn" role="status">
                 {message}

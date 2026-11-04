@@ -1,0 +1,5 @@
+invite.html  →  Subject: You're invited to the Power Store team
+reset-password.html  →  Subject: Reset your Power Store password
+magic-link.html  →  Subject: Your Power Store sign-in link
+change-email.html  →  Subject: Confirm your new email address
+confirm-signup.html  →  Subject: Confirm your email for Power Store

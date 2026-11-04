@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Your Power Store sign-in link</title></head>
+<body style="margin:0;padding:0;background:#EEF1F4;">
+  <div style="display:none;max-height:0;overflow:hidden;">Tap the button to sign in to Power Store as .</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#EEF1F4;">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;">
+        <tr><td style="padding:0 4px 18px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+          <table role="presentation" cellspacing="0" cellpadding="0"><tr>
+            <td width="34" height="34" align="center" valign="middle" style="background:#10161E;border-radius:10px;font-size:17px;line-height:34px;color:#FFD25E;">&#9889;</td>
+            <td style="padding-left:10px;font-size:17px;font-weight:700;letter-spacing:-0.2px;color:#10161E;">Power Store</td>
+          </tr></table>
+        </td></tr>
+        <tr><td style="background:#FFFFFF;border:1px solid #E3E7EC;border-radius:20px;padding:32px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+          <h1 style="margin:0;font-size:24px;line-height:1.2;font-weight:700;letter-spacing:-0.4px;color:#10161E;">Your sign-in link</h1>
+          <p style="margin:12px 0 0;font-size:15.5px;line-height:1.6;color:#434E5A;">Tap the button to sign in to Power Store as {{ .Email }}.</p>
+          <table role="presentation" cellspacing="0" cellpadding="0" style="margin:26px 0 0;"><tr>
+            <td align="center" bgcolor="#1B5CF0" style="border-radius:13px;">
+              <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=magiclink" style="display:inline-block;padding:14px 26px;font-size:15.5px;font-weight:700;color:#FFFFFF;text-decoration:none;border-radius:13px;">Sign me in</a>
+            </td>
+          </tr></table>
+          <p style="margin:22px 0 0;font-size:13px;line-height:1.55;color:#6B7682;">This link works once and expires soon. If you didn&#39;t try to sign in, ignore this email.</p>
+        </td></tr>
+        <tr><td style="padding:18px 6px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12.5px;line-height:1.55;color:#6B7682;">
+          Power Store will never ask for your password by email, phone or WhatsApp.<br>Sent because of your login at {{ .SiteURL }}.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
