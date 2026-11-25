@@ -1,7 +1,7 @@
 'use client';
 
 // The shop's own map: MapLibre with OpenFreeMap tiles, recoloured to the shop's look. Pages load it
-// with next/dynamic, so its ~280 KB only arrive where a map is on screen. Nothing depends on it:
+// with next/dynamic, so its ~470 KB (gzipped, with the worker) only arrive where a map is on screen. Nothing depends on it:
 // if it fails, every screen still works in words. The style is one setting (NEXT_PUBLIC_MAP_STYLE),
 // so it can move to a self-hosted copy without a code change. Why these choices:
 // docs/plans/2026-11-25-orders-tracking-crm.md, decision 6.
@@ -60,6 +60,8 @@ export default function ShopMap({ points, label, onPick, height = 280 }: { point
       try {
         const ml = await import('maplibre-gl');
         if (!live || !box.current) return;
+        // MapLibre 6 looks for its worker beside its own script, which a bundle doesn't keep; this ships it as a file.
+        ml.setWorkerUrl(new URL('maplibre-gl/dist/maplibre-gl-worker.mjs', import.meta.url).href);
         lib.current = ml;
         const m = new ml.Map({ container: box.current, style: STYLE, center: START, zoom: 11, attributionControl: false, dragRotate: false, pitchWithRotate: false });
         m.touchZoomRotate.disableRotation();
