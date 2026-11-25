@@ -6,9 +6,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { browserDb } from '@/lib/supabase';
+import { Tools } from '@/components/tools';
 
 export const screens = [
   { href: '/counter', label: 'Counter', about: 'Sell, take payment, close the till.', roles: ['owner', 'counter'] },
+  { href: '/orders', label: 'Orders', about: 'Every order and where it is, deliveries, customers and follow-ups.', roles: ['owner', 'counter', 'dispatcher', 'accountant'] },
+  { href: '/rider', label: 'My drops', about: 'Your deliveries, directions and the customer’s code.', roles: ['owner', 'driver'] },
   { href: '/stock', label: 'Stock room', about: 'Receive deliveries, pack orders, count shelves.', roles: ['owner', 'storekeeper', 'dispatcher', 'counter', 'accountant'] },
   { href: '/requests', label: 'Requests', about: 'Quote requests from the public shop.', roles: ['owner', 'counter', 'accountant'] },
   { href: '/owner', label: "Owner's day", about: 'Approvals, money in and out, who owes.', roles: ['owner', 'accountant'] },
@@ -53,7 +56,7 @@ export function StaffNav({ label, wide, children }: { label: string; wide?: numb
           {mine.map((s) => <Link key={s.href} href={s.href} aria-current={path === s.href ? 'page' : undefined} className="staff-link">{s.label}</Link>)}
         </div>
       ) : null}
-      {children ? <div className="staff-tools">{children}</div> : null}
+      {children || mine.length ? <div className="staff-tools">{children}{mine.length ? <Tools /> : null}</div> : null}
     </nav>
   );
 }

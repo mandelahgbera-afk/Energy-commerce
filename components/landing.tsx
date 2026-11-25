@@ -71,7 +71,7 @@ function Scene() {
   );
 }
 
-export function Landing() {
+export function Landing({ staff = false }: { staff?: boolean }) {
   const router = useRouter();
   const root = useRef<HTMLElement>(null);
   const [shop, setShop] = useState<Details | null>(null);
@@ -110,7 +110,7 @@ export function Landing() {
           {[['#shelf', 'In stock'], ['#how', 'How it works'], ['#trade', 'For installers'], ['#visit', 'Visit']].map(([h, l]) => <a key={h} href={h} className="l-link">{l}</a>)}
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <Link href="/login" className="l-link">Staff</Link>
+          <Link href={staff ? '/' : '/login'} className="l-link">{staff ? 'Back office' : 'Staff'}</Link>
           <Link href="/shop" className="press" style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: '0 16px', borderRadius: 13, background: ink, color: '#FFFFFF', fontSize: 14.5, fontWeight: 550 }}>Shop now</Link>
         </span>
       </nav>
@@ -254,7 +254,7 @@ export function Landing() {
 
       <footer style={{ ...wrap, marginTop: 30, paddingTop: 18, borderTop: '1px solid rgba(16,24,34,.08)', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10, fontSize: 13.5, color: '#55606C' }}>
         <span>© {new Date().getFullYear()} {name}. Prices are today&apos;s shelf prices.</span>
-        <Link href="/login" style={{ color: '#434E5A' }}>Staff sign in</Link>
+        <Link href={staff ? '/' : '/login'} style={{ color: '#434E5A' }}>{staff ? 'Back office' : 'Staff sign in'}</Link>
       </footer>
 
       <style>{`

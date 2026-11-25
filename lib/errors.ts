@@ -119,6 +119,21 @@ export const errorWords: Record<string, string> = {
   till_not_open: 'Open your till first.',
   too_old: 'That date is too far in the past for the books.',
   use_domain_function: 'That cannot be undone directly. Reverse it through its own screen: {detail}',
+  // Deliveries, riders and customers (2026-11-25).
+  address_required: 'Add the address the rider should go to.',
+  bad_delivery_day: 'Pick a delivery day from today up to two months ahead.',
+  bad_due_day: 'Pick a day from today up to a year ahead.',
+  bad_pin: 'That map pin is not a real place. Drop it again.',
+  code_locked: 'Too many wrong codes. Call the shop: a dispatcher can confirm this drop.',
+  code_required: 'Ask the customer for the 4-digit code on their tracking page.',
+  no_delivery_booked: 'This order has no delivery booked. Book one on the Orders screen first.',
+  no_such_follow_up: 'That follow-up does not exist any more. Refresh the list.',
+  not_a_rider: 'Pick one of the riders on the list.',
+  not_out: 'This drop is not out with a rider any more. Refresh to see where it stands.',
+  not_your_drop: 'This drop is with another rider.',
+  note_required: 'Write a few words first.',
+  order_on_delivery: 'These goods are out with a rider. The rider confirms or returns them first.',
+  serial_on_delivery: 'Unit {detail} is out with a rider for another order. Pick another unit.',
 };
 
 /** The one place a database error becomes words. Never pass a raw Postgres error onward. */

@@ -12,6 +12,7 @@ import { toQty } from '@/lib/quantity';
 import { saleBlocker, type SaleLine } from '@/lib/sale-math';
 import { cashNotes, countedKobo, noteKobo } from '@/lib/till';
 import { Tick } from '@/components/kit/feel';
+import { CameraScan, exactHit, scanSound } from '@/components/scan';
 import { StaffNav } from '@/components/staff-nav';
 
 type Hit = { product: string; sku: string; name: string; part_number: string | null; price: bigint | number | string; match: string; state: string };
@@ -40,6 +41,10 @@ export default function Counter() {
   const [hitsFor, setHitsFor] = useState('');
   const pendingEnter = useRef(false);
   const [active, setActive] = useState(0);
+  // The arrow keys were used, so Enter means "this one" even if it is not an exact match.
+  const moved = useRef(false);
+  const [miss, setMiss] = useState('');
+  const [added, setAdded] = useState<{ n: number; name: string } | null>(null);
   const [lines, setLines] = useState<SaleLine[]>([]);
   const [serials, setSerials] = useState<Record<string, string[]>>({});
   const [phone, setPhone] = useState('');
@@ -107,16 +112,16 @@ export default function Counter() {
       setHits(rows);
       setHitsFor(q);
       setActive(0);
-      if (pendingEnter.current && rows.length) {
+      if (pendingEnter.current) {
         pendingEnter.current = false;
-        void addHit(rows[0]);
+        choose(rows, q);
       }
     }, 120);
     return () => {
       live = false;
       clearTimeout(t);
     };
-    // addHit is read when the answer lands, from this same render.
+    // choose is read when the answer lands, from this same render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, db]);
 
@@ -182,6 +187,34 @@ export default function Counter() {
     const at = document.activeElement;
     if (!(at instanceof HTMLInputElement || at instanceof HTMLTextAreaElement) || at === scanRef.current) focusScan();
   }, [db, location, focusScan]);
+
+  // A scanner or Enter adds a part only when the code is that part's own number. A near miss
+  // (6206 when only 6205 is in) is offered in the list, never added by itself.
+  const take = (hit: Hit) => { scanSound(true); setAdded((a) => ({ n: (a?.n ?? 0) + 1, name: hit.name })); void addHit(hit); };
+  const choose = (rows: Hit[], q: string) => {
+    const hit = moved.current ? rows[Math.min(active, rows.length - 1)] : exactHit(rows, q);
+    if (hit) { take(hit); return; }
+    scanSound(false);
+    setMiss(q);
+  };
+  const submit = (raw: string) => {
+    const q = raw.trim();
+    if (!q) return;
+    // A serial scanned on a sale picks that unit, when it is one of the units offered.
+    const code = q.toUpperCase();
+    const line = lines.find((l) => l.needsSerials && (serials[l.productId] ?? []).includes(code));
+    if (line) {
+      if (!line.serials.includes(code)) {
+        updateLine(line.productId, { serials: line.serials.length >= Number(line.qty) ? [...line.serials.slice(1), code] : [...line.serials, code] });
+      }
+      scanSound(true);
+      setAdded((a) => ({ n: (a?.n ?? 0) + 1, name: `Serial ${code}` }));
+      setQuery('');
+      return;
+    }
+    if (hitsFor === q) choose(hits, q);
+    else pendingEnter.current = true;
+  };
 
   const updateLine = (productId: string, patch: Partial<SaleLine>) =>
     setLines((cur) => cur.map((l) => (l.productId === productId ? { ...l, ...patch } : l)));
@@ -327,31 +360,33 @@ export default function Counter() {
           <div style={{ flex: '999 1 460px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <section className="card" aria-label="Add items" style={{ position: 'relative', padding: 18 }}>
               <label htmlFor="scan" style={{ display: 'block', marginBottom: 7, fontSize: 14.5, fontWeight: 600 }}>Scan or type a part</label>
+              <div style={{ display: 'flex', gap: 8 }}>
               <input
                 id="scan"
                 ref={scanRef}
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => { moved.current = false; setMiss(''); setQuery(e.target.value); }}
                 onKeyDown={(e) => {
-                  if (e.key === 'ArrowDown' && hits.length) { e.preventDefault(); setActive((a) => (a + 1) % hits.length); }
-                  if (e.key === 'ArrowUp' && hits.length) { e.preventDefault(); setActive((a) => (a - 1 + hits.length) % hits.length); }
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    if (hitsFor === query.trim() && hits.length) void addHit(hits[Math.min(active, hits.length - 1)]);
-                    else if (query.trim()) pendingEnter.current = true;
-                  }
+                  if (e.key === 'ArrowDown' && hits.length) { e.preventDefault(); moved.current = true; setActive((a) => (a + 1) % hits.length); }
+                  if (e.key === 'ArrowUp' && hits.length) { e.preventDefault(); moved.current = true; setActive((a) => (a - 1 + hits.length) % hits.length); }
+                  if (e.key === 'Enter') { e.preventDefault(); submit(query); }
                 }}
                 autoComplete="off"
                 placeholder="Scan the barcode, or type 6205 2rs"
-                style={{ width: '100%', height: 56, boxSizing: 'border-box', padding: '0 16px', border: '1.5px solid #10161E', borderRadius: 14, background: '#FFFFFF', color: '#10161E', font: "500 18px var(--mono)" }}
+                className="scan-box"
+                style={{ flex: 1, minWidth: 0, height: 56, boxSizing: 'border-box', padding: '0 16px', border: '1.5px solid #10161E', borderRadius: 14, background: '#FFFFFF', color: '#10161E', font: "500 18px var(--mono)" }}
               />
+              <CameraScan onCode={(c) => { moved.current = false; setMiss(''); setQuery(c); submit(c); }} />
+              </div>
+              {added ? <div key={added.n} role="status" className="rise scan-ok"><Tick size={15} stroke="#0D9465" />Added {added.name}</div> : null}
+              {miss && miss === query.trim() && hits.length ? <div role="alert" className="scan-miss">No part has the number {miss} exactly. Pick the right one below, or press ↓ then Enter.</div> : null}
               {hits.length > 0 ? (
                 <div role="listbox" aria-label="Matching items" style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 8 }}>
                   {hits.map((h, i) => (
-                    <button key={h.product} type="button" role="option" aria-selected={i === active} onClick={() => void addHit(h)} className="press" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 50, padding: '6px 12px', border: 0, borderRadius: 11, background: i === active ? '#EEF3FF' : 'transparent', color: '#10161E', textAlign: 'left', fontFamily: 'var(--sans)', cursor: 'pointer' }}>
+                    <button key={h.product} type="button" role="option" aria-selected={moved.current && i === active} onClick={() => take(h)} className="press" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 50, padding: '6px 12px', border: 0, borderRadius: 11, background: moved.current && i === active ? '#EEF3FF' : 'transparent', color: '#10161E', textAlign: 'left', fontFamily: 'var(--sans)', cursor: 'pointer' }}>
                       <span style={{ minWidth: 0 }}>
                         <span style={{ display: 'block', fontSize: 15, fontWeight: 500 }}>{h.name}</span>
-                        <span style={{ display: 'block', fontSize: 13, color: '#55606C' }}>{h.part_number ?? h.sku} · {h.state}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#55606C' }}>{h.part_number ?? h.sku}<span className={`stock-pill stock-${h.state}`} style={{ marginTop: 0 }}>{h.state === 'in' ? 'In stock' : h.state === 'low' ? 'Low' : 'Out'}</span></span>
                       </span>
                       <span className="tabular" style={{ flex: 'none', fontSize: 15, fontWeight: 600 }}>{formatNaira(h.price)}</span>
                     </button>
@@ -367,7 +402,7 @@ export default function Counter() {
                   <svg aria-hidden="true" viewBox="0 0 64 40" width="64" height="40" style={{ fill: 'none', stroke: '#B9CBF8', strokeWidth: 3, strokeLinecap: 'round' }}><path d="M6 6v28M14 6v28M20 6v28M30 6v28M36 6v28M44 6v28M50 6v28M58 6v28" /></svg>
                   <div style={{ marginTop: 10, fontSize: 16, fontWeight: 600 }}>Scan the first item to start.</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginTop: 12, fontSize: 13, color: '#55606C' }}>
-                    {[['Enter', 'adds the top match'], ['↑ ↓', 'choose another'], ['25 x 52 x 15', 'finds by size']].map(([k, t]) => (
+                    {[['Enter', 'adds the exact part'], ['↑ ↓', 'choose from the list'], ['25 x 52 x 15', 'finds by size']].map(([k, t]) => (
                       <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px 4px 4px', borderRadius: 10, background: '#F6F8FA' }}>
                         <kbd style={{ padding: '2px 7px', borderRadius: 6, border: '1px solid rgba(16,24,34,.14)', background: '#FFFFFF', color: '#2A3441', font: '500 12px var(--mono)' }}>{k}</kbd>{t}
                       </span>
@@ -526,7 +561,7 @@ export default function Counter() {
                     </div>
                   </div>
                 ) : null}
-                <button type="button" onClick={() => { setDone(null); setLines([]); setPhone(''); setDiscount('0'); setError(null); focusScan(); }} className="press" style={{ width: '100%', minHeight: 56, marginTop: 8, border: 0, borderRadius: 15, background: '#1B5CF0', color: '#FFFFFF', font: '600 17px var(--sans)', cursor: 'pointer' }}>
+                <button type="button" onClick={() => { setDone(null); setAdded(null); setLines([]); setPhone(''); setDiscount('0'); setError(null); focusScan(); }} className="press" style={{ width: '100%', minHeight: 56, marginTop: 8, border: 0, borderRadius: 15, background: '#1B5CF0', color: '#FFFFFF', font: '600 17px var(--sans)', cursor: 'pointer' }}>
                   New sale
                 </button>
               </div>

@@ -239,7 +239,7 @@ Out of scope: payroll (salaries are recorded as an expense) and filing taxes.
 | Moving average cost per product | Simple, and an accepted accounting method. To confirm with the accountant |
 | Sell in naira only, hold cost in dollars or naira | Matches the trade; multi-currency selling isn't needed |
 | Installable web apps, no native apps | One codebase, and it already worked for Nazia's rider app |
-| Flutterwave first, behind one payment interface | Nazia's working webhook is reusable. It can change if the probe fails (section 12) |
+| No payment gateway until a buyer asks for one; then Flutterwave or Paystack behind one interface | Owner, 25 Nov 2026. Cash, card taps and transfers, each checked by a second person, already cover the shop. The seam is written down in `2026-11-25-orders-tracking-crm.md`, "Adding a gateway later" |
 
 ---
 
@@ -254,9 +254,9 @@ Only what this project is proven to need.
 | Hosting | Vercel Pro ($20/month), Supabase Free to start | The owner's budget decision, 1 Nov 2026. Vercel's Hobby plan bans commercial use, so Pro is needed. See "Running costs" below for what keeps Supabase Free safe |
 | Backups | Our own encrypted database dump every 6 hours, to Cloudflare R2 | Supabase Free has no automatic backups, so this is required, not optional. Gleey's `sim/db-backup.mjs` is the pattern. A restore must be tested before go-live |
 | Photos and files | Cloudflare R2 (10 GB free, no download fees) | Delivery, damage, receipt and product photos, compressed. Keeps them out of Supabase's 1 GB |
-| Payments | Flutterwave, plus recorded manual transfers, POS and cash | Paystack is the fallback |
+| Payments | Recorded manual transfers, card taps and cash, each checked by a second person | A gateway (Flutterwave or Paystack) only when a buyer asks: owner, 25 Nov 2026 |
 | Messages | Resend email, plus WhatsApp click-to-chat links that staff tap and send | Owner's decision, 1 Nov 2026: no WhatsApp Cloud API for now. See "Reminders without the API" below |
-| Maps | Mapbox | Reuse Nazia's pin and live rider maps |
+| Maps | MapLibre GL with OpenFreeMap tiles, recoloured to the shop's look | Owner, 25 Nov 2026. No account, no key, no fee; the style is one setting (`NEXT_PUBLIC_MAP_STYLE`) so it can move to a self-hosted copy. Reasons: `2026-11-25-orders-tracking-crm.md`, decision 6 |
 | Documents | `@react-pdf/renderer` for A4 quotes, invoices and waybills; browser print for receipts | Printer probe in Phase 0 |
 | Scanning | USB scanner (types like a keyboard), phone camera (`BarcodeDetector`, with a zxing fallback) | Probe in Phase 0 |
 | Search | Postgres `pg_trgm`, normalised part numbers, indexed size fields | No search service needed unless the range proves far larger than expected; test on their real list |
@@ -275,9 +275,10 @@ Only what this project is proven to need.
 | Resend | Free | 3,000 emails a month, 100 a day, resets midnight UTC, 3 domains |
 | Cloudflare R2 | Free | 10 GB, no download fees |
 | Upstash | Free | 500,000 commands a month |
-| Mapbox, Sentry, PostHog, Turnstile | Free | Limits not rechecked today |
+| OpenFreeMap | Free | No key and no limits, credit line kept on the map (checked 25 Nov 2026) |
+| Sentry, PostHog, Turnstile | Free | Limits not rechecked today |
 | WhatsApp | Free for now | Click-to-chat links only. The Cloud API is on hold by the owner's decision, and would cost about $0.0067 per reminder (third-party figure) |
-| Flutterwave | Per transaction | Only when the shop earns |
+| Flutterwave or Paystack | Per transaction | Only once a buyer asks for automatic payments |
 
 **How long Supabase Free lasts.** Measured on 1 Nov 2026 by simulating 90 days of a shop on real Postgres (`sim/simulate.mjs`): **6.6 KB per sale at 30 sales a day, 5.8 KB at 100.** That covers lines, stock moves, ledger entries, payments and audit history. The catalogue of 1,540 products with opening stock came to 12.8 MB, including Postgres's own system tables.
 

@@ -33,7 +33,7 @@ export default function Help() {
             A simple cash sale is exactly five touches: <b style={{ fontWeight: 600 }}>scan, scan, Cash, Exact, Complete</b>. Scan or type a part number, press Enter; repeat; choose how they pay; tap Exact; Complete. Nothing else is ever needed. If the network drops after Complete, the screen retries with the same key — it can never sell twice.
           </Section>
           <Section title="The sale panel">
-            <Row state="Scan box empty" words="Type a part number, any spelling (6205 2RS, 62052rs), or a size (25 52 15). Arrow keys move, Enter adds the top match. The cursor always comes back here." />
+            <Row state="Scan box empty" words="Type a part number, any spelling (6205 2RS, 62052rs), or a size (25 52 15). Enter adds the part only when the number matches it exactly, so a scan never adds a look-alike. A near match is listed: tap it, or use the arrow keys then Enter. On a phone, the camera button beside the box reads barcodes. The cursor always comes back here." />
             <Row state="Nothing matches" words="The amber line says so, calmly. Check the number, or search by size. No sale is affected." />
             <Row state="A line with a battery" words="Serials appear under the line, oldest first. The sale cannot complete until every unit has its serial — warranty starts today on the one you chose." />
             <Row state="Quantity − on the last unit" words="It removes the line. Nothing was recorded yet, so nothing needs undoing." />

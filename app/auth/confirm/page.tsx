@@ -24,7 +24,11 @@ export default function Confirm() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  // An email link works once, so ask once: a second run of this effect would spend it and say "expired".
+  const asked = useRef(false);
   useEffect(() => {
+    if (asked.current) return;
+    asked.current = true;
     const u = new URLSearchParams(window.location.search);
     const hash = u.get('token_hash');
     const type = u.get('type') as Kind | null;

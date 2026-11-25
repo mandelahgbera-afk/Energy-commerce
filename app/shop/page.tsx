@@ -73,6 +73,9 @@ export default function Shop() {
   const [shop, setShop] = useState<{ name: string | null; phone: string | null; address: string | null; hours: string | null } | null>(null);
   // The landing page links here with ?q= so a visitor lands on that kind of goods.
   useEffect(() => { const q0 = new URLSearchParams(window.location.search).get('q'); if (q0) setQuery(q0.slice(0, 80)); }, []);
+  // Home is the public front page. Signed-in staff need ?public, or / opens their back office.
+  const [home, setHome] = useState('/');
+  useEffect(() => { void db.auth.getSession().then(({ data }) => { if (data.session) setHome('/?public'); }); }, [db]);
   useEffect(() => { void db.rpc('shop_details').then(({ data }) => { if (data) setShop(data as NonNullable<typeof shop>); }); }, [db]);
 
   // The list is kept on this device only, so a visitor can come back to it.
@@ -136,7 +139,7 @@ export default function Shop() {
   return (
     <main style={{ minHeight: '100vh', boxSizing: 'border-box', padding: '12px clamp(10px, 2vw, 28px) 0', overflowX: 'clip' }}>
       <nav aria-label="Store" className="glass" style={{ position: 'sticky', top: 12, zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, padding: '6px 8px 6px 12px', borderRadius: 18, maxWidth: 1240, margin: '0 auto' }}>
-        <a href="#top" style={{ display: 'inline-flex', alignItems: 'center', gap: 9, minHeight: 44, fontWeight: 650, fontSize: 17, letterSpacing: '-.02em' }}><Mark />{shop?.name ?? 'Power Store'}</a>
+        <Link href={home} style={{ display: 'inline-flex', alignItems: 'center', gap: 9, minHeight: 44, fontWeight: 650, fontSize: 17, letterSpacing: '-.02em' }}><Mark />{shop?.name ?? 'Power Store'}</Link>
         <button type="button" onClick={() => setOpen(true)} aria-label={`Quote list, ${items}`} className="press" style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 8, minHeight: 44, padding: '0 10px 0 16px', border: 0, borderRadius: 13, background: '#10161E', color: '#FFFFFF', font: '500 14.5px var(--sans)', cursor: 'pointer' }}>
           Quote list
           <span key={bump} className={bump ? 'bump' : ''} style={{ display: 'grid', placeItems: 'center', minWidth: 24, height: 24, padding: '0 7px', boxSizing: 'border-box', borderRadius: 12, background: count ? '#1B5CF0' : 'rgba(255,255,255,.16)', fontSize: 12.5, fontWeight: 650 }}>{count}</span>

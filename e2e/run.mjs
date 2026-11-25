@@ -69,7 +69,7 @@ try {
 
   // Test logins, made fresh for this run and never written down.
   const people = {};
-  for (const who of ['owner', 'counter', 'accountant', 'storekeeper']) {
+  for (const who of ['owner', 'counter', 'accountant', 'storekeeper', 'driver']) {
     const password = `e2e-${crypto.randomBytes(9).toString('base64url')}`;
     const email = `${who}@e2e.local`;
     const r = await fetch(`http://127.0.0.1:${ports.gateway}/auth/v1/admin/users`, {
@@ -85,6 +85,7 @@ try {
   await owner('save_staff', { p_user: people.counter.id, p_name: 'Ada', p_role: 'counter', p_discount_limit: 5 });
   await owner('save_staff', { p_user: people.accountant.id, p_name: 'Fatima', p_role: 'accountant' });
   await owner('save_staff', { p_user: people.storekeeper.id, p_name: 'Bola', p_role: 'storekeeper' });
+  await owner('save_staff', { p_user: people.driver.id, p_name: 'Emeka', p_role: 'driver' });
   const shop = await owner('save_location', { p_name: 'Ikeja shop' });
   const sup = await owner('save_supplier', { p_name: 'Lagos Batteries' });
   let n = 0;
@@ -559,6 +560,65 @@ try {
     await v.page.locator('article', { hasText: 'Car battery, size 24F' }).waitFor({ timeout: 30000 });
     await v.context.close();
     return 'home to batteries, 375 px';
+  });
+
+  await step('a phone order is booked, goes out with a rider, and only the customer’s code sells it', async () => {
+    const order = await counter('create_order', { p_key: key('ord'), p_location: shop, p_lines: [{ product_id: battery, qty: 1 }], p_phone: '08039990005', p_channel: 'phone' });
+    await counter('take_payment', { p_key: key('pay'), p_order: order, p_method: 'pos', p_amount: 7800000 });
+    const [{ invoice_no: inv, receipt_token: token }] = await sql`select invoice_no, receipt_token from orders where id = ${order}`;
+    // The counter books it from the orders board and gets a WhatsApp message with the tracking link.
+    await p.goto(`${app}/orders`);
+    await p.locator('article', { hasText: inv }).getByRole('button', { name: 'Book a delivery' }).click();
+    await p.getByPlaceholder('12 Allen Avenue, Ikeja').fill('22 Allen Avenue, Ikeja');
+    await p.getByRole('button', { name: 'Morning' }).click();
+    await p.getByRole('button', { name: 'Book the delivery' }).click();
+    await p.getByText('Delivery booked').waitFor({ timeout: 20000 });
+    const wa = decodeURIComponent(await p.getByRole('link', { name: 'Send on WhatsApp' }).getAttribute('href'));
+    expect(wa.startsWith('https://wa.me/2348039990005?text=') && wa.includes(`/track?r=${token}`), `the WhatsApp message: ${wa}`);
+    await p.getByRole('button', { name: 'Done' }).click();
+    await shot(p, 'orders-1-booked');
+    // The stock room packs it and gives it to the rider: held for the customer, not sold.
+    await s.goto(`${app}/stock`);
+    await s.getByRole('button', { name: 'Pack', exact: true }).click();
+    await s.getByRole('button', { name: new RegExp(inv) }).click();
+    await s.fill('#ps', 'CB-NEW-1');
+    await s.press('#ps', 'Enter');
+    await s.getByRole('radio', { name: 'Emeka' }).click();
+    await s.getByRole('button', { name: 'Give to Emeka' }).click();
+    await s.getByText(`${inv} is with Emeka`).waitFor({ timeout: 20000 });
+    eq((await sql`select status from shipments where order_id = ${order}`)[0].status, 'out', 'the shipment:');
+    eq((await sql`select status from serial_units where serial = 'CB-NEW-1'`)[0].status, 'in_stock', 'the unit is held, not sold:');
+    eq(N(await val('select count(*) from deliveries where order_id = $1', [order])), 0, 'nothing booked as sold yet:');
+    // The customer opens the link on a phone and reads the code.
+    const c = await guest({ width: 375, height: 812 });
+    await c.page.goto(`${app}/track?r=${token}`);
+    await c.page.getByText('Your delivery code').waitFor({ timeout: 30000 });
+    const code = (await c.page.locator('.code-digits').innerText()).replace(/\D/g, '');
+    eq(code.length, 4, 'the code on the page:');
+    expect(await noSideScroll(c.page), 'the tracking page scrolls sideways at 375px');
+    await c.page.screenshot({ path: path.join(shots, 'track-phone.png'), fullPage: true });
+    // The rider tries a wrong code, then the right one: only then is it a sale.
+    const r = await session('driver', { width: 375, height: 812 });
+    await r.page.goto(`${app}/rider`);
+    const card = r.page.locator('article', { hasText: inv });
+    await card.getByRole('button', { name: 'Delivered' }).click();
+    await r.page.fill(`#c-${order}`, code === '1111' ? '2222' : '1111');
+    await r.page.press(`#c-${order}`, 'Enter');
+    await r.page.getByText('4 tries left').waitFor({ timeout: 20000 });
+    expect(await noSideScroll(r.page), 'the rider screen scrolls sideways at 375px');
+    await r.page.fill(`#c-${order}`, code);
+    await r.page.press(`#c-${order}`, 'Enter');
+    await r.page.getByText(`${inv}: Delivered to`).waitFor({ timeout: 20000 });
+    await r.page.screenshot({ path: path.join(shots, 'rider-phone.png'), fullPage: true });
+    await r.context.close();
+    eq((await sql`select goods_status from orders where id = ${order}`)[0].goods_status, 'delivered', 'the order:');
+    eq((await sql`select status from serial_units where serial = 'CB-NEW-1'`)[0].status, 'sold', 'the unit:');
+    await c.page.reload();
+    await c.page.getByRole('heading', { name: 'Delivered' }).first().waitFor({ timeout: 30000 });
+    await c.context.close();
+    const books = await val('select i_books_check()');
+    expect(books.ok, `books: ${books.problems?.join('; ')}`);
+    return 'booked, held while out, one wrong code refused, sold at the door, books agree';
   });
 
   await step('a reset link from the email sets a new password, and the new password signs in', async () => {

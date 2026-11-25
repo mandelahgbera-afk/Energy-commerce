@@ -9,13 +9,17 @@ import { browserDb } from '@/lib/supabase';
 import { friendly } from '@/lib/errors';
 import { toQty } from '@/lib/quantity';
 import { Tick } from '@/components/kit/feel';
+import { CameraScan, exactHit, scanSound } from '@/components/scan';
 import { StaffNav } from '@/components/staff-nav';
 
 type Tab = 'receive' | 'pack' | 'count';
 type Hit = { product: string; sku: string; name: string; part_number: string | null };
 type RecvLine = { productId: string; name: string; sku: string; serial: boolean; unit: string; qty: string; serials: string[]; madeOn: string };
 type PackLine = { product_id: string; sku: string; name: string; unit: string; tracking: string; remaining: number | string; oldest: string[] | null };
-type PackOrder = { order_id: string; invoice_no: string | null; customer: string | null; channel: string; created_on: string; on_credit: boolean; lines: PackLine[] };
+type PackDelivery = { scheduled_on: string; time_of_day: string | null; landmark: string | null; tries: number };
+type PackOrder = { order_id: string; invoice_no: string | null; customer: string | null; channel: string; created_on: string; on_credit: boolean; delivery: PackDelivery | null; lines: PackLine[] };
+type Rider = { id: string; name: string };
+const dayWords = (d: PackDelivery) => `${new Date(`${d.scheduled_on}T12:00:00`).toLocaleDateString('en-NG', { weekday: 'short', day: 'numeric', month: 'short' })}${d.time_of_day ? `, ${d.time_of_day}` : ''}`;
 type CountLine = { product_id: string; sku: string; name: string; unit: string; last_counted_on: string | null };
 
 const allowed: Record<Tab, string[]> = {
@@ -97,7 +101,20 @@ function PartSearch({ db, onPick, label }: { db: Db; onPick: (h: Hit) => void; l
   const [hits, setHits] = useState<Hit[]>([]);
   const [hitsFor, setHitsFor] = useState('');
   const pending = useRef(false);
-  const pick = useCallback((h: Hit) => { onPick(h); setQ(''); setHits([]); setHitsFor(''); }, [onPick]);
+  const [miss, setMiss] = useState('');
+  const pick = useCallback((h: Hit) => { scanSound(true); onPick(h); setQ(''); setHits([]); setHitsFor(''); }, [onPick]);
+  // Only the part's own number adds by itself. A near miss waits for a tap.
+  const choose = useCallback((rows: Hit[], term: string) => {
+    const h = exactHit(rows, term);
+    if (h) pick(h);
+    else { scanSound(false); setMiss(term); }
+  }, [pick]);
+  const submit = (raw: string) => {
+    const term = raw.trim();
+    if (!term) return;
+    if (hitsFor === term) choose(hits, term);
+    else pending.current = true;
+  };
   useEffect(() => {
     const term = q.trim();
     if (!term) { setHits([]); setHitsFor(''); return; }
@@ -108,20 +125,23 @@ function PartSearch({ db, onPick, label }: { db: Db; onPick: (h: Hit) => void; l
       const rows = (data ?? []) as Hit[];
       setHits(rows);
       setHitsFor(term);
-      if (pending.current && rows.length) { pending.current = false; pick(rows[0]); }
+      if (pending.current) { pending.current = false; choose(rows, term); }
     }, 120);
     return () => { live = false; clearTimeout(t); };
-  }, [q, db, pick]);
+  }, [q, db, choose]);
   return (
     <div>
       <label htmlFor="part" style={{ display: 'block', marginBottom: 7, fontSize: 14.5, fontWeight: 600 }}>{label}</label>
-      <input id="part" value={q} onChange={(e) => setQ(e.target.value)} autoComplete="off" placeholder="Scan the barcode, or type 6205 2rs" style={field}
-        onKeyDown={(e) => {
-          if (e.key !== 'Enter') return;
-          e.preventDefault();
-          if (hitsFor === q.trim() && hits.length) pick(hits[0]);
-          else if (q.trim()) pending.current = true;
-        }} />
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input id="part" value={q} onChange={(e) => { setMiss(''); setQ(e.target.value); }} autoComplete="off" placeholder="Scan the barcode, or type 6205 2rs" style={{ ...field, flex: 1, minWidth: 0 }}
+          onKeyDown={(e) => {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            submit(q);
+          }} />
+        <CameraScan onCode={(c) => { setMiss(''); setQ(c); submit(c); }} />
+      </div>
+      {miss && miss === q.trim() && hits.length ? <p role="alert" className="scan-miss">No part has the number {miss} exactly. Tap the right one below.</p> : null}
       {hits.length ? (
         <div role="listbox" aria-label="Matching parts" style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 8 }}>
           {hits.map((h) => (
@@ -160,10 +180,11 @@ function Receive({ db, locations, onError, clearError }: Props & { locations: { 
   }, [db]);
   const update = (id: string, patch: Partial<RecvLine>) => setLines((cur) => cur.map((l) => (l.productId === id ? { ...l, ...patch } : l)));
 
-  const scanSerial = (l: RecvLine) => {
-    const code = (scan[l.productId] ?? '').trim().toUpperCase();
+  const scanSerial = (l: RecvLine, raw = scan[l.productId] ?? '') => {
+    const code = raw.trim().toUpperCase();
     if (!code) return;
-    if (lines.some((x) => x.serials.includes(code))) { setNote(`${code} was already scanned.`); return; }
+    if (lines.some((x) => x.serials.includes(code))) { scanSound(false); setNote(`${code} was already scanned.`); return; }
+    scanSound(true);
     update(l.productId, { serials: [...l.serials, code], qty: String(l.serials.length + 1) });
     setScan((s) => ({ ...s, [l.productId]: '' }));
     setNote(`${code} received.`);
@@ -232,6 +253,7 @@ function Receive({ db, locations, onError, clearError }: Props & { locations: { 
                 <div style={{ marginTop: 8, display: 'grid', gap: 8 }}>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <input aria-label={`Scan a serial for ${l.name}`} value={scan[l.productId] ?? ''} onChange={(e) => setScan((s) => ({ ...s, [l.productId]: e.target.value }))} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); scanSerial(l); } }} autoComplete="off" placeholder="Scan the serial, then Enter" style={{ ...field, flex: '1 1 220px', height: 46, fontSize: 15 }} />
+                    <CameraScan onCode={(c) => scanSerial(l, c)} label={`Scan a serial for ${l.name} with the camera`} />
                     <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13.5, color: '#434E5A' }}>Made on
                       <input type="date" value={l.madeOn} onChange={(e) => update(l.productId, { madeOn: e.target.value })} style={{ height: 46, padding: '0 10px', border: '1px solid rgba(16,24,34,.16)', borderRadius: 12, font: '500 14px var(--sans)' }} />
                     </label>
@@ -262,7 +284,8 @@ function Receive({ db, locations, onError, clearError }: Props & { locations: { 
 }
 
 function Pack({ db, onError, clearError }: Props) {
-  const [list, setList] = useState<{ ready: PackOrder[]; waiting_for_money: number } | null>(null);
+  const [list, setList] = useState<{ ready: PackOrder[]; waiting_for_money: number; riders: Rider[] } | null>(null);
+  const [rider, setRider] = useState('');
   const [open, setOpen] = useState<PackOrder | null>(null);
   const [picked, setPicked] = useState<Record<string, string[] | true>>({});
   const [scan, setScan] = useState('');
@@ -275,7 +298,7 @@ function Pack({ db, onError, clearError }: Props) {
   const load = useCallback(async () => {
     const { data, error } = await db.rpc('pack_list');
     if (error) onError(error.message);
-    else setList(data as { ready: PackOrder[]; waiting_for_money: number });
+    else setList(data as { ready: PackOrder[]; waiting_for_money: number; riders: Rider[] });
   }, [db, onError]);
   useEffect(() => { void load(); }, [load]);
 
@@ -285,37 +308,44 @@ function Pack({ db, onError, clearError }: Props) {
   const allDone = open !== null && doneCount === open.lines.length;
 
   const take = (productId: string, code: string) => {
+    scanSound(true);
     setPicked((p) => ({ ...p, [productId]: [...((p[productId] as string[] | undefined) ?? []), code] }));
     setWarn(null);
     setMsg(`${code} picked.`);
     setScan('');
   };
-  const onScan = () => {
+  const onScan = (raw = scan) => {
     if (!open) return;
-    const code = scan.trim().toUpperCase();
+    const code = raw.trim().toUpperCase();
     if (!code) return;
     const taken = Object.values(picked).flatMap((v) => (Array.isArray(v) ? v : []));
-    if (taken.includes(code)) { setMsg(`${code} is already picked.`); setScan(''); return; }
+    if (taken.includes(code)) { scanSound(false); setMsg(`${code} is already picked.`); setScan(''); return; }
     const line = open.lines.find((l) => l.tracking === 'serial' && !isDone(l) && (l.oldest ?? []).includes(code))
       ?? open.lines.find((l) => l.tracking === 'serial' && !isDone(l));
-    if (!line) { setMsg(`${code} is not on this order, or that line is already picked.`); setScan(''); return; }
+    if (!line) { scanSound(false); setMsg(`${code} is not on this order, or that line is already picked.`); setScan(''); return; }
     // Oldest first, so batteries never sit until they go flat. A newer unit can still go, on purpose.
     const first = (line.oldest ?? []).find((s) => !taken.includes(s));
-    if (first && first !== code) { setWarn({ code, productId: line.product_id, first }); setScan(''); return; }
+    if (first && first !== code) { scanSound(false); setWarn({ code, productId: line.product_id, first }); setScan(''); return; }
     take(line.product_id, code);
   };
 
+  // A booked delivery goes to a rider and is only sold at the door; anything else is handed over here.
   const handOver = async () => {
-    if (!open || !allDone || busy) return;
+    const riderName = open?.delivery ? list?.riders.find((r) => r.id === rider)?.name : null;
+    if (!open || !allDone || busy || (open.delivery && !riderName)) return;
     setBusy(true);
     clearError();
     key.current ??= crypto.randomUUID();
     const lines = open.lines.map((l) => ({ product_id: l.product_id, qty: Number(l.remaining), ...(l.tracking === 'serial' ? { serials: picked[l.product_id] as string[] } : {}) }));
-    const { error } = await db.rpc('deliver_order', { p_key: key.current, p_order: open.order_id, p_lines: lines });
+    const { error } = riderName
+      ? await db.rpc('dispatch_order', { p_key: key.current, p_order: open.order_id, p_rider: rider, p_lines: lines })
+      : await db.rpc('deliver_order', { p_key: key.current, p_order: open.order_id, p_lines: lines });
     setBusy(false);
     if (error) { onError(error.message); return; }
     key.current = null;
-    setDone(`${open.invoice_no ?? 'The order'} is packed and handed over${open.customer ? ` for ${open.customer}` : ''}.`);
+    setDone(riderName
+      ? `${open.invoice_no ?? 'The order'} is with ${riderName}. The sale is recorded when the customer gives their code at the door.`
+      : `${open.invoice_no ?? 'The order'} is packed and handed over${open.customer ? ` for ${open.customer}` : ''}.`);
     setOpen(null);
     setPicked({});
     void load();
@@ -335,7 +365,7 @@ function Pack({ db, onError, clearError }: Props) {
         ) : null}
         <div style={{ display: 'grid', gap: 10 }}>
           {list?.ready.map((o, i) => (
-            <button key={o.order_id} type="button" onClick={() => { setDone(null); setMsg(null); setPicked({}); setOpen(o); }} className="card press rise pack-row" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 16, textAlign: 'left', cursor: 'pointer', color: '#10161E', font: 'inherit', animationDelay: `${Math.min(i, 6) * 40}ms` }}>
+            <button key={o.order_id} type="button" onClick={() => { setDone(null); setMsg(null); setPicked({}); setRider(''); setOpen(o); }} className="card press rise pack-row" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 16, textAlign: 'left', cursor: 'pointer', color: '#10161E', font: 'inherit', animationDelay: `${Math.min(i, 6) * 40}ms` }}>
               <span aria-hidden="true" style={{ display: 'grid', placeItems: 'center', width: 42, height: 42, flex: 'none', borderRadius: 12, background: 'linear-gradient(160deg, #EEF3FF, #E3EAFD)' }}>
                 <svg viewBox="0 0 24 24" width="21" height="21" style={{ fill: 'none', stroke: '#1B5CF0', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' }}><path d="M3 8l9-5 9 5v8l-9 5-9-5ZM3 8l9 5 9-5M12 13v8" /></svg>
               </span>
@@ -345,6 +375,7 @@ function Pack({ db, onError, clearError }: Props) {
                   {plural(o.lines.length, 'line')}
                   <span style={{ padding: '1px 8px', borderRadius: 9, background: '#F1F3F5', fontSize: 12.5, fontWeight: 550, color: '#434E5A' }}>{o.channel === 'counter' ? 'At the counter' : o.channel === 'phone' ? 'Phone order' : 'Online order'}</span>
                   {o.on_credit ? <span style={{ padding: '1px 8px', borderRadius: 9, background: '#EEF3FF', fontSize: 12.5, fontWeight: 550, color: '#1B5CF0' }}>On account</span> : null}
+                  {o.delivery ? <span style={{ padding: '1px 8px', borderRadius: 9, background: '#FFF6E0', fontSize: 12.5, fontWeight: 550, color: '#8A5A00' }}>Delivery {dayWords(o.delivery)}{o.delivery.tries ? `, try ${o.delivery.tries + 1}` : ''}</span> : null}
                 </span>
               </span>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 14, fontWeight: 600, color: '#1B5CF0' }}>Pack<svg aria-hidden="true" className="pack-arrow" viewBox="0 0 24 24" width="16" height="16" style={{ fill: 'none', stroke: '#1B5CF0', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', transition: 'transform .2s' }}><path d="M9 6l6 6-6 6" /></svg></span>
@@ -367,7 +398,10 @@ function Pack({ db, onError, clearError }: Props) {
       </div>
       <div className="card" style={{ marginTop: 14, padding: 18 }}>
         <label htmlFor="ps" style={{ display: 'block', marginBottom: 7, fontSize: 14.5, fontWeight: 600 }}>Scan what you pick up</label>
-        <input id="ps" value={scan} onChange={(e) => setScan(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onScan(); } }} autoComplete="off" placeholder="Scan the unit, then Enter" style={field} />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input id="ps" value={scan} onChange={(e) => setScan(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onScan(); } }} autoComplete="off" placeholder="Scan the unit, then Enter" style={{ ...field, flex: 1, minWidth: 0 }} />
+          <CameraScan onCode={(c) => onScan(c)} />
+        </div>
         {warn ? (
           <div role="alert" className="rise" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 10, padding: '10px 12px', borderRadius: 12, background: '#FDF3E7' }}>
             <span style={{ fontSize: 14, color: '#92400E' }}>Take {warn.first} first. It is older, so it should leave before {warn.code}.</span>
@@ -386,7 +420,7 @@ function Pack({ db, onError, clearError }: Props) {
                   <div style={{ fontSize: 15.5, fontWeight: 550 }}>{l.name}</div>
                   <div style={{ fontSize: 13, color: '#55606C' }}>
                     {l.tracking === 'serial'
-                      ? `${got.length} of ${need(l)} scanned${(l.oldest ?? []).length ? `. Oldest first: ${(l.oldest ?? []).filter((s) => !got.includes(s)).slice(0, 3).join(', ')}` : ''}`
+                      ? `${got.length} of ${need(l)} scanned${(l.oldest ?? []).length && got.length < need(l) ? `. Oldest first: ${(l.oldest ?? []).filter((s) => !got.includes(s)).slice(0, 3).join(', ')}` : ''}`
                       : `Take ${String(Number(l.remaining))}${l.unit === 'metre' ? ' m' : ''}`}
                   </div>
                 </div>
@@ -396,8 +430,24 @@ function Pack({ db, onError, clearError }: Props) {
           })}
         </ol>
       </div>
-      {allDone ? <p className="rise" style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '12px 2px 0', fontSize: 15, fontWeight: 550, color: '#0A6E4B' }}><Tick size={18} stroke="#0D9465" />Ready to hand over</p> : null}
-      <button type="button" onClick={() => void handOver()} disabled={!allDone || busy} className="press" style={solid(allDone && !busy)}>{busy ? 'Recording…' : allDone ? 'Hand over' : 'Pick every line first'}</button>
+      {open.delivery ? (
+        <div className="card" style={{ marginTop: 12, padding: 18 }}>
+          <div style={{ fontSize: 14.5, fontWeight: 600 }}>Delivery {dayWords(open.delivery)}</div>
+          {open.delivery.landmark ? <div style={{ marginTop: 2, fontSize: 13.5, color: '#55606C' }}>Landmark: {open.delivery.landmark}</div> : null}
+          <div role="radiogroup" aria-label="Which rider takes it" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+            {list?.riders.length ? list.riders.map((r) => (
+              <button key={r.id} type="button" role="radio" aria-checked={rider === r.id} onClick={() => setRider(r.id)} className="press"
+                style={{ ...ghost, borderColor: rider === r.id ? '#1B5CF0' : 'rgba(16,24,34,.16)', background: rider === r.id ? '#EEF3FF' : '#FFFFFF', color: rider === r.id ? '#1B5CF0' : '#10161E', fontWeight: rider === r.id ? 600 : 500 }}>{r.name}</button>
+            )) : <p style={{ margin: 0, fontSize: 14, color: '#92400E' }}>No riders yet. The owner adds them as staff with the Driver role.</p>}
+          </div>
+        </div>
+      ) : null}
+      {allDone ? <p className="rise" style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '12px 2px 0', fontSize: 15, fontWeight: 550, color: '#0A6E4B' }}><Tick size={18} stroke="#0D9465" />{open.delivery ? 'Packed. Pick the rider, then give it to them' : 'Ready to hand over'}</p> : null}
+      {(() => {
+        const ready = allDone && !busy && (!open.delivery || rider !== '');
+        const label = busy ? 'Recording…' : !allDone ? 'Pick every line first' : open.delivery ? (rider ? `Give to ${list?.riders.find((r) => r.id === rider)?.name ?? 'the rider'}` : 'Pick the rider') : 'Hand over';
+        return <button type="button" onClick={() => void handOver()} disabled={!ready} className="press" style={solid(ready)}>{label}</button>;
+      })()}
     </section>
   );
 }

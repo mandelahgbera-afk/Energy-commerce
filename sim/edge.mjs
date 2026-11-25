@@ -1088,7 +1088,8 @@ await test('counter, storekeeper, dispatcher, driver and strangers cannot read c
 });
 
 await test('the anonymous public cannot read any of it at all', async () => {
-  for (const t of [...secretTables, 'product_trade_prices', 'staff', 'customers', 'suppliers', 'audit_log', 'orders', 'order_lines', 'payments', 'deliveries', 'stock_balances', 'serial_units', 'stock_movements', 'lots', 'approvals', 'locations', 'shop_settings']) {
+  for (const t of [...secretTables, 'product_trade_prices', 'staff', 'customers', 'suppliers', 'audit_log', 'orders', 'order_lines', 'payments', 'deliveries', 'stock_balances', 'serial_units', 'stock_movements', 'lots', 'approvals', 'locations', 'shop_settings',
+    'shipments', 'shipment_codes', 'shipment_serials', 'order_events', 'customer_notes', 'follow_ups']) {
     await fails(as('anon', () => q(`select * from ${t} limit 1`)), 'permission denied');
   }
   expect(N((await as('anon', () => q('select count(*) c from products')))[0].c) > 0, 'public should see products');
@@ -1126,14 +1127,14 @@ await test('no login can write to any table directly, whatever its role', async 
 await test('only the functions on this list can be run from outside', async () => {
   const runnable = async (role) => (await q(`select p.proname n from pg_proc p join pg_namespace s on s.oid = p.pronamespace
     where s.nspname = 'public' and has_function_privilege($1, p.oid, 'execute') order by 1`, [role])).map((r) => r.n);
-  eq((await runnable('anon')).join(), 'availability,catalogue,check_serial,has_staff_role,is_staff,receipt_by_token,request_quote,shop_details,shop_today');
+  eq((await runnable('anon')).join(), 'availability,catalogue,check_serial,has_staff_role,is_staff,receipt_by_token,request_quote,set_drop_pin,shop_details,shop_today,track_order');
   eq((await runnable('service_role')).join(), 'expire_holds,i_books_check,shop_today');
   eq((await runnable('authenticated')).join(), [
-    'accept_quote', 'add_bank_line', 'approve_safe_count', 'approve_stock_count', 'availability', 'bank_matches', 'books_check', 'books_month', 'cancel_order', 'cancel_quote', 'cash_position', 'catalogue', 'check_serial', 'close_month', 'close_quote_request', 'close_till', 'confirm_payment', 'count_list',
-    'counter_sale', 'create_order', 'create_quote', 'customer_balance', 'debtors', 'decide_approval', 'deliver_order', 'has_staff_role', 'import_products', 'is_staff', 'month_close_checks', 'month_report', 'move_money',
-    'my_till', 'oldest_serials', 'open_quote_requests', 'open_till', 'owner_exceptions', 'owner_money_in', 'owner_money_out', 'owner_today', 'pack_list', 'pay_supplier', 'post_opening_balance', 'post_opening_debt', 'preview_sale', 'quote_from_request', 'receipt_by_token', 'receive_goods',
+    'accept_quote', 'add_bank_line', 'add_customer_note', 'add_follow_up', 'approve_safe_count', 'approve_stock_count', 'availability', 'bank_matches', 'book_delivery', 'books_check', 'books_month', 'cancel_order', 'cancel_quote', 'cash_position', 'catalogue', 'check_serial', 'close_follow_up', 'close_month', 'close_quote_request', 'close_till', 'confirm_drop', 'confirm_payment', 'count_list',
+    'counter_sale', 'create_order', 'create_quote', 'crm_customer', 'crm_customers', 'customer_balance', 'debtors', 'decide_approval', 'deliver_order', 'dispatch_order', 'fail_drop', 'has_staff_role', 'import_products', 'is_staff', 'month_close_checks', 'month_report', 'move_money',
+    'my_drops', 'my_till', 'oldest_serials', 'open_quote_requests', 'open_till', 'orders_board', 'owner_exceptions', 'owner_money_in', 'owner_money_out', 'owner_today', 'pack_list', 'pay_supplier', 'post_opening_balance', 'post_opening_debt', 'preview_sale', 'quote_from_request', 'receipt_by_token', 'receive_goods',
     'record_expense', 'refund_order', 'reject_payment', 'reject_safe_count', 'reject_stock_count', 'request_quote', 'reserve_order', 'return_goods', 'reverse_payment', 'reverse_txn', 'revise_quote', 'save_customer', 'save_location', 'save_part_details', 'save_product',
-    'save_settings', 'save_staff', 'save_supplier', 'search_parts', 'set_customer_terms', 'set_last_cost', 'shop_details', 'shop_today', 'submit_safe_count', 'submit_stock_count', 'take_payment', 'till_paid_out', 'transfer_stock', 'void_opening_debt',
+    'save_settings', 'save_staff', 'save_supplier', 'search_parts', 'set_customer_terms', 'set_drop_pin', 'set_last_cost', 'share_position', 'shop_details', 'shop_today', 'submit_safe_count', 'submit_stock_count', 'take_payment', 'till_paid_out', 'track_order', 'transfer_stock', 'void_opening_debt',
   ].join());
 });
 
@@ -1212,6 +1213,18 @@ await test('each role is refused what is not its job', async () => {
     ['cancel_quote', { p_quote: dummy, p_reason: 'x' }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
     ['save_part_details', { p_product: dummy, p_part_number: 'x' }, everyoneBut()],
     ['search_parts', { p_query: 'x' }, everyoneBut(COUNTER, COUNTER2, STORE, DISPATCH, ACCOUNT)],
+    ['book_delivery', { p_order: dummy, p_address: 'x', p_on: '2026-01-01' }, everyoneBut(COUNTER, COUNTER2, DISPATCH)],
+    ['dispatch_order', { p_key: 'x', p_order: dummy, p_rider: dummy }, everyoneBut(STORE, DISPATCH)],
+    ['confirm_drop', { p_key: 'x', p_order: dummy, p_code: '0000' }, everyoneBut(DRIVER, DISPATCH)],
+    ['fail_drop', { p_key: 'x', p_order: dummy, p_reason: 'x' }, everyoneBut(DRIVER, DISPATCH)],
+    ['share_position', { p_lat: 0, p_lng: 0 }, everyoneBut(DRIVER)],
+    ['my_drops', {}, everyoneBut(DRIVER)],
+    ['orders_board', {}, everyoneBut(COUNTER, COUNTER2, DISPATCH, ACCOUNT)],
+    ['crm_customers', {}, everyoneBut(COUNTER, COUNTER2, DISPATCH, ACCOUNT)],
+    ['crm_customer', { p_customer: dummy }, everyoneBut(COUNTER, COUNTER2, DISPATCH, ACCOUNT)],
+    ['add_customer_note', { p_key: 'x', p_customer: dummy, p_kind: 'note', p_body: 'x' }, everyoneBut(COUNTER, COUNTER2, DISPATCH, ACCOUNT)],
+    ['add_follow_up', { p_key: 'x', p_customer: dummy, p_what: 'x', p_due_on: '2026-01-01' }, everyoneBut(COUNTER, COUNTER2, DISPATCH, ACCOUNT)],
+    ['close_follow_up', { p_follow_up: dummy }, everyoneBut(COUNTER, COUNTER2, DISPATCH, ACCOUNT)],
   ];
   for (const [fn, args, forbidden] of rules) {
     for (const who of forbidden) await fails(rpc(who, fn, args).catch((e) => { throw new Error(`${fn} as ${who}: ${e.message}`); }), 'not_allowed');
@@ -2221,6 +2234,187 @@ await test('a return after a month closed lands in the open month', async () => 
   eq(await val(`select to_char(occurred_on, 'YYYY-MM-01') from ledger_txns where ref_type = 'return' and ref_id = $1`, [r]),
     await val(`select to_char(shop_today(), 'YYYY-MM-01')`));
   eq((await shelf(p)).qty, 2, 'the unit is back:');
+});
+
+// ---- Deliveries, riders and the small CRM (2026-11-25) ----
+
+// Cash payments below need the counter's till open, whatever the scenes before left it as.
+await rpc(COUNTER, 'open_till', { p_float: 0 }).catch((e) => { if (!/till_already_open/.test(e.message)) throw e; });
+
+const day = (n = 1) => val('select (shop_today() + $1::int)::text', [n]);
+const book = async (o, extra = {}) => rpc(COUNTER, 'book_delivery', { p_order: o, p_address: '12 Allen Avenue, Ikeja', p_on: await day(), p_time: 'morning', p_landmark: 'Opposite the filling station', ...extra });
+const tokenOf = (o) => val('select receipt_token from orders where id = $1', [o]);
+const track = async (o) => rpc('anon', 'track_order', { p_token: await tokenOf(o) });
+const paidOrder = async (p, phone, qty = 1) => { const o = await order(p, { qty, phone }); await pay(o, 10000000 * qty); return o; };
+const toRider = (o, lines = null, who = STORE) => rpc(who, 'dispatch_order', { p_key: k('out'), p_order: o, p_rider: DRIVER, p_lines: lines });
+
+await test('goods given to a rider are sold only at the door, with the customer’s code', async () => {
+  const p = await product({ qty: 2, tracking: 'serial', warranty: 12 });
+  const o = await paidOrder(p, '08030000201');
+  await book(o);
+  eq((await track(o)).stage, 'paid', 'booked and paid:');
+  same(await moved(() => toRider(o, [line(p, 1, { serials: [p.serials[0]] })])), {}, 'giving goods to a rider books nothing:');
+  eq((await orderRow(o)).goods_status, 'waiting', 'not delivered yet:');
+  const seen = await track(o);
+  eq(seen.stage, 'on_the_way', 'the customer sees it on the way:');
+  eq(seen.delivery.rider, 'Emeka', 'with the rider’s first name:');
+  expect(/^\d{4}$/.test(seen.delivery.code), 'the customer sees a 4-digit code');
+  eq((await rpc(COUNTER, 'track_order', { p_token: await tokenOf(o) })).delivery.code, null, 'staff never see the code:');
+  const wrong = seen.delivery.code === '0000' ? '0001' : '0000';
+  eq((await rpc(DRIVER, 'confirm_drop', { p_key: k('drop'), p_order: o, p_code: wrong })).tries_left, 4, 'a wrong code is counted:');
+  eq((await orderRow(o)).goods_status, 'waiting', 'and delivers nothing:');
+  const key = k('drop');
+  let first;
+  const sold = await moved(async () => { first = await rpc(DRIVER, 'confirm_drop', { p_key: key, p_order: o, p_code: seen.delivery.code }); });
+  eq(sold.sales, -10000000, 'the sale is booked at the door:');
+  eq((await orderRow(o)).goods_status, 'delivered');
+  eq((await rpc(DRIVER, 'confirm_drop', { p_key: key, p_order: o, p_code: seen.delivery.code })).delivery, first.delivery, 'a retry is the same drop:');
+  const after = await track(o);
+  eq(after.stage, 'delivered');
+  eq(after.delivery.code, null, 'the code goes once delivered:');
+  eq(await val('select status::text from serial_units where serial = $1', [p.serials[0]]), 'sold', 'the unit on the bike is the unit sold:');
+});
+
+await test('a unit out with a rider cannot be sold, moved or offered at the counter', async () => {
+  const p = await product({ qty: 2, tracking: 'serial' });
+  const o = await paidOrder(p, '08030000202');
+  await book(o);
+  await toRider(o, [line(p, 1, { serials: [p.serials[0]] })]);
+  await fails(sale(p, { serials: [p.serials[0]] }), 'serial_on_delivery');
+  await fails(rpc(STORE, 'transfer_stock', { p_product: p.id, p_from: shop, p_to: back, p_qty: 1, p_serials: arr('text', [p.serials[0]]) }), 'serial_on_delivery');
+  const offered = await as(COUNTER, () => q('select serial from oldest_serials($1, $2, 5)', [p.id, shop]));
+  eq(offered.map((r) => r.serial).join(), p.serials[1], 'only the unit still on the shelf is offered:');
+  await sale(p, { serials: [p.serials[1]] });
+  const c = await product({ qty: 3 });
+  const o2 = await paidOrder(c, '08030000203', 3);
+  await book(o2);
+  await toRider(o2);
+  await fails(sale(c), 'insufficient_stock');
+});
+
+await test('while goods are out, their hold never runs out and only the rider can close the order', async () => {
+  const c = await product({ qty: 2 });
+  const o = await paidOrder(c, '08030000204');
+  await book(o);
+  await toRider(o, null, DISPATCH);
+  await q(`update orders set hold_until = now() - interval '1 hour' where id = $1`, [o]);
+  eq((await orderRow(o)).hold_until, null, 'the hold cannot be given an end:');
+  await rpc('service', 'expire_holds');
+  same(await shelf(c), { qty: 2, reserved: 1 }, 'still held for the order:');
+  await fails(deliver(o), 'order_on_delivery');
+  await fails(q(`update orders set goods_status = 'cancelled' where id = $1`, [o]), 'order_on_delivery');
+  await fails(rpc(COUNTER, 'book_delivery', { p_order: o, p_address: 'Somewhere else', p_on: await day() }), 'order_on_delivery');
+  await fails(toRider(o), 'order_on_delivery');
+});
+
+await test('a failed drop brings the goods back, still held, and the next try can finish it', async () => {
+  const p = await product({ qty: 1, tracking: 'serial' });
+  const o = await paidOrder(p, '08030000205');
+  await book(o);
+  await toRider(o, [line(p, 1, { serials: [p.serials[0]] })]);
+  await fails(rpc(DRIVER, 'fail_drop', { p_key: k('fail'), p_order: o, p_reason: '' }), 'reason_required');
+  const failArgs = { p_key: k('fail'), p_order: o, p_reason: 'Nobody at the gate', p_next_on: await day(2) };
+  await rpc(DRIVER, 'fail_drop', failArgs);
+  await rpc(DRIVER, 'fail_drop', failArgs);
+  same(await shelf(p), { qty: 1, reserved: 1 }, 'back on the shelf, held for the customer:');
+  const seen = await track(o);
+  eq(seen.stage, 'paid', 'waiting for a rider again:');
+  eq(seen.delivery.scheduled_on, await day(2), 'on the new day:');
+  eq(seen.events.filter((e) => e.kind === 'failed').length, 1, 'a retried failure is one failure:');
+  eq(seen.events.find((e) => e.kind === 'failed').note, 'Nobody at the gate', 'the customer sees why:');
+  expect((await orderRow(o)).hold_until !== null, 'the hold runs again');
+  await toRider(o, [line(p, 1, { serials: [p.serials[0]] })]);
+  const again = await track(o);
+  eq(again.delivery.tries, 2);
+  await rpc(DRIVER, 'confirm_drop', { p_key: k('drop'), p_order: o, p_code: again.delivery.code });
+  eq((await orderRow(o)).goods_status, 'delivered');
+});
+
+await test('five wrong codes lock the drop, and a dispatcher finishes it with a reason the board shows', async () => {
+  const c = await product({ qty: 1 });
+  const o = await paidOrder(c, '08030000206');
+  await book(o);
+  await fails(rpc(DISPATCH, 'dispatch_order', { p_key: k('out'), p_order: o, p_rider: COUNTER }), 'not_a_rider');
+  await toRider(o);
+  const code = (await track(o)).delivery.code;
+  const wrong = code === '9999' ? '9998' : '9999';
+  for (let i = 0; i < 5; i++) await rpc(DRIVER, 'confirm_drop', { p_key: k('drop'), p_order: o, p_code: wrong });
+  await fails(rpc(DRIVER, 'confirm_drop', { p_key: k('drop'), p_order: o, p_code: code }), 'code_locked');
+  await fails(rpc(DRIVER, 'confirm_drop', { p_key: k('drop'), p_order: o }), 'code_required');
+  await fails(rpc(DISPATCH, 'confirm_drop', { p_key: k('drop'), p_order: o }), 'reason_required');
+  await rpc(DISPATCH, 'confirm_drop', { p_key: k('drop'), p_order: o, p_reason: 'Phone was dead; confirmed on a call to the shop line' });
+  eq((await orderRow(o)).goods_status, 'delivered');
+  const row = (await rpc(COUNTER, 'orders_board', {})).orders.find((r) => r.order_id === o);
+  expect(/without the code/.test(row.delivery.override ?? ''), 'the board shows how it was confirmed');
+});
+
+await test('only a booked order with its money in can go out with a rider', async () => {
+  const c = await product({ qty: 2 });
+  const o = await order(c, { phone: '08030000207' });
+  await fails(toRider(o), 'no_delivery_booked');
+  await book(o);
+  await fails(toRider(o), 'payment_required');
+  eq((await track(o)).stage, 'placed', 'unpaid is only placed:');
+  await fails(book(o, { p_address: 'x' }), 'address_required');
+  await fails(book(o, { p_on: await day(-1) }), 'bad_delivery_day');
+  await fails(book(o, { p_time: 'midnight' }), 'bad_choice');
+  await fails(book(o, { p_lat: 6.5 }), 'bad_pin');
+  const total = Number((await track(o)).total);
+  await pay(o, total, 'pos');
+  const t = await track(o);
+  eq(t.stage, 'paid', 'a card tap waiting for its check lets it go:');
+  eq(`${t.paid} ${t.balance}`, `${total} 0`, 'the customer sees the tap as paid:');
+  const row = (await rpc(COUNTER, 'orders_board')).orders.find((r) => r.order_id === o);
+  eq(`${row.paid} ${row.waiting}`, `0 ${total}`, 'the board still shows it as a tap to check:');
+});
+
+await test('the customer drops a pin from the link, and the rider shares only their last point', async () => {
+  const c = await product({ qty: 1 });
+  const o = await paidOrder(c, '08030000208');
+  const token = await tokenOf(o);
+  await fails(rpc('anon', 'set_drop_pin', { p_token: token, p_lat: 6.6, p_lng: 3.35 }), 'no_delivery_booked');
+  await book(o);
+  await fails(rpc('anon', 'set_drop_pin', { p_token: token, p_lat: 95, p_lng: 3.35 }), 'bad_pin');
+  await fails(rpc('anon', 'set_drop_pin', { p_token: randomUUID(), p_lat: 6.6, p_lng: 3.35 }), 'no_such_order');
+  await rpc('anon', 'set_drop_pin', { p_token: token, p_lat: 6.6018, p_lng: 3.3515, p_landmark: 'Blue gate after the church' });
+  const t = await track(o);
+  eq(t.delivery.lat, 6.6018, 'the pin is on the delivery:');
+  eq(t.delivery.landmark, 'Blue gate after the church');
+  await toRider(o);
+  await rpc(DRIVER, 'share_position', { p_lat: 6.59, p_lng: 3.34 });
+  const live = (await track(o)).delivery;
+  eq(live.rider_lat, 6.59, 'the customer sees the rider’s last point:');
+  expect(live.rider_seen_at, 'with when it was seen');
+  const drops = await rpc(DRIVER, 'my_drops', {});
+  eq(drops.find((d) => d.order_id === o).landmark, 'Blue gate after the church', 'the rider gets the landmark:');
+  expect(!/price|total|paid|cost|owes/.test(JSON.stringify(drops)), 'no money on the rider’s screen');
+  await rpc(DRIVER, 'confirm_drop', { p_key: k('drop'), p_order: o, p_code: live.code });
+  eq((await track(o)).delivery.rider_lat, null, 'the rider’s point is wiped when the drop closes:');
+  await fails(rpc('anon', 'set_drop_pin', { p_token: token, p_lat: 6.6, p_lng: 3.35 }), 'no_delivery_booked');
+});
+
+await test('notes and follow-ups sit on the customer, and what is due shows first', async () => {
+  const c = await rpc(COUNTER, 'save_customer', { p_phone: '08030000209', p_name: 'Musa Bello' });
+  const key = k('note');
+  const body = 'Wants a 200Ah battery quote next week';
+  const n1 = await rpc(COUNTER, 'add_customer_note', { p_key: key, p_customer: c, p_kind: 'call', p_body: body });
+  eq(await rpc(COUNTER, 'add_customer_note', { p_key: key, p_customer: c, p_kind: 'call', p_body: body }), n1, 'a retry is the same note:');
+  await fails(rpc(COUNTER, 'add_customer_note', { p_key: k('note'), p_customer: c, p_kind: 'call', p_body: '  ' }), 'note_required');
+  await fails(rpc(COUNTER, 'add_customer_note', { p_key: k('note'), p_customer: c, p_kind: 'fax', p_body: 'x' }), 'bad_choice');
+  const f = await rpc(COUNTER, 'add_follow_up', { p_key: k('fu'), p_customer: c, p_what: 'Call with the battery price', p_due_on: await day(0) });
+  await fails(rpc(COUNTER, 'add_follow_up', { p_key: k('fu'), p_customer: c, p_what: 'x', p_due_on: await day(-1) }), 'bad_due_day');
+  await fails(rpc(COUNTER, 'add_follow_up', { p_key: k('fu'), p_customer: c, p_what: 'x', p_due_on: await day(0), p_assignee: DRIVER }), 'bad_choice');
+  const list = await rpc(DISPATCH, 'crm_customers', { p_query: '0803 000 0209' });
+  eq(list.customers.length, 1, 'found by phone:');
+  eq(N(list.customers[0].open_follow_ups), 1);
+  expect(list.due.some((d) => d.id === f && d.mine === false), 'due today, set by the counter');
+  const one = await rpc(ACCOUNT, 'crm_customer', { p_customer: c });
+  eq(one.notes[0].body, body);
+  eq(one.notes[0].by, 'Ada', 'who wrote it:');
+  await rpc(COUNTER, 'close_follow_up', { p_follow_up: f });
+  await rpc(COUNTER, 'close_follow_up', { p_follow_up: f });
+  expect(!(await rpc(COUNTER, 'crm_customers', {})).due.some((d) => d.id === f), 'gone from due once done');
+  await fails(q('update customer_notes set body = $1 where id = $2', ['x', n1]), 'append_only');
 });
 
 const failed = results.filter((r) => !r.ok);

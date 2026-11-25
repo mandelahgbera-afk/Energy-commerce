@@ -2,7 +2,8 @@
 
 // The front door. Staff see the screens their role can open; anyone else is pointed to the shop.
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { browserDb, connected } from '@/lib/supabase';
 import { Mark, StaffNav, screens } from '@/components/staff-nav';
 import { Landing } from '@/components/landing';
@@ -10,14 +11,17 @@ import { Landing } from '@/components/landing';
 const icon: Record<string, string> = {
   '/counter': 'M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2ZM9 8h6M9 12h6',
   '/stock': 'M3 8l9-5 9 5v8l-9 5-9-5ZM3 8l9 5 9-5M12 13v8',
+  '/orders': 'M4 5h16M4 12h10M4 19h7M17 15l2 2 3-4',
+  '/rider': 'M5 18a2.5 2.5 0 1 0 0-.1M19 18a2.5 2.5 0 1 0 0-.1M5 17.9 9 11h5l3 6.9M14 11l-2-4h-3M16 7h3l1 4',
   '/requests': 'M4 4h16v12H9l-5 4ZM8 9h8M8 12h5',
   '/owner': 'M4 20V11M10 20V5M16 20v-6M2 20h20',
   '/books': 'M5 3h11l3 3v15H5ZM9 9h6M9 13h6M9 17h4',
   '/shop': 'M3 9l2-5h14l2 5M4 9v11h16V9M9 20v-6h6v6',
+  '/?public': 'M3 11 12 4l9 7M5 10v10h14V10M10 20v-5h4v5',
   '/import': 'M4 3h10l6 6v12H4ZM14 3v6h6M8 13h8M8 17h8M8 9h3',
   '/settings':'M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4',
 };
-const roleName: Record<string, string> = { owner: 'Owner', counter: 'Counter', accountant: 'Accountant', storekeeper: 'Storekeeper', dispatcher: 'Dispatcher' };
+const roleName: Record<string, string> = { owner: 'Owner', counter: 'Counter', accountant: 'Accountant', storekeeper: 'Storekeeper', dispatcher: 'Dispatcher', driver: 'Rider' };
 const greet = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; };
 
 function Tile({ href, label, about, i }: { href: string; label: string; about: string; i: number }) {
@@ -35,7 +39,13 @@ function Tile({ href, label, about, i }: { href: string; label: string; about: s
   );
 }
 
-export default function Home() {
+export default function Page() {
+  return <Suspense fallback={<main style={{ minHeight: '100vh' }} aria-busy="true" />}><Home /></Suspense>;
+}
+
+function Home() {
+  // ?public shows signed-in staff the same front door customers see, shop and all.
+  const pub = useSearchParams().has('public');
   const [state, setState] = useState<'loading' | 'out' | 'in' | 'offline'>('loading');
   const [me, setMe] = useState<{ name: string; role: string | null; email: string } | null>(null);
   const [day, setDay] = useState<string | null>(null);
@@ -62,7 +72,7 @@ export default function Home() {
 
   if (state === 'loading') return <main style={{ minHeight: '100vh' }} aria-busy="true" />;
 
-  if (state === 'out') return <Landing />;
+  if (state === 'out' || (state === 'in' && pub)) return <Landing staff={state === 'in'} />;
   if (state !== 'in') {
     return (
       <main style={{ display: 'grid', placeItems: 'center', minHeight: '100vh', boxSizing: 'border-box', padding: 20 }}>
@@ -94,7 +104,8 @@ export default function Home() {
         </header>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
           {mine.map((s, i) => <Tile key={s.href} href={s.href} label={s.label} about={s.about} i={i} />)}
-          <Tile href="/shop" label="Public shop" about="What customers see, with today's prices." i={mine.length} />
+          <Tile href="/?public" label="Public home" about="The front page customers land on, with the shop in it." i={mine.length} />
+          <Tile href="/shop" label="Public shop" about="What customers see, with today's prices." i={mine.length + 1} />
         </div>
         <p style={{ margin: '28px 4px 0', fontSize: 13.5, color: '#55606C' }}>
           <Link href="/help" style={{ color: '#434E5A' }}>Help</Link> · <Link href="/kit" style={{ color: '#434E5A' }}>Component kit</Link>

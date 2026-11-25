@@ -3,11 +3,14 @@
 // A glass thumb slides to your choice on a spring.
 import { useState } from 'react';
 
-export function Segmented({ options, initial = 0 }: { options: string[]; initial?: number }) {
-  const [choice, setChoice] = useState(initial);
+export function Segmented({ options, initial = 0, value, onChange, label }: { options: string[]; initial?: number; value?: number; onChange?: (i: number) => void; label?: string }) {
+  const [own, setOwn] = useState(initial);
+  const choice = value ?? own;
+  const setChoice = (i: number) => { setOwn(i); onChange?.(i); };
   return (
     <div
       role="group"
+      aria-label={label}
       style={{
         position: 'relative',
         display: 'grid',

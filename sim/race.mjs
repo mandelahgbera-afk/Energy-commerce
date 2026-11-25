@@ -4,7 +4,7 @@ import postgres from 'postgres';
 import { startPostgres } from './testpg.mjs';
 import { schemaSql, buildCall, unwrap, N, USERS, seedPeople, postgresOptions } from './lib.mjs';
 
-const { OWNER, COUNTER, COUNTER2, STORE, ACCOUNT } = USERS;
+const { OWNER, COUNTER, COUNTER2, STORE, DRIVER, ACCOUNT } = USERS;
 const PORT = 54412;
 const pg = await startPostgres({ port: PORT, password: 'test', database: 'power_race' });
 const sql = postgres(postgresOptions(PORT, 'test', 'power_race', 30));
@@ -24,6 +24,7 @@ await rpc(OWNER, 'save_staff', { p_user: COUNTER, p_name: 'Ada', p_role: 'counte
 await rpc(OWNER, 'save_staff', { p_user: COUNTER2, p_name: 'Bayo', p_role: 'counter', p_discount_limit: 5 });
 await rpc(OWNER, 'save_staff', { p_user: STORE, p_name: 'Chidi', p_role: 'storekeeper' });
 await rpc(OWNER, 'save_staff', { p_user: ACCOUNT, p_name: 'Fatima', p_role: 'accountant' });
+await rpc(OWNER, 'save_staff', { p_user: DRIVER, p_name: 'Emeka', p_role: 'driver' });
 const shop = await rpc(OWNER, 'save_location', { p_name: 'Main shop' });
 const back = await rpc(OWNER, 'save_location', { p_name: 'Back store', p_kind: 'warehouse' });
 const sup = await rpc(OWNER, 'save_supplier', { p_name: 'Lagos Batteries' });
@@ -385,6 +386,22 @@ await scene('postings racing a month close: nothing lands in the month after it 
   const actual = N(await val(`select count(*) from ledger_txns where occurred_on >= $1::date and occurred_on < ($1::date + interval '1 month')`, [month]));
   eq(actual, N(audited.txns_in_month), 'postings after the close:');
   return `${results.length} posted first, closed on try ${tries}, ${actual} in the month and none after`;
+});
+
+await scene('a rider and nine counter sales race for one battery: it goes one way only', async () => {
+  const p = await product({ qty: 2, tracking: 'serial' });
+  const o = await rpc(COUNTER, 'create_order', { p_key: k('ord'), p_location: shop, p_lines: [{ product_id: p.id, qty: 1 }], p_phone: '08030000301' });
+  await rpc(COUNTER, 'take_payment', { p_key: k('pay'), p_order: o, p_method: 'pos', p_amount: 10000000 });
+  await rpc(COUNTER, 'book_delivery', { p_order: o, p_address: '12 Allen Avenue, Ikeja', p_on: today });
+  const out = rpc(STORE, 'dispatch_order', { p_key: k('out'), p_order: o, p_rider: DRIVER, p_lines: [{ product_id: p.id, qty: 1, serials: [p.serials[0]] }] });
+  const { wins, errors } = await settle([out, ...Array.from({ length: 9 }, () => sale(p, { serials: [p.serials[0]] }))]);
+  eq(wins.length, 1, 'winners:');
+  onlyErrors(errors, ['serial_not_available', 'serial_on_delivery', 'insufficient_stock']);
+  const unit = await val('select id from serial_units where serial = $1', [p.serials[0]]);
+  const sold = N(await val(`select count(*) from serial_units where id = $1 and status = 'sold'`, [unit]));
+  const held = N(await val('select count(*) from shipment_serials where serial_id = $1', [unit]));
+  eq(sold + held, 1, 'sold or on the bike, never both:');
+  return held ? 'the rider got it, 9 sales refused' : 'a sale got it, the rider was refused';
 });
 
 await scene('after all of that, invoice and receipt numbers have no gaps', async () => {
