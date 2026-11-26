@@ -101,9 +101,9 @@ const back = await rpc(OWNER, 'save_location', { p_name: 'Back store', p_kind: '
 const sup = await rpc(OWNER, 'save_supplier', { p_name: 'Lagos Batteries' });
 await rpc(COUNTER, 'open_till', { p_float: 0 });
 
-async function product({ price = 10000000, cost = 6000000, qty = 10, trade = null, tracking = 'count', unit = 'each', vat = 0, warranty = 0, low = 0, at = shop } = {}) {
+async function product({ price = 10000000, cost = 6000000, qty = 10, trade = null, tracking = 'count', unit = 'each', vat = 0, warranty = 0, low = 0, at = shop, name = null, family = 'general' } = {}) {
   const sku = `T-${++seq}`;
-  const id = await rpc(OWNER, 'save_product', { p_sku: sku, p_name: `Test ${sku}`, p_price: price, p_trade: trade, p_tracking: tracking, p_unit: unit, p_warranty_months: warranty, p_vat_bp: vat, p_low_stock_at: low });
+  const id = await rpc(OWNER, 'save_product', { p_sku: sku, p_name: name ?? `Test ${sku}`, p_price: price, p_trade: trade, p_tracking: tracking, p_unit: unit, p_warranty_months: warranty, p_vat_bp: vat, p_low_stock_at: low, p_family: family });
   await rpc(OWNER, 'set_last_cost', { p_product: id, p_cost: cost });
   const serials = tracking === 'serial' ? Array.from({ length: qty }, (_, i) => `${sku}-${i + 1}`) : [];
   if (qty > 0) await rpc(STORE, 'receive_goods', { p_key: k('rcv'), p_supplier: sup, p_location: at, p_lines: [{ product_id: id, qty, serials }] });
@@ -1096,7 +1096,7 @@ await test('the anonymous public cannot read any of it at all', async () => {
 });
 
 await test('nothing a counter can read has a cost in it', async () => {
-  const readable = ['products', 'orders', 'order_lines', 'deliveries', 'payments', 'stock_balances', 'serial_units', 'order_line_serials', 'customers', 'locations', 'shop_settings', 'approvals'];
+  const readable = ['products', 'orders', 'order_lines', 'deliveries', 'payments', 'stock_balances', 'serial_units', 'order_line_serials', 'customers', 'locations', 'shop_settings', 'approvals', 'equipment_units', 'energy_readings'];
   const cols = await q(`select table_name, column_name from information_schema.columns where table_schema = 'public' and table_name = any($1::text::text[]) and (column_name ilike '%cost%' or column_name ilike '%margin%' or column_name ilike '%profit%' or column_name = 'value_kobo')`,
     [`{${readable.join(',')}}`]);
   eq(cols.length, 0, `columns: ${JSON.stringify(cols)}`);
@@ -1127,14 +1127,14 @@ await test('no login can write to any table directly, whatever its role', async 
 await test('only the functions on this list can be run from outside', async () => {
   const runnable = async (role) => (await q(`select p.proname n from pg_proc p join pg_namespace s on s.oid = p.pronamespace
     where s.nspname = 'public' and has_function_privilege($1, p.oid, 'execute') order by 1`, [role])).map((r) => r.n);
-  eq((await runnable('anon')).join(), 'availability,catalogue,check_serial,has_staff_role,is_staff,receipt_by_token,request_quote,set_drop_pin,shop_details,shop_today,track_order');
+  eq((await runnable('anon')).join(), 'availability,catalogue,check_serial,has_staff_role,is_staff,receipt_by_token,receipt_equipment,request_quote,set_drop_pin,shop_details,shop_today,track_order');
   eq((await runnable('service_role')).join(), 'expire_holds,i_books_check,shop_today');
   eq((await runnable('authenticated')).join(), [
-    'accept_quote', 'add_bank_line', 'add_customer_note', 'add_follow_up', 'approve_safe_count', 'approve_stock_count', 'availability', 'bank_matches', 'book_delivery', 'books_check', 'books_month', 'cancel_order', 'cancel_quote', 'cash_position', 'catalogue', 'check_serial', 'close_follow_up', 'close_month', 'close_quote_request', 'close_till', 'confirm_drop', 'confirm_payment', 'count_list',
-    'counter_sale', 'create_order', 'create_quote', 'crm_customer', 'crm_customers', 'customer_balance', 'debtors', 'decide_approval', 'deliver_order', 'dispatch_order', 'fail_drop', 'has_staff_role', 'import_products', 'is_staff', 'link_barcode', 'month_close_checks', 'month_report', 'move_money',
-    'my_drops', 'my_till', 'oldest_serials', 'open_quote_requests', 'open_till', 'orders_board', 'owner_exceptions', 'owner_money_in', 'owner_money_out', 'owner_today', 'pack_list', 'pay_supplier', 'post_opening_balance', 'post_opening_debt', 'preview_sale', 'quote_from_request', 'receipt_by_token', 'receive_goods',
+    'accept_quote', 'add_bank_line', 'add_customer_note', 'add_follow_up', 'add_reading', 'approve_safe_count', 'approve_stock_count', 'availability', 'bank_matches', 'book_delivery', 'books_check', 'books_month', 'cancel_order', 'cancel_quote', 'cash_position', 'catalogue', 'check_serial', 'close_follow_up', 'close_month', 'close_quote_request', 'close_till', 'confirm_drop', 'confirm_payment', 'count_list',
+    'counter_sale', 'create_order', 'create_quote', 'crm_customer', 'crm_customers', 'customer_balance', 'customer_equipment', 'debtors', 'decide_approval', 'deliver_order', 'dispatch_order', 'fail_drop', 'has_staff_role', 'import_products', 'is_staff', 'link_barcode', 'month_close_checks', 'month_report', 'move_money',
+    'my_drops', 'my_equipment', 'my_till', 'oldest_serials', 'open_quote_requests', 'open_till', 'orders_board', 'owner_exceptions', 'owner_money_in', 'owner_money_out', 'owner_today', 'pack_list', 'pay_supplier', 'post_opening_balance', 'post_opening_debt', 'preview_sale', 'quote_from_request', 'reading_is_live', 'receipt_by_token', 'receipt_equipment', 'receive_goods',
     'record_expense', 'refund_order', 'reject_payment', 'reject_safe_count', 'reject_stock_count', 'request_quote', 'reserve_order', 'return_goods', 'reverse_payment', 'reverse_txn', 'revise_quote', 'save_customer', 'save_location', 'save_part_details', 'save_product',
-    'save_settings', 'save_staff', 'save_supplier', 'search_parts', 'set_customer_terms', 'set_drop_pin', 'set_last_cost', 'share_position', 'shop_details', 'shop_today', 'submit_safe_count', 'submit_stock_count', 'take_payment', 'till_paid_out', 'track_order', 'transfer_stock', 'unlink_barcode', 'void_opening_debt',
+    'save_settings', 'save_staff', 'save_supplier', 'search_parts', 'set_customer_terms', 'set_drop_pin', 'set_last_cost', 'share_position', 'shop_details', 'shop_today', 'submit_safe_count', 'submit_stock_count', 'take_payment', 'till_paid_out', 'track_order', 'transfer_stock', 'unlink_barcode', 'void_opening_debt', 'void_reading',
   ].join());
 });
 
@@ -1213,6 +1213,10 @@ await test('each role is refused what is not its job', async () => {
     ['cancel_quote', { p_quote: dummy, p_reason: 'x' }, everyoneBut(COUNTER, COUNTER2, ACCOUNT)],
     ['save_part_details', { p_product: dummy, p_part_number: 'x' }, everyoneBut()],
     ['search_parts', { p_query: 'x' }, everyoneBut(COUNTER, COUNTER2, STORE, DISPATCH, ACCOUNT)],
+    ['customer_equipment', { p_customer: dummy }, everyoneBut(COUNTER, COUNTER2, DISPATCH, ACCOUNT)],
+    ['my_equipment', {}, everyoneBut()],
+    ['add_reading', { p_key: 'x', p_unit: dummy }, everyoneBut(COUNTER, COUNTER2, DISPATCH, ACCOUNT)],
+    ['void_reading', { p_reading: dummy, p_reason: 'x' }, everyoneBut()],
     ['book_delivery', { p_order: dummy, p_address: 'x', p_on: '2026-01-01' }, everyoneBut(COUNTER, COUNTER2, DISPATCH)],
     ['dispatch_order', { p_key: 'x', p_order: dummy, p_rider: dummy }, everyoneBut(STORE, DISPATCH)],
     ['confirm_drop', { p_key: 'x', p_order: dummy, p_code: '0000' }, everyoneBut(DRIVER, DISPATCH)],
@@ -2238,6 +2242,142 @@ await test('a return after a month closed lands in the open month', async () => 
   eq((await shelf(p)).qty, 2, 'the unit is back:');
 });
 
+// ---- The customer's energy record ----
+
+await rpc(COUNTER, 'open_till', { p_float: 0 });
+
+await test('a delivered serial becomes the customer\u2019s equipment, and a return closes it', async () => {
+  const p = await product({ qty: 1, tracking: 'serial', name: 'Test solar battery 220Ah', warranty: 12 });
+  const c = await rpc(COUNTER, 'save_customer', { p_phone: '08030000121', p_name: 'Ruth' });
+  const s = await sale(p, { phone: '08030000121', method: 'cash', serials: [p.serials[0]] });
+  const mine = await rpc(COUNTER, 'customer_equipment', { p_customer: c });
+  eq(mine.length, 1, 'one unit recorded:');
+  eq(mine[0].serial, p.serials[0], 'the serial:');
+  eq(mine[0].closed_on, null, 'open while owned:');
+  eq(mine[0].verdict.basis, 'age_vs_life', 'a battery is judged by age:');
+  eq(mine[0].verdict.stage, 'new', 'a fresh battery is new:');
+  const firstSoldOn = mine[0].sold_on;
+  await ret(s.order_id, [{ product_id: p.id, qty: 1, serials: [p.serials[0]] }]);
+  const after = await rpc(COUNTER, 'customer_equipment', { p_customer: c });
+  eq(after.length, 1, 'the record stays as history:');
+  expect(after[0].closed_on !== null, 'closed by the return');
+  await fails(rpc(COUNTER, 'add_reading', { p_key: k('rd'), p_unit: mine[0].id, p_backup_hours: 4 }), 'unit_closed');
+  // Handing the same unit out again on the SAME order is a fresh stint, and the return stays on record.
+  await deliver(s.order_id, [{ product_id: p.id, qty: 1, serials: [p.serials[0]] }]);
+  const sameOrder = await rpc(COUNTER, 'customer_equipment', { p_customer: c });
+  eq(sameOrder.length, 2, 'the re-delivery is a fresh record:');
+  eq(sameOrder.filter((u) => u.closed_on === null).length, 1, 'one open stint:');
+  const first = sameOrder.find((u) => u.closed_on !== null);
+  eq(first.sold_on, firstSoldOn, 'the closed record keeps its sale day:');
+  await ret(s.order_id, [{ product_id: p.id, qty: 1, serials: [p.serials[0]] }]);
+  await sale(p, { phone: '08030000121', method: 'cash', serials: [p.serials[0]] });
+  const thrice = await rpc(COUNTER, 'customer_equipment', { p_customer: c });
+  eq(thrice.length, 3, 'each stint is its own record:');
+  eq(thrice.filter((u) => u.closed_on === null).length, 1, 'exactly one open:');
+  eq(thrice.find((u) => u.id === first.id).sold_on, firstSoldOn, 'history is never rewritten:');
+});
+
+await test('readings: one key per record, a retry returns the first answer, a void hides but keeps', async () => {
+  const p = await product({ qty: 1, tracking: 'serial', warranty: 6 });
+  const c = await rpc(COUNTER, 'save_customer', { p_phone: '08030000122' });
+  await sale(p, { phone: '08030000122', method: 'cash', serials: [p.serials[0]] });
+  const unit = (await rpc(COUNTER, 'customer_equipment', { p_customer: c }))[0].id;
+  const key = k('rd');
+  const r1 = await rpc(COUNTER, 'add_reading', { p_key: key, p_unit: unit, p_backup_hours: 6.5, p_felt: 'strong' });
+  eq(await rpc(COUNTER, 'add_reading', { p_key: key, p_unit: unit, p_backup_hours: 6.5, p_felt: 'strong' }), r1, 'a retry returns the first reading:');
+  await fails(rpc(COUNTER, 'add_reading', { p_key: key, p_unit: unit, p_backup_hours: 9 }), 'key_reused');
+  await fails(rpc(COUNTER, 'add_reading', { p_key: k('rd'), p_unit: unit, p_backup_hours: -1 }), 'bad_reading');
+  await fails(rpc(COUNTER, 'add_reading', { p_key: k('rd'), p_unit: unit, p_charge_pct: 140 }), 'bad_reading');
+  await fails(rpc(COUNTER, 'add_reading', { p_key: k('rd'), p_unit: unit }), 'bad_reading');
+  let withReading = await rpc(COUNTER, 'customer_equipment', { p_customer: c });
+  eq(withReading[0].readings.length, 1, 'the reading appears:');
+  eq(withReading[0].verdict.latest.backup_hours, 6.5, 'the latest reading feeds the verdict:');
+  await fails(rpc(COUNTER, 'void_reading', { p_reading: r1, p_reason: 'Typed wrong' }), 'not_allowed');
+  await fails(rpc(OWNER, 'void_reading', { p_reading: r1, p_reason: null }), 'reason_required');
+  await rpc(OWNER, 'void_reading', { p_reading: r1, p_reason: 'Typed wrong' });
+  await fails(rpc(OWNER, 'void_reading', { p_reading: r1, p_reason: 'Again' }), 'already_voided');
+  await fails(rpc(OWNER, 'void_reading', { p_reading: randomUUID(), p_reason: 'x' }), 'no_such_reading');
+  withReading = await rpc(COUNTER, 'customer_equipment', { p_customer: c });
+  eq(withReading[0].readings.length, 0, 'a voided reading disappears:');
+  eq(withReading[0].verdict.latest, null, 'the verdict no longer cites it:');
+  await fails(rpc(COUNTER, 'add_reading', { p_key: k('rd'), p_unit: randomUUID() }), 'no_such_unit');
+  // The key is bound to the unit: the same key on another unit is refused, never answered for it.
+  const p2 = await product({ qty: 1, tracking: 'serial' });
+  const c2 = await rpc(COUNTER, 'save_customer', { p_phone: '08030000128' });
+  await sale(p2, { phone: '08030000128', method: 'cash', serials: [p2.serials[0]] });
+  const unit2 = (await rpc(COUNTER, 'customer_equipment', { p_customer: c2 }))[0].id;
+  const key2 = k('rd');
+  await rpc(COUNTER, 'add_reading', { p_key: key2, p_unit: unit, p_backup_hours: 7 });
+  await fails(rpc(COUNTER, 'add_reading', { p_key: key2, p_unit: unit2, p_backup_hours: 7 }), 'key_reused');
+  // A refused request never stored its key, so the corrected values go through on the same key.
+  const key3 = k('rd');
+  await fails(rpc(COUNTER, 'add_reading', { p_key: key3, p_unit: unit, p_backup_hours: -1 }), 'bad_reading');
+  await rpc(COUNTER, 'add_reading', { p_key: key3, p_unit: unit, p_backup_hours: 7.5 });
+  eq((await rpc(COUNTER, 'customer_equipment', { p_customer: c }))[0].readings.length, 2, 'the corrected reading landed:');
+  // The customer reads only live readings, and never the staff note or who recorded it.
+  const cust2 = randomUUID();
+  await q('insert into auth.users (id) values ($1)', [cust2]);
+  await q('update customers set user_id = $1 where id = $2', [cust2, c]);
+  eq(N((await as(cust2, () => q('select count(*) c from energy_readings where equipment_id = $1', [unit])))[0].c), 2, 'the customer sees their live readings:');
+  await fails(as(cust2, () => q('select note from energy_readings')), 'permission denied');
+  await fails(as(cust2, () => q('select recorded_by from energy_readings')), 'permission denied');
+  await fails(as(cust2, () => q('select client_key from energy_readings')), 'permission denied');
+  await rpc(OWNER, 'void_reading', { p_reading: await val('select id from energy_readings where client_key = $1', [key3]), p_reason: 'Typed wrong again' });
+  eq(N((await as(cust2, () => q('select count(*) c from energy_readings where equipment_id = $1', [unit])))[0].c), 1, 'a voided reading is gone from the table too:');
+});
+
+await test('a customer sees only their own equipment and readings', async () => {
+  const p = await product({ qty: 2, tracking: 'serial' });
+  const me = randomUUID();
+  const other = randomUUID();
+  for (const who of [me, other]) await q('insert into auth.users (id) values ($1)', [who]);
+  const c1 = await rpc(COUNTER, 'save_customer', { p_phone: '08030000123' });
+  const c2 = await rpc(COUNTER, 'save_customer', { p_phone: '08030000124' });
+  await sale(p, { phone: '08030000123', method: 'cash', serials: [p.serials[0]] });
+  await sale(p, { phone: '08030000124', method: 'cash', serials: [p.serials[1]] });
+  await q('update customers set user_id = $1 where id = $2', [me, c1]);
+  await q('update customers set user_id = $1 where id = $2', [other, c2]);
+  const mine = await rpc(me, 'my_equipment', {});
+  const theirs = await rpc(other, 'my_equipment', {});
+  eq(mine.length, 1, 'my own units only:');
+  eq(theirs.length, 1, 'their own units only:');
+  expect(mine[0].id !== theirs[0].id, 'never someone else\u2019s unit');
+  await fails(rpc(me, 'add_reading', { p_key: k('rd'), p_unit: theirs[0].id, p_backup_hours: 3 }), 'no_such_unit');
+  await rpc(me, 'add_reading', { p_key: k('rd'), p_unit: mine[0].id, p_backup_hours: 5, p_felt: 'weaker' });
+  eq((await rpc(me, 'my_equipment', {}))[0].readings.length, 1, 'the customer\u2019s reading is on the record:');
+});
+
+await test('the verdict follows the shop\u2019s battery life and stays honest for other goods', async () => {
+  const p = await product({ qty: 1, tracking: 'serial', warranty: 12 });
+  const c = await rpc(COUNTER, 'save_customer', { p_phone: '08030000126' });
+  await sale(p, { phone: '08030000126', method: 'cash', serials: [p.serials[0]] });
+  const unit = (await rpc(COUNTER, 'customer_equipment', { p_customer: c }))[0];
+  eq(unit.verdict.basis, 'warranty', 'a bearing is judged by warranty, not battery age:');
+  eq(unit.verdict.stage, 'covered', 'inside warranty:');
+  const b = await product({ qty: 1, tracking: 'serial', name: 'Car battery, size 24F', family: 'batteries' });
+  const cb = await rpc(COUNTER, 'save_customer', { p_phone: '08030000127' });
+  await sale(b, { phone: '08030000127', method: 'cash', serials: [b.serials[0]] });
+  const bu = (await rpc(COUNTER, 'customer_equipment', { p_customer: cb }))[0];
+  eq(bu.verdict.life_months, 24, 'the shop\u2019s set life:');
+  await q(`update equipment_units set sold_on = shop_today() - interval '10 months' where id = $1`, [bu.id]);
+  eq((await rpc(COUNTER, 'customer_equipment', { p_customer: cb }))[0].verdict.stage, 'mid', 'ten of 24 months is mid:');
+  await q(`update equipment_units set sold_on = shop_today() - interval '30 months' where id = $1`, [bu.id]);
+  const due = (await rpc(COUNTER, 'customer_equipment', { p_customer: cb }))[0].verdict;
+  eq(due.stage, 'due', 'past the shop\u2019s life is due:');
+  eq(due.months_to_due, 0, 'nothing left to the due month:');
+});
+
+await test('the receipt link shows the order\u2019s units and nothing private', async () => {
+  const p = await product({ qty: 1, tracking: 'serial', warranty: 12 });
+  const s = await sale(p, { phone: '08030000125', method: 'cash', serials: [p.serials[0]] });
+  const token = await val('select receipt_token from orders where id = $1', [s.order_id]);
+  const mine = await rpc('anon', 'receipt_equipment', { p_token: token });
+  eq(mine.length, 1, 'the unit behind the link:');
+  eq(mine[0].serial, p.serials[0], 'its serial:');
+  expect(!JSON.stringify(mine).includes('customer_id'), 'no customer id in the link payload');
+  await fails(rpc('anon', 'receipt_equipment', { p_token: randomUUID() }), 'no_such_order');
+});
+
 // ---- Deliveries, riders and the small CRM (2026-11-25) ----
 
 // Cash payments below need the counter's till open, whatever the scenes before left it as.
@@ -2421,14 +2561,14 @@ await test('notes and follow-ups sit on the customer, and what is due shows firs
 
 await test('a scan finds the part by its shop code, a taught barcode or the words of its name', async () => {
   const id = await rpc(OWNER, 'save_product', { p_sku: 'SP-450M', p_name: '450 W mono solar panel', p_price: 11500000 });
-  const other = await rpc(OWNER, 'save_product', { p_sku: 'TB-220', p_name: '220 Ah tubular battery', p_price: 39500000 });
+  const other = await rpc(OWNER, 'save_product', { p_sku: 'TB-230', p_name: '230 Ah tubular battery', p_price: 39500000 });
   const first = async (who, q) => (await rpc(who, 'search_parts', { p_query: q }))[0];
   eq((await first(COUNTER, 'sp-450m')).product, id, 'the shop code, however written:');
   eq((await first(COUNTER, 'sp-450m')).match, 'part');
   eq((await first(STORE, '450 w panel')).product, id, 'the words of the name:');
-  eq((await first(COUNTER, '220ah')).product, other, 'written together or apart:');
-  eq((await first(COUNTER, '220 ah')).product, other);
-  eq((await first(COUNTER, '220 ah panel')), undefined, 'every word must be in the name:');
+  eq((await first(COUNTER, '230ah')).product, other, 'written together or apart:');
+  eq((await first(COUNTER, '230 ah')).product, other);
+  eq((await first(COUNTER, '230 ah panel')), undefined, 'every word must be in the name:');
   eq(await first(COUNTER, '6923450012345'), undefined, 'an unknown barcode finds nothing:');
   await rpc(COUNTER, 'link_barcode', { p_product: id, p_code: '6923450012345' });
   await rpc(COUNTER, 'link_barcode', { p_product: id, p_code: '6923-4500-12345' });

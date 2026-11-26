@@ -679,6 +679,47 @@ try {
     return `${code} taught to the bearing, second scan added it, sizer: ${inverter.replace(/\s+/g, ' ')}`;
   });
 
+  await step('a counter records a battery reading, and the receipt link shows the health record', async () => {
+    await p.goto(`${app}/readings`);
+    await p.locator('#ph').waitFor({ timeout: 30000 });
+    await p.fill('#ph', '08039990001');
+    await p.getByRole('button', { name: 'Find' }).click();
+    await p.getByText('Car battery, size 24F').waitFor({ timeout: 20000 });
+    await shot(p, 'readings-1-found');
+    await p.getByRole('button', { name: 'Record a check' }).click();
+    await p.fill('#rh', '6.5');
+    await p.getByRole('button', { name: 'Feels strong' }).click();
+    await p.fill('#rn', 'checked after a full charge');
+    await p.getByRole('button', { name: 'Save the reading' }).click();
+    await p.getByText('Reading saved.').waitFor({ timeout: 20000 });
+    const [r] = await sql`select backup_hours, source from energy_readings where equipment_id = (select id from equipment_units where serial_id = (select id from serial_units where serial = 'CB-OLD-1'))`;
+    eq(N(r.backup_hours), 6.5, 'the reading hours:');
+    eq(r.source, 'staff', 'recorded by staff:');
+    await p.getByText('6.5 hours of backup').waitFor({ timeout: 20000 });
+    await shot(p, 'readings-2-saved');
+    await p.goto(`${app}/my`);
+    await p.getByText('This page is for customers.').waitFor({ timeout: 20000 });
+    const token = await val(`select receipt_token from orders where id = $1`, [phoneOrder]);
+    const v = await guest();
+    await v.page.goto(`${app}/my?r=${token}`);
+    await v.page.getByText('Car battery, size 24F').waitFor({ timeout: 30000 });
+    await v.page.getByText('Your health record').waitFor();
+    await v.page.getByText('6.5 hours of backup').waitFor();
+    await v.page.getByText('Young battery').waitFor();
+    expect(!(await v.page.content()).includes('cost'), 'no cost on the customer page');
+    await v.page.screenshot({ path: path.join(shots, 'my-desktop.png'), fullPage: true });
+    await v.context.close();
+    const phone = await guest({ width: 375, height: 812 });
+    await phone.page.goto(`${app}/my?r=${token}`);
+    await phone.page.getByText('Your health record').waitFor({ timeout: 30000 });
+    await phone.page.screenshot({ path: path.join(shots, 'my-phone.png'), fullPage: true });
+    expect(await noSideScroll(phone.page), 'the health record scrolls sideways at 375px');
+    await phone.context.close();
+    const books = await val('select i_books_check()');
+    expect(books.ok, `books: ${books.problems?.join('; ')}`);
+    return '6.5 hours recorded, health record and chart shown, books agree';
+  });
+
   await step('a counter cannot open the owner screen', async () => {
     await p.goto(`${app}/owner`);
     await p.getByText('This page is for the owner and the accountant.').waitFor({ timeout: 20000 });

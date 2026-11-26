@@ -14,6 +14,7 @@ export const screens = [
   { href: '/rider', label: 'My drops', about: 'Your deliveries, directions and the customer’s code.', roles: ['owner', 'driver'] },
   { href: '/stock', label: 'Stock room', about: 'Receive deliveries, pack orders, count shelves.', roles: ['owner', 'storekeeper', 'dispatcher', 'counter', 'accountant'] },
   { href: '/requests', label: 'Requests', about: 'Quote requests from the public shop.', roles: ['owner', 'counter', 'accountant'] },
+  { href: '/readings', label: 'Readings', about: 'A customer\u2019s equipment and how it is doing.', roles: ['owner', 'counter', 'dispatcher', 'accountant'] },
   { href: '/owner', label: "Owner's day", about: 'Approvals, money in and out, who owes.', roles: ['owner', 'accountant'] },
   { href: '/books', label: 'Books', about: 'The month, entries, the bank and closing.', roles: ['owner', 'accountant'] },
   { href: '/import', label: 'Price list', about: "Bring in the shop's price list from Excel.", roles: ['owner'] },
