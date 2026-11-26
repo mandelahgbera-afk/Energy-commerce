@@ -756,6 +756,9 @@ try {
     await v.page.getByText('600 W solar panel').first().waitFor({ timeout: 30000 });
     const note = await v.page.locator('#rq-note').inputValue();
     expect(note.includes('Inverter: 1 kVA, 12 V.'), `the sizes go in the note, got ${note.slice(0, 80)}`);
+    expect(note.includes('Panels: 2 × 600 W.'), `the note counts the shop's own 600 W panel, got ${note}`);
+    const [panelQty] = await v.page.evaluate(() => JSON.parse(localStorage.getItem('power-store-quote-list') ?? '[]').filter((p) => /600 W/.test(p.name)).map((p) => p.qty));
+    eq(panelQty, '2', 'the list has the same 2 panels as the note:');
     await v.page.screenshot({ path: path.join(shots, 'sizer-to-list.png'), fullPage: true });
     await v.context.close();
     return 'fridge and two fans: panels from the list, sizes in the note';

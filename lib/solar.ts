@@ -73,6 +73,10 @@ const read = (re: RegExp, s: string) => { const m = s.match(re); return m ? Numb
 const byName = (items: Offer[], kind: RegExp, size: RegExp) =>
   items.flatMap((i) => { const n = kind.test(i.name) ? read(size, i.name) : null; return n ? [{ i, n, v: read(/(\d+)\s*v\b/i, i.name) }] : []; }).sort((a, b) => a.n - b.n);
 
+const panelsOn = (items: Offer[]) => byName(items, /panel/i, /(\d+)\s*w\b/i);
+/** The biggest panel on the list, in watts. Size with it, so the plan and the matched set count the same panels. */
+export const panelSize = (items: Offer[]) => panelsOn(items).pop()?.n ?? null;
+
 export function matchSet(plan: Plan, items: Offer[], sunHours = 4.5): SetLine[] {
   if (!plan.kva) return [];
   const out: SetLine[] = [];
@@ -89,7 +93,7 @@ export function matchSet(plan: Plan, items: Offer[], sunHours = 4.5): SetLine[] 
     const series = volts / 12;
     out.push({ ...big.i, qty: Math.ceil(plan.storeWh / TUBULAR_DOD / (12 * big.n * series)) * series });
   }
-  const panel = byName(items, /panel/i, /(\d+)\s*w\b/i).pop();
+  const panel = panelsOn(items).pop();
   if (panel) out.push({ ...panel.i, qty: panelsFor(plan.dailyWh, panel.n, sunHours) });
   return out.filter((l) => l.qty > 0);
 }

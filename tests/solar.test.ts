@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { matchSet, size, type Load } from '../lib/solar.ts';
+import { matchSet, panelSize, size, type Load, type Plan } from '../lib/solar.ts';
 
 const flat: Load[] = [
   { name: 'LED bulb', watts: 10, qty: 10, hours: 6 },
@@ -66,4 +66,16 @@ test('an air conditioner needs the 5 kVA at 48 V, so the bank is 48 V lithium', 
 test('what the shop does not stock is left out, and a system too big for one inverter matches nothing', () => {
   assert.deepEqual(picks(matchSet(size(flat)!, shelf.filter((i) => /panel/i.test(i.name)))), { 'SP-600B': 2 });
   assert.deepEqual(matchSet(size([{ name: 'Factory', watts: 20000, qty: 99, hours: 1 }])!, shelf), []);
+});
+
+test("sized with the shop's own biggest panel, the sizes and the matched set count the same panels", () => {
+  const w = panelSize(shelf)!;
+  assert.equal(w, 600);
+  const homes: Load[][] = [flat, [...flat, { name: 'AC', watts: 1300, qty: 1, hours: 6, motor: true }]];
+  for (const loads of homes) {
+    const p: Plan = size(loads, { panelW: w })!;
+    assert.equal(p.panelW, 600);
+    assert.equal(picks(matchSet(p, shelf))['SP-600B'], p.panels);
+  }
+  assert.equal(panelSize(shelf.filter((i) => !/panel/i.test(i.name))), null);
 });

@@ -198,14 +198,14 @@ const backups = [['Half a day', 0.5], ['A day', 1], ['Two days', 2]] as const;
 const watts = (w: number) => (w >= 1000 ? `${(w / 1000).toLocaleString('en-NG', { maximumFractionDigits: 1 })} kW` : `${Math.round(w)} W`);
 
 // Staff get "Find in stock"; the public shop passes onAsk instead, to turn the sizes into a quote list.
-export function Sizer({ onFind, onAsk, storeKey = SIZER, ask = 'What will the customer run?' }: {
-  onFind?: (q: string) => void; onAsk?: (plan: Plan, summary: string) => void; storeKey?: string; ask?: string;
+export function Sizer({ onFind, onAsk, storeKey = SIZER, ask = 'What will the customer run?', panelW }: {
+  onFind?: (q: string) => void; onAsk?: (plan: Plan, summary: string) => void; storeKey?: string; ask?: string; panelW?: number;
 }) {
   const [loads, setLoads] = useState<Load[]>(() => { try { return JSON.parse(localStorage.getItem(storeKey) ?? '[]'); } catch { return []; } });
   const [backup, setBackup] = useState(1);
   const [copied, setCopied] = useState(false);
   useEffect(() => { try { localStorage.setItem(storeKey, JSON.stringify(loads)); } catch {} setCopied(false); }, [loads, backup, storeKey]);
-  const plan = size(loads, { backupDays: backups[backup][1] });
+  const plan = size(loads, { backupDays: backups[backup][1], panelW });
   const edit = (i: number, patch: Partial<Load>) => setLoads((all) => all.map((l, j) => (j === i ? { ...l, ...patch } : l)));
   const num = (v: string) => Number(v.replace(',', '.')) || 0;
   const summary = plan ? [
