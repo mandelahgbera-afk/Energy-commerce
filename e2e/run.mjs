@@ -99,6 +99,8 @@ try {
   };
   const bearing = await product({ sku: 'B-6205-2RS', name: '6205-2RS bearing', price: 480000, trade: 420000, cost: 300000, qty: 48, part: '6205 2RS', size: [25, 52, 15], family: 'bearings' });
   const panel = await product({ sku: 'P-550', name: '550 W solar panel', price: 18500000, trade: 17000000, cost: 14000000, qty: 6, family: 'solar panels', warranty: 120 });
+  // For the public sizer: its note and the matched set count the same 200 Ah batteries.
+  await product({ sku: 'TB-200', name: '200Ah tubular battery', price: 42000000, trade: 39200000, cost: 31500000, qty: 4, family: 'batteries', warranty: 12 });
   const tradePhone = '08031234567';
   const musa = await counter('save_customer', { p_phone: tradePhone, p_name: 'Musa Installer', p_reminders_ok: true });
   await owner('set_customer_terms', { p_customer: musa, p_kind: 'installer', p_credit_limit: 50000000 });
@@ -759,6 +761,9 @@ try {
     expect(note.includes('Panels: 2 × 600 W.'), `the note counts the shop's own 600 W panel, got ${note}`);
     const [panelQty] = await v.page.evaluate(() => JSON.parse(localStorage.getItem('power-store-quote-list') ?? '[]').filter((p) => /600 W/.test(p.name)).map((p) => p.qty));
     eq(panelQty, '2', 'the list has the same 2 panels as the note:');
+    const [, count, ah] = note.match(/or (\d+) × (\d+) Ah tubular/) ?? [];
+    const tubular = await v.page.evaluate(() => JSON.parse(localStorage.getItem('power-store-quote-list') ?? '[]').filter((p) => /tubular/i.test(p.name)).map((p) => `${p.qty} × ${p.name}`));
+    eq(tubular.join(), `${count} × ${ah}Ah tubular battery`, 'the note counts the batteries the list holds:');
     await v.page.screenshot({ path: path.join(shots, 'sizer-to-list.png'), fullPage: true });
     await v.context.close();
     return 'fridge and two fans: panels from the list, sizes in the note';

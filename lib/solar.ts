@@ -37,7 +37,7 @@ const PANEL_LOSS = 0.75; // heat, dust, wiring and the charge controller
 export type Plan = {
   runningW: number; surgeW: number; dailyWh: number; storeWh: number;
   kva: number | null; volts: 12 | 24 | 48;
-  lithiumKwh: number; tubular: number; panels: number; panelW: number;
+  lithiumKwh: number; tubular: number; tubularAh: number; panels: number; panelW: number;
 };
 
 const clamp = (n: number, lo: number, hi: number) => (Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : lo);
@@ -60,40 +60,51 @@ export function size(loads: Load[], { backupDays = 1, sunHours = 4.5, panelW = 5
   const series = volts / 12;
   const tubular = storeWh > 0 ? Math.ceil(storeWh / TUBULAR_DOD / (TUBULAR_WH * series)) * series : 0;
   const panels = panelsFor(dailyWh, panelW, sunHours);
-  return { runningW, surgeW, dailyWh, storeWh, kva, volts, lithiumKwh, tubular, panels, panelW };
+  return { runningW, surgeW, dailyWh, storeWh, kva, volts, lithiumKwh, tubular, tubularAh: 220, panels, panelW };
 }
 
-// The public sizer turns a plan into goods from the shop's own list, read from the product names
-// ("5 kVA 48 V hybrid inverter", "550 W mono solar panel", "200Ah tubular battery"): the smallest
-// inverter that is big enough, a battery bank at that inverter's voltage (lithium if one matches,
-// else tubular in whole strings), and the biggest panel. The counter still checks it in the quote.
+// The public sizer fits the plan to the shop's own list, read from the product names ("5 kVA 48 V
+// hybrid inverter", "550 W mono solar panel", "200Ah tubular battery"): the smallest inverter that is
+// big enough sets the kVA and the bank's voltage, the biggest tubular battery sets the Ah, and the
+// biggest panel sets the watts. The sizes on screen, the note and the matched set then all come from
+// the same numbers. The counter still checks it in the quote.
 export type Offer = { product: string; name: string; unit: string; price: number | string };
 export type SetLine = Offer & { qty: number };
 const read = (re: RegExp, s: string) => { const m = s.match(re); return m ? Number(m[1]) : null; };
 const byName = (items: Offer[], kind: RegExp, size: RegExp) =>
   items.flatMap((i) => { const n = kind.test(i.name) ? read(size, i.name) : null; return n ? [{ i, n, v: read(/(\d+)\s*v\b/i, i.name) }] : []; }).sort((a, b) => a.n - b.n);
-
+const invertersOn = (items: Offer[]) => byName(items, /inverter/i, /(\d+(?:\.\d+)?)\s*kva/i);
+const lithiumOn = (items: Offer[]) => byName(items, /lithium/i, /(\d+(?:\.\d+)?)\s*kwh/i);
+const tubularOn = (items: Offer[]) => byName(items, /tubular/i, /(\d+)\s*ah\b/i);
 const panelsOn = (items: Offer[]) => byName(items, /panel/i, /(\d+)\s*w\b/i);
-/** The biggest panel on the list, in watts. Size with it, so the plan and the matched set count the same panels. */
+/** The biggest panel on the list, in watts. */
 export const panelSize = (items: Offer[]) => panelsOn(items).pop()?.n ?? null;
+
+/** The plan in this shop's goods: the inverter it will get, that inverter's voltage, its tubular Ah and panel watts. */
+export function fitToShelf(plan: Plan, items: Offer[], sunHours = 4.5): Plan {
+  const inverter = plan.kva ? invertersOn(items).find((x) => x.n >= plan.kva! - 1e-9) : undefined;
+  const v = inverter?.v;
+  const volts = v === 12 || v === 24 || v === 48 ? v : plan.volts;
+  const tubularAh = tubularOn(items).pop()?.n ?? plan.tubularAh;
+  const series = volts / 12;
+  const tubular = plan.storeWh > 0 ? Math.ceil(plan.storeWh / TUBULAR_DOD / (12 * tubularAh * series)) * series : 0;
+  const panelW = panelSize(items) ?? plan.panelW;
+  return { ...plan, kva: inverter?.n ?? plan.kva, volts, tubularAh, tubular, panelW, panels: panelsFor(plan.dailyWh, panelW, sunHours) };
+}
 
 export function matchSet(plan: Plan, items: Offer[], sunHours = 4.5): SetLine[] {
   if (!plan.kva) return [];
+  const p = fitToShelf(plan, items, sunHours);
   const out: SetLine[] = [];
-  const inverter = byName(items, /inverter/i, /(\d+(?:\.\d+)?)\s*kva/i).find((x) => x.n >= plan.kva! - 1e-9);
+  const inverter = invertersOn(items).find((x) => x.n >= p.kva! - 1e-9);
   if (inverter) out.push({ ...inverter.i, qty: 1 });
-  const volts = inverter?.v ?? plan.volts;
-  const lithium = byName(items, /lithium/i, /(\d+(?:\.\d+)?)\s*kwh/i).filter((x) => !x.v || x.v === volts);
-  const tubular = byName(items, /tubular/i, /(\d+)\s*ah\b/i);
-  if (plan.storeWh > 0 && lithium.length) {
-    const fit = lithium.find((x) => x.n >= plan.lithiumKwh) ?? lithium[lithium.length - 1];
-    out.push({ ...fit.i, qty: Math.ceil(plan.lithiumKwh / fit.n - 1e-9) });
-  } else if (plan.storeWh > 0 && tubular.length) {
-    const big = tubular[tubular.length - 1];
-    const series = volts / 12;
-    out.push({ ...big.i, qty: Math.ceil(plan.storeWh / TUBULAR_DOD / (12 * big.n * series)) * series });
-  }
+  const lithium = lithiumOn(items).filter((x) => !x.v || x.v === p.volts);
+  const tubular = tubularOn(items).pop();
+  if (p.storeWh > 0 && lithium.length) {
+    const fit = lithium.find((x) => x.n >= p.lithiumKwh) ?? lithium[lithium.length - 1];
+    out.push({ ...fit.i, qty: Math.ceil(p.lithiumKwh / fit.n - 1e-9) });
+  } else if (tubular) out.push({ ...tubular.i, qty: p.tubular });
   const panel = panelsOn(items).pop();
-  if (panel) out.push({ ...panel.i, qty: panelsFor(plan.dailyWh, panel.n, sunHours) });
+  if (panel) out.push({ ...panel.i, qty: p.panels });
   return out.filter((l) => l.qty > 0);
 }

@@ -2,14 +2,14 @@
 
 // The solar sizer for the public: a visitor adds what they will run, sees the inverter, battery and
 // panels it needs, and one tap puts a matching set from this shop's own list into their quote list,
-// with the sizes as the note. Panels are counted in the shop's own biggest panel, so the sizes, the
-// note and the set agree. The counter prices and checks it, as with any request. Nothing here
+// with the sizes as the note. The plan is fitted to the shop's own inverters, batteries and panels,
+// so the sizes, the note and the set agree. The counter prices and checks it, as with any request. Nothing here
 // shows trade prices or stock counts, and nothing is saved until the visitor sends the request.
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { browserDb } from '@/lib/supabase';
-import { matchSet, panelSize, type Offer, type Plan } from '@/lib/solar';
+import { fitToShelf, matchSet, type Offer, type Plan } from '@/lib/solar';
 import { Mark } from '@/components/staff-nav';
 import { Sizer } from '@/components/tools';
 
@@ -64,7 +64,7 @@ export default function SolarSizer() {
           <p style={{ margin: '12px 0 0', maxWidth: 580, fontSize: 'clamp(15.5px, 1.6vw, 17px)', lineHeight: 1.5, color: '#434E5A' }}>Add what you will run, how many, and the hours a day. You get the inverter, battery and panels it needs, and the shop can quote a matching set from today&apos;s list.</p>
         </header>
         <section className="card rise" style={{ padding: 'clamp(16px, 3vw, 24px)' }}>
-          <Sizer storeKey="power-store-sizer" ask="What will you run?" panelW={shelf ? panelSize(shelf) ?? undefined : undefined}
+          <Sizer storeKey="power-store-sizer" ask="What will you run?" fit={shelf ? (p) => fitToShelf(p, shelf) : undefined}
             onAsk={shelf ? (plan, summary) => ask(plan, summary, shelf) : undefined} />
           {shelf === false ? (
             <p role="alert" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, margin: '12px 0 0', padding: '10px 12px', borderRadius: 12, background: '#FDF3E7', color: '#92400E', fontSize: 14 }}>

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { matchSet, panelSize, size, type Load, type Plan } from '../lib/solar.ts';
+import { fitToShelf, matchSet, panelSize, size, type Load, type Plan } from '../lib/solar.ts';
 
 const flat: Load[] = [
   { name: 'LED bulb', watts: 10, qty: 10, hours: 6 },
@@ -78,4 +78,20 @@ test("sized with the shop's own biggest panel, the sizes and the matched set cou
     assert.equal(picks(matchSet(p, shelf))['SP-600B'], p.panels);
   }
   assert.equal(panelSize(shelf.filter((i) => !/panel/i.test(i.name))), null);
+});
+
+test("fitted to the shop, the plan's battery count is the set's: a 48 V inverter means 48 V strings", () => {
+  const noLithium = shelf.filter((i) => !/lithium/i.test(i.name));
+  const raw = size([...flat, { name: 'AC', watts: 1300, qty: 1, hours: 6, motor: true }])!;
+  assert.deepEqual([raw.kva, raw.volts, raw.tubular], [3.5, 24, 10]); // unfitted: 24 V strings of 220 Ah
+  const p = fitToShelf(raw, noLithium);
+  assert.deepEqual([p.kva, p.volts, p.tubularAh, p.tubular, p.panelW, p.panels], [5, 48, 220, 12, 600, 5]);
+  assert.deepEqual(picks(matchSet(p, noLithium)), { 'INV-5K': 1, 'TB-220': 12, 'SP-600B': 5 });
+  // Only 200 Ah on the shelf: the plan counts 200 Ah batteries, as the set does.
+  const only200 = noLithium.filter((i) => i.product !== 'TB-220');
+  const q = fitToShelf(size(flat)!, only200);
+  assert.equal(q.tubularAh, 200);
+  assert.equal(picks(matchSet(q, only200))['TB-200'], q.tubular);
+  // Fitting twice changes nothing, so the set matched from a fitted plan is the same set.
+  assert.deepEqual(fitToShelf(p, noLithium), p);
 });
