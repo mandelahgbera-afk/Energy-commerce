@@ -1,7 +1,7 @@
 // A believable day in the shop, dated today, so the owner's screens are never empty in a demo:
 // counter sales by card and by transfer, an installer at trade price, a phone order on a deposit,
-// a delivery out with the demo rider, a quote request from the public shop and a follow-up due
-// today. Run it on the morning of a demo. Shop data goes in only through the real functions, every
+// a delivery out with the demo rider, a quote request from the public shop, a follow-up due
+// today, and a battery sold by its serial with readings, for Readings and the health record. Run it on the morning of a demo. Shop data goes in only through the real functions, every
 // step's key carries the date, so a second run the same day changes nothing and the next day adds
 // that day. Shelves running low get restocked first. Run the demo day and deliveries demo before.
 //   node scripts/db-demo-today.mjs --confirm <project-id>
@@ -69,6 +69,26 @@ try {
       await step('delivery booked for today', () => rpc('book_delivery', { p_order: o2, p_address: '9 Toyin Street, Ikeja', p_on: today, p_time: 'afternoon', p_landmark: 'Opposite the big mosque', p_lat: 6.5985, p_lng: 3.3528 }));
     }
     if (rider) await step('given to the demo rider', () => rpc('dispatch_order', { p_key: key('out-2'), p_order: o2, p_rider: rider.id }));
+  }
+
+  // A battery sold by its serial, so Readings and the customer's health record have something to show:
+  // each day one unit with that day's serial goes to a new customer with a set-up check, and every
+  // unit from an earlier demo day gets one check a day, its backup easing off as it ages.
+  if (ids['TB-200']) {
+    const e = who(4);
+    const sn = `TB200-${today.replaceAll('-', '')}`;
+    await step(`customer ${e.name}`, () => rpc('save_customer', { p_phone: e.phone, p_name: e.name, p_reminders_ok: true }));
+    await step(`battery ${sn} received`, () => rpc('receive_goods', { p_key: key('rcv-tb200'), p_supplier: sup.id, p_location: shop.id, p_lines: [{ product_id: ids['TB-200'], qty: 1, serials: [sn] }] }));
+    await step(`sale: battery ${sn} for ${e.name}`, () => rpc('counter_sale', { p_key: key('sale-tb200'), p_location: shop.id, p_lines: [{ product_id: ids['TB-200'], qty: 1, serials: [sn] }], p_method: 'pos', p_phone: e.phone }));
+    const units = await sql`select e.id, (shop_today() - e.sold_on)::int days, u.serial from equipment_units e
+      join serial_units u on u.id = e.serial_id where e.product_id = ${ids['TB-200']} and e.closed_on is null order by e.sold_on`;
+    for (const u of units) {
+      const first = u.days === 0;
+      const hours = Math.max(4, Math.round((7.5 - u.days * 0.03) * 10) / 10);
+      await step(`reading on ${u.serial}: ${hours} h`, () => rpc('add_reading', { p_key: key(`rd-${u.id}`), p_unit: u.id, p_backup_hours: hours,
+        p_voltage_mv: first ? 13400 : 12800, p_charge_pct: first ? 100 : 95, p_felt: u.days > 90 ? 'weaker' : 'strong',
+        p_note: first ? 'Set-up check at handover' : 'Check-in call' }));
+    }
   }
 
   await step('quote request from the public shop', () => visitor('request_quote', { p_key: key('rq-1'), p_name: who(3).name, p_phone: who(3).phone, p_lines: [{ product_id: ids['SP-550M'], qty: 6 }, { product_id: ids['INV-5K'], qty: 1 }], p_note: 'For a small office. What would the whole set cost?' }));
