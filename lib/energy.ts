@@ -61,10 +61,11 @@ export const monthCount = (n: number | string | null | undefined): string => {
   return v === 1 ? '1 month' : `${v} months`;
 };
 
-/** "12 May" for an ISO date string, so charts read calmly in any locale. */
-export const dayText = (iso: string): string => {
+/** "12 May" for an ISO date string, so charts read calmly in any locale. With the year ("12 May 2027") where a
+ *  date can be a year or more away, like a warranty's end, which without it reads as already past. */
+export const dayText = (iso: string, withYear = false): string => {
   const d = new Date(`${iso.slice(0, 10)}T00:00:00`);
-  return `${d.getDate()} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()]}`;
+  return `${d.getDate()} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()]}${withYear ? ` ${d.getFullYear()}` : ''}`;
 };
 
 /** Hours without a trailing ".00", for a reading: 6.5, 8, 0. */

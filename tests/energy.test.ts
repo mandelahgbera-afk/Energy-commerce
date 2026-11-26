@@ -62,6 +62,8 @@ test('months and days read in plain words', () => {
   assert.equal(monthCount(null), '');
   assert.equal(dayText('2026-11-19'), '19 Nov');
   assert.equal(dayText('2026-01-03'), '3 Jan');
+  // a warranty's end a year on must not read as already past
+  assert.equal(dayText('2027-08-14', true), '14 Aug 2027');
   assert.equal(hoursText(6.5), '6.5');
   assert.equal(hoursText('8'), '8');
   assert.equal(hoursText(null), '');
