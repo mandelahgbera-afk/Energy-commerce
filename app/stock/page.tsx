@@ -9,7 +9,7 @@ import { browserDb } from '@/lib/supabase';
 import { friendly } from '@/lib/errors';
 import { toQty } from '@/lib/quantity';
 import { Tick } from '@/components/kit/feel';
-import { CameraScan, exactHit, scanSound } from '@/components/scan';
+import { CameraScan, TeachBarcode, exactHit, looksLikeBarcode, scanSound } from '@/components/scan';
 import { StaffNav } from '@/components/staff-nav';
 
 type Tab = 'receive' | 'pack' | 'count';
@@ -141,7 +141,9 @@ function PartSearch({ db, onPick, label }: { db: Db; onPick: (h: Hit) => void; l
           }} />
         <CameraScan onCode={(c) => { setMiss(''); setQ(c); submit(c); }} />
       </div>
-      {miss && miss === q.trim() && hits.length ? <p role="alert" className="scan-miss">No part has the number {miss} exactly. Tap the right one below.</p> : null}
+      {miss && miss === q.trim() ? (looksLikeBarcode(miss) || !hits.length
+        ? <TeachBarcode key={miss} code={miss} onTaught={(h) => { setMiss(''); pick(h); }} />
+        : <p role="alert" className="scan-miss">No part has the number {miss} exactly. Tap the right one below.</p>) : null}
       {hits.length ? (
         <div role="listbox" aria-label="Matching parts" style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 8 }}>
           {hits.map((h) => (
@@ -151,7 +153,7 @@ function PartSearch({ db, onPick, label }: { db: Db; onPick: (h: Hit) => void; l
           ))}
         </div>
       ) : null}
-      {q.trim() && hitsFor === q.trim() && hits.length === 0 ? <p style={{ margin: '8px 0 0', fontSize: 14, color: '#92400E' }}>Nothing matches. Check the number, or search by size.</p> : null}
+      {q.trim() && hitsFor === q.trim() && hits.length === 0 && miss !== q.trim() ? <p style={{ margin: '8px 0 0', fontSize: 14, color: '#92400E' }}>Nothing matches. Check the number, or search by size.</p> : null}
     </div>
   );
 }
@@ -175,7 +177,9 @@ function Receive({ db, locations, onError, clearError }: Props & { locations: { 
   const add = useCallback(async (h: Hit) => {
     setDone(null);
     const { data } = await db.from('products').select('tracking, unit').eq('id', h.product).maybeSingle();
-    setLines((cur) => (cur.some((l) => l.productId === h.product) ? cur
+    // Scanning the same part again counts one more off the truck; serials and metres are typed or scanned in their own box.
+    setLines((cur) => (cur.some((l) => l.productId === h.product)
+      ? cur.map((l) => (l.productId === h.product && !l.serial && l.unit === 'each' ? { ...l, qty: String((Number(l.qty) || 0) + 1) } : l))
       : [...cur, { productId: h.product, name: h.name, sku: h.sku, serial: data?.tracking === 'serial', unit: data?.unit ?? 'each', qty: data?.tracking === 'serial' ? '0' : '1', serials: [], madeOn: '' }]));
   }, [db]);
   const update = (id: string, patch: Partial<RecvLine>) => setLines((cur) => cur.map((l) => (l.productId === id ? { ...l, ...patch } : l)));

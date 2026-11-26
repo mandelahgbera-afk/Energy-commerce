@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { browserDb } from '@/lib/supabase';
 import { friendly } from '@/lib/errors';
 import { formatNaira, shortNaira } from '@/lib/money';
+import { localPhone } from '@/lib/orders';
 import { Tick } from '@/components/kit/feel';
 import { StaffNav } from '@/components/staff-nav';
 
@@ -500,8 +501,8 @@ function Debts({ debts, band, setBand }: { debts: Today['debts']; band: number; 
         {chosen?.customers.map((c) => (
           <div key={c.customer_id ?? 'walk-in'} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 0', borderTop: '1px solid #F1F3F5' }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 550 }}>{c.name ?? (c.customer_id ? 'Customer with no name' : 'Walk-in, no name or phone')}</div>
-              <div style={{ fontSize: 13, color: '#55606C' }}>Oldest {c.oldest_days} days</div>
+              <div style={{ fontSize: 15, fontWeight: 550 }}>{c.name ?? (c.phone ? localPhone(c.phone) : c.customer_id ? 'Customer with no name' : 'Walk-in, no name or phone')}</div>
+              <div style={{ fontSize: 13, color: '#55606C' }}>{Number(c.oldest_days) < 1 ? 'Since today' : `Oldest ${c.oldest_days} ${Number(c.oldest_days) === 1 ? 'day' : 'days'}`}</div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <b className="tabular" style={{ fontWeight: 600 }}>{formatNaira(c.owes)}</b>
@@ -576,7 +577,7 @@ function Batteries({ months, month, setMonth }: { months: Today['batteries_due']
         {chosen && (chosen.customers ?? []).length === 0 ? <p className="sub">Nobody due in {chosen ? monthName(chosen.month) : 'this month'}.</p> : null}
         {(chosen?.customers ?? []).map((c) => (
           <div key={c.customer_id ?? c.phone ?? 'x'} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 0', borderTop: '1px solid #F1F3F5' }}>
-            <div style={{ fontSize: 15, fontWeight: 550 }}>{c.name ?? 'Customer with no name'}</div>
+            <div style={{ fontSize: 15, fontWeight: 550 }}>{c.name ?? (c.phone ? localPhone(c.phone) : 'Customer with no name')}</div>
             <Reach person={c} text={`Hello${c.name ? ` ${c.name}` : ''}, this is Power Store. The battery you bought from us is reaching the age most need replacing. Come in for a free test.`} />
           </div>
         ))}

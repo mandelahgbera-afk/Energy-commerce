@@ -17,7 +17,9 @@ const images = {
   auth: 'public.ecr.aws/supabase/gotrue:v2.197.0',
   rest: 'public.ecr.aws/supabase/postgrest:v16.5',
 };
-export const ports = { gateway: 54530, auth: 54531, db: 54532, rest: 54533 };
+// POWER_PORT_SHIFT moves the stack off ports Windows has reserved (see sim/testpg.mjs).
+const shift = Number(process.env.POWER_PORT_SHIFT) || 0;
+export const ports = { gateway: 54530 + shift, auth: 54531 + shift, db: 54532 + shift, rest: 54533 + shift };
 const net = 'power-e2e';
 const names = { db: 'power-e2e-db', auth: 'power-e2e-auth', rest: 'power-e2e-rest' };
 // A secret for this run only. The keys it signs are useless anywhere else.

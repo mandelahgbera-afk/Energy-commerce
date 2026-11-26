@@ -1,11 +1,11 @@
 // Real connections fighting over the same things at the same moment, on real Postgres.
 // Passing here means the locks hold, retries are safe, numbers have no gaps and nothing deadlocks.
 import postgres from 'postgres';
-import { startPostgres } from './testpg.mjs';
+import { startPostgres, shifted } from './testpg.mjs';
 import { schemaSql, buildCall, unwrap, N, USERS, seedPeople, postgresOptions } from './lib.mjs';
 
 const { OWNER, COUNTER, COUNTER2, STORE, DRIVER, ACCOUNT } = USERS;
-const PORT = 54412;
+const PORT = shifted(54412);
 const pg = await startPostgres({ port: PORT, password: 'test', database: 'power_race' });
 const sql = postgres(postgresOptions(PORT, 'test', 'power_race', 30));
 for (const part of schemaSql()) await sql.unsafe(part);

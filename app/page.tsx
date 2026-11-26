@@ -108,7 +108,7 @@ function Home() {
           <Tile href="/shop" label="Public shop" about="What customers see, with today's prices." i={mine.length + 1} />
         </div>
         <p style={{ margin: '28px 4px 0', fontSize: 13.5, color: '#55606C' }}>
-          <Link href="/help" style={{ color: '#434E5A' }}>Help</Link> · <Link href="/kit" style={{ color: '#434E5A' }}>Component kit</Link>
+          <Link href="/help" style={{ color: '#434E5A' }}>Help</Link>
         </p>
       </div>
       <style>{`

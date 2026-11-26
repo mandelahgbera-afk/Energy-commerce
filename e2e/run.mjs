@@ -652,6 +652,33 @@ try {
     return 'new password works, the link works once';
   });
 
+  await step('an unknown barcode is taught once, then every scan of it finds the part; the solar sizer sizes a home', async () => {
+    const code = '6923450012345';
+    await s.goto(`${app}/stock`);
+    await s.fill('#part', code);
+    await s.press('#part', 'Enter');
+    await s.getByText(`New code ${code}`).waitFor({ timeout: 20000 });
+    await shot(s, 'stock-teach-1-new-code');
+    await s.getByRole('textbox', { name: 'Find the part for this code' }).fill('6205');
+    await s.getByRole('button', { name: /6205-2RS bearing.*This one/ }).click();
+    await s.getByRole('textbox', { name: 'Quantity received of 6205-2RS bearing' }).waitFor({ timeout: 20000 });
+    eq(await val('select product_id from product_barcodes where code = $1', [code]), bearing, 'the code is on the bearing:');
+    await s.fill('#part', code);
+    await s.press('#part', 'Enter');
+    await s.waitForFunction(() => !document.querySelector('#part')?.value, null, { timeout: 20000 });
+    expect(!(await s.getByText(`New code ${code}`).count()), 'a taught code must not ask again');
+    await s.waitForFunction(() => document.querySelector('input[aria-label="Quantity received of 6205-2RS bearing"]')?.value === '2', null, { timeout: 20000 });
+    await s.getByRole('button', { name: 'Tools', exact: true }).click();
+    await s.getByRole('button', { name: 'Sizing', exact: true }).click();
+    await s.selectOption('#sz-add', { label: 'Fridge, 150 W' });
+    await s.selectOption('#sz-add', { label: 'Ceiling fan, 75 W' });
+    await s.getByText('kWh lithium').waitFor({ timeout: 10000 });
+    await shot(s, 'tools-sizer');
+    const inverter = await s.locator('.sz-card').first().innerText();
+    expect(/1 kVA, 12 V/.test(inverter), `fridge and two fans should need 1 kVA at 12 V, got ${inverter}`);
+    return `${code} taught to the bearing, second scan added it, sizer: ${inverter.replace(/\s+/g, ' ')}`;
+  });
+
   await step('a counter cannot open the owner screen', async () => {
     await p.goto(`${app}/owner`);
     await p.getByText('This page is for the owner and the accountant.').waitFor({ timeout: 20000 });

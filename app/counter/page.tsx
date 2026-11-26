@@ -12,7 +12,7 @@ import { toQty } from '@/lib/quantity';
 import { saleBlocker, type SaleLine } from '@/lib/sale-math';
 import { cashNotes, countedKobo, noteKobo } from '@/lib/till';
 import { Tick } from '@/components/kit/feel';
-import { CameraScan, exactHit, scanSound } from '@/components/scan';
+import { CameraScan, TeachBarcode, exactHit, looksLikeBarcode, scanSound } from '@/components/scan';
 import { StaffNav } from '@/components/staff-nav';
 
 type Hit = { product: string; sku: string; name: string; part_number: string | null; price: bigint | number | string; match: string; state: string };
@@ -379,7 +379,9 @@ export default function Counter() {
               <CameraScan onCode={(c) => { moved.current = false; setMiss(''); setQuery(c); submit(c); }} />
               </div>
               {added ? <div key={added.n} role="status" className="rise scan-ok"><Tick size={15} stroke="#0D9465" />Added {added.name}</div> : null}
-              {miss && miss === query.trim() && hits.length ? <div role="alert" className="scan-miss">No part has the number {miss} exactly. Pick the right one below, or press ↓ then Enter.</div> : null}
+              {miss && miss === query.trim() ? (looksLikeBarcode(miss) || !hits.length
+                ? <TeachBarcode key={miss} code={miss} onTaught={(h) => { setMiss(''); setQuery(''); take(h as Hit); }} />
+                : <div role="alert" className="scan-miss">No part has the number {miss} exactly. Pick the right one below, or press ↓ then Enter.</div>) : null}
               {hits.length > 0 ? (
                 <div role="listbox" aria-label="Matching items" style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 8 }}>
                   {hits.map((h, i) => (
@@ -393,7 +395,7 @@ export default function Counter() {
                   ))}
                 </div>
               ) : null}
-              {query.trim() && hitsFor === query.trim() && hits.length === 0 ? <div style={{ marginTop: 8, fontSize: 14, color: '#92400E' }}>Nothing matches. Check the number, or search by size.</div> : null}
+              {query.trim() && hitsFor === query.trim() && hits.length === 0 && miss !== query.trim() ? <div style={{ marginTop: 8, fontSize: 14, color: '#92400E' }}>Nothing matches. Check the number, or search by size.</div> : null}
             </section>
 
             <section className="card" aria-label="Items on this sale" style={{ padding: '8px 18px 10px' }}>

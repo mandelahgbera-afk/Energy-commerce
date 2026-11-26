@@ -707,3 +707,65 @@ body > main {
   .sheet-back { place-items: center; }
   .sheet { border-radius: 24px; }
 }
+
+/* Teaching a new barcode (26 Nov 2026). */
+.teach {
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: 13px;
+  background: #f4f7fb;
+  border: 1px solid rgba(16, 24, 34, 0.08);
+}
+.teach-pick {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 50px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: #10161e;
+  text-align: left;
+  font-family: var(--sans);
+  cursor: pointer;
+}
+.teach-pick:hover:not(:disabled) { background: #eef3ff; }
+.teach-pick:disabled { cursor: default; opacity: 0.7; }
+
+/* Solar sizing in the staff tools (26 Nov 2026). */
+.sz-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 6px 6px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.75);
+}
+.sz-name { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 500; line-height: 1.25; }
+.sz-num { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; color: #55606c; }
+.sz-num input {
+  width: 42px;
+  height: 34px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  border: 1px solid rgba(16, 24, 34, 0.14);
+  border-radius: 9px;
+  background: #ffffff;
+  color: #10161e;
+  font: 500 14px var(--mono);
+  text-align: right;
+}
+.sz-num input:focus-visible { outline: 2px solid #1b5cf0; outline-offset: 1px; }
+.sz-use { font-size: 13.5px; font-weight: 600; color: #434e5a; }
+.sz-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 13px;
+  background: #ffffff;
+  border: 1px solid rgba(16, 24, 34, 0.07);
+}

@@ -13,6 +13,9 @@ const elevated = () => process.platform === 'win32'
   : process.getuid?.() === 0;
 const docker = (args, timeout = 120000) => spawnSync('docker', args, { encoding: 'utf8', timeout, windowsHide: true });
 
+// Windows can reserve whole port ranges (this laptop holds 54162-55118), so POWER_PORT_SHIFT moves every test port.
+export const shifted = (port) => port + (Number(process.env.POWER_PORT_SHIFT) || 0);
+
 export async function startPostgres({ port, password, database, flags = [] }) {
   if (process.env.POWER_TEST_PG === 'docker' || elevated()) {
     if (docker(['info', '--format', '{{.ServerVersion}}'], 60000).status !== 0) {

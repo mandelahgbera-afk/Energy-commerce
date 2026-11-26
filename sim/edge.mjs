@@ -10,10 +10,10 @@ const real = process.argv.includes('--real');
 let db;
 let stopPg = async () => {};
 if (real) {
-  const { startPostgres } = await import('./testpg.mjs');
+  const { startPostgres, shifted } = await import('./testpg.mjs');
   const { default: postgres } = await import('postgres');
-  const pg = await startPostgres({ port: 54411, password: 'test', database: 'power_edge' });
-  const sql = postgres(postgresOptions(54411, 'test', 'power_edge', 1));
+  const pg = await startPostgres({ port: shifted(54411), password: 'test', database: 'power_edge' });
+  const sql = postgres(postgresOptions(shifted(54411), 'test', 'power_edge', 1));
   const conn = await sql.reserve();
   db = {
     where: `real Postgres (${pg.where})`,
@@ -1089,7 +1089,7 @@ await test('counter, storekeeper, dispatcher, driver and strangers cannot read c
 
 await test('the anonymous public cannot read any of it at all', async () => {
   for (const t of [...secretTables, 'product_trade_prices', 'staff', 'customers', 'suppliers', 'audit_log', 'orders', 'order_lines', 'payments', 'deliveries', 'stock_balances', 'serial_units', 'stock_movements', 'lots', 'approvals', 'locations', 'shop_settings',
-    'shipments', 'shipment_codes', 'shipment_serials', 'order_events', 'customer_notes', 'follow_ups']) {
+    'shipments', 'shipment_codes', 'shipment_serials', 'order_events', 'customer_notes', 'follow_ups', 'product_barcodes']) {
     await fails(as('anon', () => q(`select * from ${t} limit 1`)), 'permission denied');
   }
   expect(N((await as('anon', () => q('select count(*) c from products')))[0].c) > 0, 'public should see products');
@@ -1131,10 +1131,10 @@ await test('only the functions on this list can be run from outside', async () =
   eq((await runnable('service_role')).join(), 'expire_holds,i_books_check,shop_today');
   eq((await runnable('authenticated')).join(), [
     'accept_quote', 'add_bank_line', 'add_customer_note', 'add_follow_up', 'approve_safe_count', 'approve_stock_count', 'availability', 'bank_matches', 'book_delivery', 'books_check', 'books_month', 'cancel_order', 'cancel_quote', 'cash_position', 'catalogue', 'check_serial', 'close_follow_up', 'close_month', 'close_quote_request', 'close_till', 'confirm_drop', 'confirm_payment', 'count_list',
-    'counter_sale', 'create_order', 'create_quote', 'crm_customer', 'crm_customers', 'customer_balance', 'debtors', 'decide_approval', 'deliver_order', 'dispatch_order', 'fail_drop', 'has_staff_role', 'import_products', 'is_staff', 'month_close_checks', 'month_report', 'move_money',
+    'counter_sale', 'create_order', 'create_quote', 'crm_customer', 'crm_customers', 'customer_balance', 'debtors', 'decide_approval', 'deliver_order', 'dispatch_order', 'fail_drop', 'has_staff_role', 'import_products', 'is_staff', 'link_barcode', 'month_close_checks', 'month_report', 'move_money',
     'my_drops', 'my_till', 'oldest_serials', 'open_quote_requests', 'open_till', 'orders_board', 'owner_exceptions', 'owner_money_in', 'owner_money_out', 'owner_today', 'pack_list', 'pay_supplier', 'post_opening_balance', 'post_opening_debt', 'preview_sale', 'quote_from_request', 'receipt_by_token', 'receive_goods',
     'record_expense', 'refund_order', 'reject_payment', 'reject_safe_count', 'reject_stock_count', 'request_quote', 'reserve_order', 'return_goods', 'reverse_payment', 'reverse_txn', 'revise_quote', 'save_customer', 'save_location', 'save_part_details', 'save_product',
-    'save_settings', 'save_staff', 'save_supplier', 'search_parts', 'set_customer_terms', 'set_drop_pin', 'set_last_cost', 'share_position', 'shop_details', 'shop_today', 'submit_safe_count', 'submit_stock_count', 'take_payment', 'till_paid_out', 'track_order', 'transfer_stock', 'void_opening_debt',
+    'save_settings', 'save_staff', 'save_supplier', 'search_parts', 'set_customer_terms', 'set_drop_pin', 'set_last_cost', 'share_position', 'shop_details', 'shop_today', 'submit_safe_count', 'submit_stock_count', 'take_payment', 'till_paid_out', 'track_order', 'transfer_stock', 'unlink_barcode', 'void_opening_debt',
   ].join());
 });
 
@@ -1225,6 +1225,8 @@ await test('each role is refused what is not its job', async () => {
     ['add_customer_note', { p_key: 'x', p_customer: dummy, p_kind: 'note', p_body: 'x' }, everyoneBut(COUNTER, COUNTER2, DISPATCH, ACCOUNT)],
     ['add_follow_up', { p_key: 'x', p_customer: dummy, p_what: 'x', p_due_on: '2026-01-01' }, everyoneBut(COUNTER, COUNTER2, DISPATCH, ACCOUNT)],
     ['close_follow_up', { p_follow_up: dummy }, everyoneBut(COUNTER, COUNTER2, DISPATCH, ACCOUNT)],
+    ['link_barcode', { p_product: dummy, p_code: '6923450012345' }, everyoneBut(COUNTER, COUNTER2, STORE)],
+    ['unlink_barcode', { p_code: '6923450012345' }, everyoneBut()],
   ];
   for (const [fn, args, forbidden] of rules) {
     for (const who of forbidden) await fails(rpc(who, fn, args).catch((e) => { throw new Error(`${fn} as ${who}: ${e.message}`); }), 'not_allowed');
@@ -2415,6 +2417,34 @@ await test('notes and follow-ups sit on the customer, and what is due shows firs
   await rpc(COUNTER, 'close_follow_up', { p_follow_up: f });
   expect(!(await rpc(COUNTER, 'crm_customers', {})).due.some((d) => d.id === f), 'gone from due once done');
   await fails(q('update customer_notes set body = $1 where id = $2', ['x', n1]), 'append_only');
+});
+
+await test('a scan finds the part by its shop code, a taught barcode or the words of its name', async () => {
+  const id = await rpc(OWNER, 'save_product', { p_sku: 'SP-450M', p_name: '450 W mono solar panel', p_price: 11500000 });
+  const other = await rpc(OWNER, 'save_product', { p_sku: 'TB-220', p_name: '220 Ah tubular battery', p_price: 39500000 });
+  const first = async (who, q) => (await rpc(who, 'search_parts', { p_query: q }))[0];
+  eq((await first(COUNTER, 'sp-450m')).product, id, 'the shop code, however written:');
+  eq((await first(COUNTER, 'sp-450m')).match, 'part');
+  eq((await first(STORE, '450 w panel')).product, id, 'the words of the name:');
+  eq((await first(COUNTER, '220ah')).product, other, 'written together or apart:');
+  eq((await first(COUNTER, '220 ah')).product, other);
+  eq((await first(COUNTER, '220 ah panel')), undefined, 'every word must be in the name:');
+  eq(await first(COUNTER, '6923450012345'), undefined, 'an unknown barcode finds nothing:');
+  await rpc(COUNTER, 'link_barcode', { p_product: id, p_code: '6923450012345' });
+  await rpc(COUNTER, 'link_barcode', { p_product: id, p_code: '6923-4500-12345' });
+  const hit = await first(STORE, '6923450012345');
+  eq(hit.product, id, 'once taught, the barcode finds it:');
+  eq(hit.match, 'barcode');
+  await fails(rpc(STORE, 'link_barcode', { p_product: other, p_code: '6923450012345' }), 'barcode_taken');
+  await fails(rpc(STORE, 'link_barcode', { p_product: other, p_code: 'SP450M' }), 'barcode_taken');
+  await fails(rpc(STORE, 'link_barcode', { p_product: other, p_code: '12' }), 'bad_barcode');
+  await fails(rpc(STORE, 'link_barcode', { p_product: randomUUID(), p_code: '5011111111111' }), 'no_such_product');
+  await fails(rpc(COUNTER, 'unlink_barcode', { p_code: '6923450012345' }), 'not_allowed');
+  await rpc(OWNER, 'unlink_barcode', { p_code: '6923450012345' });
+  await fails(rpc(OWNER, 'unlink_barcode', { p_code: '6923450012345' }), 'no_such_barcode');
+  await rpc(STORE, 'link_barcode', { p_product: other, p_code: '6923450012345' });
+  eq((await first(COUNTER, '6923450012345')).product, other, 'a wrong link is fixed by the owner, then taught again:');
+  eq(N(await val(`select count(*) from audit_log where action in ('link_barcode', 'unlink_barcode')`)), 3, 'each change is audited:');
 });
 
 const failed = results.filter((r) => !r.ok);
