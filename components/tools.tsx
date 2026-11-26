@@ -9,7 +9,7 @@ import { Segmented } from '@/components/kit/segmented';
 import { browserDb } from '@/lib/supabase';
 import { formatNaira } from '@/lib/money';
 import { display, fresh, plain, press, show, type Calc } from '@/lib/calc';
-import { presets, size, type Load } from '@/lib/solar';
+import { presets, size, type Load, type Plan } from '@/lib/solar';
 import { friendly } from '@/lib/errors';
 
 const tabs = ['Calculator', 'Notes', 'Prices', 'Sizing'];
@@ -197,11 +197,14 @@ const SIZER = 'ps-sizer';
 const backups = [['Half a day', 0.5], ['A day', 1], ['Two days', 2]] as const;
 const watts = (w: number) => (w >= 1000 ? `${(w / 1000).toLocaleString('en-NG', { maximumFractionDigits: 1 })} kW` : `${Math.round(w)} W`);
 
-function Sizer({ onFind }: { onFind: (q: string) => void }) {
-  const [loads, setLoads] = useState<Load[]>(() => { try { return JSON.parse(localStorage.getItem(SIZER) ?? '[]'); } catch { return []; } });
+// Staff get "Find in stock"; the public shop passes onAsk instead, to turn the sizes into a quote list.
+export function Sizer({ onFind, onAsk, storeKey = SIZER, ask = 'What will the customer run?' }: {
+  onFind?: (q: string) => void; onAsk?: (plan: Plan, summary: string) => void; storeKey?: string; ask?: string;
+}) {
+  const [loads, setLoads] = useState<Load[]>(() => { try { return JSON.parse(localStorage.getItem(storeKey) ?? '[]'); } catch { return []; } });
   const [backup, setBackup] = useState(1);
   const [copied, setCopied] = useState(false);
-  useEffect(() => { try { localStorage.setItem(SIZER, JSON.stringify(loads)); } catch {} setCopied(false); }, [loads, backup]);
+  useEffect(() => { try { localStorage.setItem(storeKey, JSON.stringify(loads)); } catch {} setCopied(false); }, [loads, backup, storeKey]);
   const plan = size(loads, { backupDays: backups[backup][1] });
   const edit = (i: number, patch: Partial<Load>) => setLoads((all) => all.map((l, j) => (j === i ? { ...l, ...patch } : l)));
   const num = (v: string) => Number(v.replace(',', '.')) || 0;
@@ -215,7 +218,7 @@ function Sizer({ onFind }: { onFind: (q: string) => void }) {
   ].join('\n') : '';
   return (
     <div>
-      <label htmlFor="sz-add" style={{ display: 'block', marginBottom: 6, fontSize: 14, fontWeight: 600 }}>What will the customer run?</label>
+      <label htmlFor="sz-add" style={{ display: 'block', marginBottom: 6, fontSize: 14, fontWeight: 600 }}>{ask}</label>
       <select id="sz-add" value="" onChange={(e) => { const p = presets[Number(e.target.value)]; if (p) setLoads((all) => [...all, { ...p }]); }} className="note-box" style={{ height: 46, cursor: 'pointer' }}>
         <option value="">Add an appliance…</option>
         {presets.map((p, i) => <option key={p.name} value={i}>{p.name}, {p.watts} W</option>)}
@@ -232,7 +235,7 @@ function Sizer({ onFind }: { onFind: (q: string) => void }) {
             </li>
           ))}
         </ul>
-      ) : <p style={{ margin: '10px 2px 0', fontSize: 14, color: '#55606C' }}>Add what they will run, how many, and the hours a day. The sizes appear here.</p>}
+      ) : <p style={{ margin: '10px 2px 0', fontSize: 14, color: '#55606C' }}>Add each appliance, how many, and the hours a day. The sizes appear here.</p>}
       {loads.length ? (
         <div style={{ marginTop: 10 }}>
           <Segmented options={backups.map((b) => b[0])} value={backup} onChange={setBackup} label="Battery backup" />
@@ -252,10 +255,11 @@ function Sizer({ onFind }: { onFind: (q: string) => void }) {
                 <span className="tabular" style={{ display: 'block', fontSize: 16, fontWeight: 600 }}>{main}</span>
                 {sub ? <span style={{ display: 'block', fontSize: 12.5, color: '#55606C' }}>{sub}</span> : null}
               </span>
-              {q ? <button type="button" onClick={() => onFind(q)} className="press calc-chip" style={{ flex: 'none', minHeight: 36, padding: '0 10px' }}>Find in stock</button> : null}
+              {q && onFind ? <button type="button" onClick={() => onFind(q)} className="press calc-chip" style={{ flex: 'none', minHeight: 36, padding: '0 10px' }}>Find in stock</button> : null}
             </div>
           ))}
           <button type="button" onClick={async () => { try { await navigator.clipboard.writeText(summary); setCopied(true); } catch {} }} className="press calc-chip" style={{ minHeight: 42 }}>{copied ? 'Copied. Paste it in WhatsApp' : 'Copy for WhatsApp'}</button>
+          {onAsk ? <button type="button" onClick={() => onAsk(plan, summary)} className="press" style={{ minHeight: 48, border: 0, borderRadius: 13, background: '#10161E', color: '#FFFFFF', font: '600 15px var(--sans)', cursor: 'pointer' }}>Ask the shop for a quote on this</button> : null}
         </div>
       ) : null}
       <p style={{ margin: '10px 2px 0', fontSize: 12.5, color: '#55606C' }}>A guide, not a design: 4.5 sun hours, motors start at three times their power. Check the site before the final quote.</p>

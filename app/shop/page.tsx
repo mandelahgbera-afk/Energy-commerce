@@ -17,7 +17,8 @@ type Item = { product: string; sku: string; name: string; family: string; unit: 
   sizes: { bore: number | null; outside: number | null; width: number | null } | null; state: 'in' | 'low' | 'out' };
 type Pick = { product: string; name: string; unit: string; price: number | string; qty: string };
 
-const store = 'power-store-quote-list';
+const store = 'power-store-quote-list'; // also written by app/shop/sizer/page.tsx
+const sizerNote = 'power-store-quote-note';
 const examples = ['6205 2RS', '25 x 52 x 15', 'Car battery'];
 const facts = ['Prices set by the shop today', 'Real stock from the shelves', 'No account, nothing to pay to ask'];
 const stateText = { in: 'In stock', low: 'Only a few left', out: 'Out of stock' } as const;
@@ -79,8 +80,15 @@ export default function Shop() {
   useEffect(() => { void db.rpc('shop_details').then(({ data }) => { if (data) setShop(data as NonNullable<typeof shop>); }); }, [db]);
 
   // The list is kept on this device only, so a visitor can come back to it.
-  useEffect(() => { try { const saved = localStorage.getItem(store); if (saved) setList(JSON.parse(saved)); } catch {} }, []);
-  useEffect(() => { try { localStorage.setItem(store, JSON.stringify(list)); } catch {} }, [list]);
+  // Saving waits for the load, so the empty first render never overwrites a saved list.
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => { try { const saved = localStorage.getItem(store); if (saved) setList(JSON.parse(saved)); } catch {} setLoaded(true); }, []);
+  useEffect(() => { if (loaded) try { localStorage.setItem(store, JSON.stringify(list)); } catch {} }, [list, loaded]);
+  // The solar sizer fills the list, leaves its sizes as the note, and links back with ?list.
+  useEffect(() => {
+    try { const n = localStorage.getItem(sizerNote); if (n) { setForm((f) => ({ ...f, note: n.slice(0, 500) })); localStorage.removeItem(sizerNote); } } catch {}
+    if (new URLSearchParams(window.location.search).has('list')) setOpen(true);
+  }, []);
 
   // "/" jumps to the search, Escape closes the list on a phone.
   useEffect(() => {
@@ -165,6 +173,7 @@ export default function Shop() {
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6, marginTop: 10, fontSize: 13.5, color: '#55606C' }}>
               <span>Try</span>
               {examples.map((e) => <button key={e} type="button" onClick={() => setQuery(e)} className="press" style={{ minHeight: 36, padding: '0 12px', border: '1px solid rgba(16,24,34,.1)', borderRadius: 18, background: 'rgba(255,255,255,.72)', color: '#10161E', font: '500 13.5px var(--mono)', cursor: 'pointer' }}>{e}</button>)}
+              <Link href="/shop/sizer" className="press" style={{ display: 'inline-flex', alignItems: 'center', minHeight: 36, padding: '0 12px', borderRadius: 18, background: '#EEF3FF', color: '#1B5CF0', fontSize: 13.5, fontWeight: 600 }}>What size of solar do I need?</Link>
             </div>
             <ul aria-label="Why ask here" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 20px', listStyle: 'none', margin: '18px 0 0', padding: 0, fontSize: 13.5, color: '#434E5A' }}>
               {facts.map((f) => <li key={f} style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}><Tick size={15} stroke="#0D9465" />{f}</li>)}

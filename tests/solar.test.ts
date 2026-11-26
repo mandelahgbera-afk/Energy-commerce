@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { size, type Load } from '../lib/solar.ts';
+import { matchSet, size, type Load } from '../lib/solar.ts';
 
 const flat: Load[] = [
   { name: 'LED bulb', watts: 10, qty: 10, hours: 6 },
@@ -40,4 +40,30 @@ test('nothing sensible in means no plan, and wild numbers are held in range', ()
 test('more backup days, more battery; too big for any inverter says so', () => {
   assert.ok(size(flat, { backupDays: 2 })!.lithiumKwh > size(flat)!.lithiumKwh);
   assert.equal(size([{ name: 'Factory', watts: 20000, qty: 99, hours: 1 }])!.kva, null);
+});
+
+// Named the way the demo shop names them, with a charge controller and a car battery as decoys.
+const shelf = [
+  ['INV-3K', '3 kVA 24 V hybrid inverter'], ['INV-5K', '5 kVA 48 V hybrid inverter'], ['INV-10K', '10 kVA 48 V hybrid inverter'],
+  ['CC-60', '60 A MPPT charge controller'], ['LI-5K', '5 kWh 48 V lithium battery'], ['LI-10K', '10 kWh 48 V lithium battery'],
+  ['TB-200', '200Ah tubular battery'], ['TB-220', '220 Ah tubular battery'], ['CB-75', 'Car battery, 75 Ah'],
+  ['SP-450M', '450 W mono solar panel'], ['SP-550M', '550 W mono solar panel'], ['SP-600B', '600 W bifacial solar panel'],
+].map(([product, name]) => ({ product, name, unit: 'each', price: 100 }));
+const picks = (lines: { product: string; qty: number }[]) => Object.fromEntries(lines.map((l) => [l.product, l.qty]));
+
+test('a small flat gets the smallest inverter, tubular batteries at its 24 V, and the biggest panel', () => {
+  // 1 kVA is enough, but the smallest on the list is 3 kVA at 24 V, and no lithium is 24 V.
+  assert.deepEqual(picks(matchSet(size(flat)!, shelf)), { 'INV-3K': 1, 'TB-220': 2, 'SP-600B': 2 });
+});
+
+test('an air conditioner needs the 5 kVA at 48 V, so the bank is 48 V lithium', () => {
+  const p = size([...flat, { name: 'AC', watts: 1300, qty: 1, hours: 6, motor: true }])!;
+  assert.equal(p.kva, 3.5);
+  assert.equal(p.lithiumKwh, 12.3); // 9900 Wh / 0.9 / 0.9
+  assert.deepEqual(picks(matchSet(p, shelf)), { 'INV-5K': 1, 'LI-10K': 2, 'SP-600B': 5 });
+});
+
+test('what the shop does not stock is left out, and a system too big for one inverter matches nothing', () => {
+  assert.deepEqual(picks(matchSet(size(flat)!, shelf.filter((i) => /panel/i.test(i.name)))), { 'SP-600B': 2 });
+  assert.deepEqual(matchSet(size([{ name: 'Factory', watts: 20000, qty: 99, hours: 1 }])!, shelf), []);
 });

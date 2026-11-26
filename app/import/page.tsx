@@ -12,7 +12,7 @@ import { formatNaira, nairaToKobo } from '@/lib/money';
 import { Spinner, Tick } from '@/components/kit/feel';
 import { StaffNav } from '@/components/staff-nav';
 
-type Row = { line: number; sku: string | null; name: string | null; action: 'new' | 'update' | 'same' | 'error'; problem: string | null; price: number | string | null; price_before: number | string | null; trade: number | string | null; trade_before: number | string | null };
+type Row = { line: number; sku: string | null; name: string | null; action: 'new' | 'update' | 'same' | 'error'; problem: string | null; price: number | string | null; price_before: number | string | null; trade: number | string | null; trade_before: number | string | null; barcodes?: number };
 type Preview = { counts: { new: number; update: number; same: number; error: number }; rows: Row[] };
 
 const columns: [string, string[]][] = [
@@ -30,11 +30,12 @@ const columns: [string, string[]][] = [
   ['warranty', ['warranty', 'warranty months']],
   ['tracking', ['serial', 'serials', 'serial numbers', 'tracking']],
   ['low', ['low', 'low stock', 'low stock at', 'reorder level']],
+  ['barcode', ['barcode', 'barcodes', 'bar code', 'ean', 'upc', 'gtin']],
 ];
 const template = [
-  'SKU,Name,Kind,Unit,Price,Trade price,Cost,Part number,Bore mm,Outside mm,Width mm,Warranty months,Serial numbers,Low stock at',
-  'B-6205-2RS,6205-2RS bearing,Bearings,each,4800,4200,3000,6205 2RS,25,52,15,0,no,3',
-  'CB-24F,"Car battery, size 24F",Batteries,each,78000,71000,56000,,,,,12,yes,2',
+  'SKU,Name,Kind,Unit,Price,Trade price,Cost,Part number,Bore mm,Outside mm,Width mm,Warranty months,Serial numbers,Low stock at,Barcode',
+  'B-6205-2RS,6205-2RS bearing,Bearings,each,4800,4200,3000,6205 2RS,25,52,15,0,no,3,',
+  'CB-24F,"Car battery, size 24F",Batteries,each,78000,71000,56000,,,,,12,yes,2,',
 ].join('\r\n');
 const badge = { new: ['New', '#1B5CF0', '#EEF3FF'], update: ['Changes', '#92400E', '#FDF3E7'], same: ['Same', '#55606C', '#F1F3F5'], error: ['Problem', '#B42318', '#FEF0EE'] } as const;
 const errorOf = (message: string) => { const [n, ...rest] = message.split(':'); return friendly(n, rest.join(':').trim()); };
@@ -155,7 +156,7 @@ export default function ImportPage() {
       <div style={{ maxWidth: 1040, margin: '22px auto 0', display: 'grid', gap: 14 }}>
         <header style={{ padding: '0 2px' }}>
           <h1 style={{ margin: 0, fontSize: 'clamp(26px, 3vw, 34px)', lineHeight: 1.1, fontWeight: 600, letterSpacing: '-.03em' }}>Bring in the price list</h1>
-          <p style={{ margin: '6px 0 0', maxWidth: 680, fontSize: 15, lineHeight: 1.5, color: '#434E5A' }}>In Excel, select the rows with the header row on top, copy, and paste them below. Or choose a CSV file. Nothing is saved until you press Save, and a product that already exists keeps anything you leave blank.</p>
+          <p style={{ margin: '6px 0 0', maxWidth: 680, fontSize: 15, lineHeight: 1.5, color: '#434E5A' }}>In Excel, select the rows with the header row on top, copy, and paste them below. Or choose a CSV file. Nothing is saved until you press Save, and a product that already exists keeps anything you leave blank. A Barcode column links the maker’s barcodes, several to a cell split by commas, so a scan finds the part.</p>
         </header>
 
         {saved ? (
@@ -219,6 +220,7 @@ export default function ImportPage() {
                       <td style={{ padding: '9px 6px' }}>
                         <div style={{ fontWeight: 550 }}>{r.name ?? '—'}</div>
                         <div style={{ fontSize: 12.5, color: '#55606C', fontFamily: 'var(--mono)' }}>{r.sku ?? 'no SKU'}</div>
+                        {r.barcodes ? <div style={{ marginTop: 3, fontSize: 12.5, color: '#1B5CF0' }}>+ {r.barcodes} {r.barcodes === 1 ? 'barcode' : 'barcodes'}</div> : null}
                         {r.problem ? <div style={{ marginTop: 3, fontSize: 13.5, color: '#B42318' }}>{r.problem}</div> : null}
                       </td>
                       <td style={{ padding: '9px 6px', textAlign: 'right', whiteSpace: 'nowrap' }}>

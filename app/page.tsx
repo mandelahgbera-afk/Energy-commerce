@@ -19,6 +19,7 @@ const icon: Record<string, string> = {
   '/shop': 'M3 9l2-5h14l2 5M4 9v11h16V9M9 20v-6h6v6',
   '/readings': 'M3 12h4l3-7 4 14 3-7h4',
   '/?public': 'M3 11 12 4l9 7M5 10v10h14V10M10 20v-5h4v5',
+  '/labels': 'M3 5h18v14H3ZM6 9v6M8.5 9v6M10.5 9v6M13.5 9v6M15.5 9v6M18 9v6',
   '/import': 'M4 3h10l6 6v12H4ZM14 3v6h6M8 13h8M8 17h8M8 9h3',
   '/settings':'M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4',
 };

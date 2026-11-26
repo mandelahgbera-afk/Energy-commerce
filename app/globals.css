@@ -769,3 +769,24 @@ body > main {
   background: #ffffff;
   border: 1px solid rgba(16, 24, 34, 0.07);
 }
+
+/* Shelf labels: A4 sheets of 24 (3 × 8 labels of 70 × 37 mm). On screen a dashed edge shows each cut;
+   in print only the sheets show, one per page. */
+.label-sheet { display: grid; grid-template-columns: repeat(3, 70mm); grid-auto-rows: 37mm; width: 210mm; margin: 0 auto 14px; background: #FFFFFF; box-shadow: 0 1px 3px rgba(16, 24, 34, .12); }
+.label { box-sizing: border-box; display: flex; flex-direction: column; gap: .6mm; padding: 2.6mm 4mm; overflow: hidden; outline: 1px dashed #D5DBE1; outline-offset: -1px; color: #000000; }
+.label-shop { font-size: 6.5pt; color: #444444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.label-name { font-size: 9.5pt; font-weight: 600; line-height: 1.15; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.label-price { font-size: 15pt; font-weight: 700; letter-spacing: -.01em; line-height: 1.1; }
+.label-unit { font-size: 8pt; font-weight: 500; }
+.label-code { display: block; height: 9.5mm; margin-top: auto; }
+.label-sku { font: 500 7pt var(--mono); text-align: center; letter-spacing: .05em; }
+@media print {
+  @page { size: A4; margin: 0; }
+  html, body { background: #FFFFFF !important; }
+  .labels-page { padding: 0 !important; }
+  .labels-page > :not(.label-print) { display: none !important; }
+  .label-print { margin: 0 !important; max-width: none !important; overflow: visible !important; }
+  .label-sheet { margin: .5mm 0 0; box-shadow: none; break-after: page; }
+  .label-sheet:last-child { break-after: auto; }
+  .label { outline: none; }
+}

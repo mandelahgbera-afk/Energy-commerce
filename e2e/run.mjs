@@ -419,10 +419,10 @@ try {
   });
 
   await step('the owner pastes a price list from Excel: a problem line stops it, then the fixed list saves', async () => {
-    const head = ['SKU', 'Name', 'Kind', 'Selling price', 'Wholesale', 'Part no', 'Bore mm', 'Outside mm', 'Width mm', 'Serial numbers'].join('\t');
-    const good = ['B-6206-2RS', '6206-2RS bearing', 'Bearings', '5,200', '4,700', '6206 2RS', '30', '62', '16', 'no'].join('\t');
-    const old = ['P-550', '550 W solar panel', 'Solar panels', '₦190,000', '', '', '', '', '', ''].join('\t');
-    const bad = ['P-600', '600 W solar panel', 'Solar panels', 'ask', '', '', '', '', '', ''].join('\t');
+    const head = ['SKU', 'Name', 'Kind', 'Selling price', 'Wholesale', 'Part no', 'Bore mm', 'Outside mm', 'Width mm', 'Serial numbers', 'Barcode'].join('\t');
+    const good = ['B-6206-2RS', '6206-2RS bearing', 'Bearings', '5,200', '4,700', '6206 2RS', '30', '62', '16', 'no', '6151000000048'].join('\t');
+    const old = ['P-550', '550 W solar panel', 'Solar panels', '₦190,000', '', '', '', '', '', '', ''].join('\t');
+    const bad = ['P-600', '600 W solar panel', 'Solar panels', 'ask', '', '', '', '', '', '', ''].join('\t');
     await o.goto(`${app}/import`);
     await o.fill('#sheet', [head, good, old, bad].join('\n'));
     await shot(o, 'import-1-pasted');
@@ -432,6 +432,7 @@ try {
     expect(await o.getByRole('button', { name: /^Save/ }).isDisabled(), 'saving is blocked while a line has a problem');
     await o.fill('#sheet', [head, good, old, bad.replace('\task\t', '\t210,000\t')].join('\n'));
     await o.getByRole('button', { name: 'Check the list' }).click();
+    await o.getByText('+ 1 barcode').waitFor({ timeout: 20000 });
     await o.getByRole('button', { name: 'Save 3 products' }).click();
     await o.getByText('Saved: 2 new, 1 changed. They are on the shop now.').waitFor({ timeout: 30000 });
     await shot(o, 'import-3-saved');
@@ -442,7 +443,9 @@ try {
     const [old5] = await sql`select p.price_kobo, t.trade_price_kobo from products p join product_trade_prices t on t.product_id = p.id where p.sku = 'P-550'`;
     eq(N(old5.price_kobo), 19000000, 'the existing panel has its new price');
     eq(N(old5.trade_price_kobo), 17000000, 'and keeps its trade price from a blank cell');
-    return '2 new, 1 changed, blank cells kept';
+    const [bc] = await sql`select p.sku from product_barcodes c join products p on p.id = c.product_id where c.code = '6151000000048'`;
+    eq(bc?.sku, 'B-6206-2RS', 'the barcode from the list is linked to its product');
+    return '2 new, 1 changed, blank cells kept, a barcode linked';
   });
 
   await step("the owner sets the shop's rules and details, and the public shop shows how to reach it", async () => {
@@ -718,6 +721,44 @@ try {
     const books = await val('select i_books_check()');
     expect(books.ok, `books: ${books.problems?.join('; ')}`);
     return '6.5 hours recorded, health record and chart shown, books agree';
+  });
+
+  await step('the owner prints shelf labels: the price and the shop code as a barcode, and only the sheets print', async () => {
+    await o.goto(`${app}/labels`);
+    await o.locator('#lb-q').waitFor({ timeout: 30000 });
+    await o.fill('#lb-q', '6206');
+    await o.getByLabel('Labels for 6206-2RS bearing').fill('3');
+    await o.locator('.label').nth(2).waitFor({ timeout: 10000 });
+    eq(await o.locator('.label').count(), 3, 'labels on the sheet:');
+    eq(await o.locator('svg[aria-label="Barcode B-6206-2RS"]').count(), 3, 'each label carries the shop code as bars:');
+    expect((await o.locator('.label').first().innerText()).includes('₦5,200'), 'the label shows the shelf price');
+    await shot(o, 'labels-1-picked');
+    await o.emulateMedia({ media: 'print' });
+    expect(!(await o.locator('nav.staff-nav').isVisible()), 'the menu does not print');
+    expect(await o.locator('.label-sheet').isVisible(), 'the sheet prints');
+    await shot(o, 'labels-2-print');
+    await o.emulateMedia({ media: 'screen' });
+    return '3 labels for B-6206-2RS at ₦5,200, only the sheet prints';
+  });
+
+  await step('a visitor sizes a solar system, and a matching set lands in their quote list with the sizes as the note', async () => {
+    const v = await guest({ width: 375, height: 812 });
+    await v.page.goto(`${app}/shop/sizer`);
+    await v.page.locator('#sz-add').waitFor({ timeout: 30000 });
+    await v.page.selectOption('#sz-add', { label: 'Fridge, 150 W' });
+    await v.page.selectOption('#sz-add', { label: 'Ceiling fan, 75 W' });
+    await v.page.locator('.sz-card').first().waitFor();
+    expect(!(await v.page.getByRole('button', { name: 'Find in stock' }).count()), 'no staff stock search on the public page');
+    expect(await noSideScroll(v.page), 'the sizer scrolls sideways at 375px');
+    await v.page.screenshot({ path: path.join(shots, 'sizer-public.png'), fullPage: true });
+    await v.page.getByRole('button', { name: 'Ask the shop for a quote on this' }).click();
+    await v.page.waitForURL(/\/shop\?list/, { timeout: 30000 });
+    await v.page.getByText('600 W solar panel').first().waitFor({ timeout: 30000 });
+    const note = await v.page.locator('#rq-note').inputValue();
+    expect(note.includes('Inverter: 1 kVA, 12 V.'), `the sizes go in the note, got ${note.slice(0, 80)}`);
+    await v.page.screenshot({ path: path.join(shots, 'sizer-to-list.png'), fullPage: true });
+    await v.context.close();
+    return 'fridge and two fans: panels from the list, sizes in the note';
   });
 
   await step('a counter cannot open the owner screen', async () => {

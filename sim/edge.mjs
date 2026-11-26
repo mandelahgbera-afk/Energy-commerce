@@ -2587,6 +2587,35 @@ await test('a scan finds the part by its shop code, a taught barcode or the word
   eq(N(await val(`select count(*) from audit_log where action in ('link_barcode', 'unlink_barcode')`)), 3, 'each change is audited:');
 });
 
+await test('a price list can carry barcodes: linked on save, refused when they would ring up the wrong part', async () => {
+  const imp = (rows, apply = false, k = null) => rpc(OWNER, 'import_products', { p_key: k, p_rows: rows, p_apply: apply });
+  const base = { sku: 'IMP-BC-1', name: 'Import battery 75Ah', price: 9000000, family: 'batteries' };
+  const rows = [
+    { ...base, barcode: '6151000000017, 6151 0000 00024' },
+    { sku: 'IMP-BC-2', name: 'Import belt', price: 500000, barcode: '6151000000017' },
+    { sku: 'IMP-BC-3', name: 'Import chain', price: 700000, barcode: 'SP-450M' },
+    { sku: 'IMP-BC-4', name: 'Import sprocket', price: 700000, barcode: '12' },
+  ];
+  const look = await imp(rows);
+  eq(look.rows[0].action, 'new');
+  eq(look.rows[0].barcodes, 2, 'two codes in one cell, spaces ignored:');
+  eq(look.rows[1].problem, 'A barcode on this line is already on an earlier line.');
+  eq(look.rows[2].problem, 'Barcode SP450M already belongs to another product.', "another product's shop code:");
+  eq(look.rows[3].problem, 'A barcode must be 4 to 64 letters or digits.');
+  await fails(imp(rows, true, 'imp-bc-a'), 'import_has_errors');
+  eq(N(await val(`select count(*) from product_barcodes where code like '6151%'`)), 0, 'nothing saved while a line has a problem:');
+  eq((await imp([rows[0]], true, 'imp-bc-b')).counts.new, 1);
+  const pid = await val(`select id from products where sku = 'IMP-BC-1'`);
+  eq((await rpc(COUNTER, 'search_parts', { p_query: '6151000000024' }))[0].product, pid, 'a scan finds the imported product:');
+  eq((await imp([{ ...base, barcode: '6151000000017' }])).rows[0].action, 'same', 'a code already linked changes nothing:');
+  const more = await imp([{ ...base, barcode: '6151000000031' }]);
+  eq(more.rows[0].action, 'update');
+  eq(more.rows[0].barcodes, 1);
+  await imp([{ ...base, barcode: '6151000000031' }], true, 'imp-bc-c');
+  eq(N(await val(`select count(*) from product_barcodes where product_id = $1`, [pid])), 3, 'codes are only ever added:');
+  eq(N(await val(`select count(*) from audit_log where action = 'link_barcode' and entity_id = $1`, [pid])), 3, 'each new code is audited once:');
+});
+
 const failed = results.filter((r) => !r.ok);
 for (const r of results) console.log(`${r.ok ? 'pass' : 'FAIL'}  ${r.name}${r.ok ? '' : `\n      ${r.why}`}`);
 console.log(`\n${results.length - failed.length} of ${results.length} passed on ${db.where}`);
